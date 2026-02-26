@@ -1,0 +1,243 @@
+import { IdentityModule } from '@/types';
+
+export const IDENTITY_MODULES: IdentityModule[] = [
+  {
+    id: 'week-1-self-worth',
+    week: 1,
+    title: 'Rediscovering Your Worth',
+    description: 'Begin reconnecting with your inherent value — separate from addiction, mistakes, or labels.',
+    category: 'self_worth',
+    affirmation: 'I am more than what happened to me.',
+    exercises: [
+      {
+        id: 'w1-e1',
+        title: 'Three Truths About Me',
+        prompt: 'Write three things that are true about you that have nothing to do with addiction. These can be simple — "I care about my family," "I notice beauty in nature," "I try even when it\'s hard."',
+        hint: 'Focus on who you are, not what you\'ve done.',
+        type: 'writing',
+      },
+      {
+        id: 'w1-e2',
+        title: 'Letter to Younger Self',
+        prompt: 'Write a short, kind letter to the version of you before addiction took hold. What would you want that person to know?',
+        hint: 'Speak with compassion, not criticism.',
+        type: 'reflection',
+      },
+      {
+        id: 'w1-e3',
+        title: 'One Kind Act Today',
+        prompt: 'Do one small thing for yourself today that says "I matter." It could be a walk, a healthy meal, or five minutes of quiet. Describe what you did and how it felt.',
+        type: 'action',
+      },
+    ],
+  },
+  {
+    id: 'week-2-self-worth',
+    week: 2,
+    title: 'Releasing Shame',
+    description: 'Shame keeps us stuck. This week, gently begin separating who you are from what you\'ve done.',
+    category: 'self_worth',
+    affirmation: 'My past does not define my future.',
+    exercises: [
+      {
+        id: 'w2-e1',
+        title: 'Shame vs. Guilt',
+        prompt: 'Think of one thing you feel shame about. Now reframe it: instead of "I am bad," write "I did something I regret, and I\'m working to grow." How does that feel different?',
+        type: 'reflection',
+      },
+      {
+        id: 'w2-e2',
+        title: 'What I\'d Tell a Friend',
+        prompt: 'If a close friend told you they felt worthless because of their past, what would you say to them? Now say those same words to yourself.',
+        hint: 'You deserve the same kindness you give others.',
+        type: 'writing',
+      },
+      {
+        id: 'w2-e3',
+        title: 'Letting Go Visualization',
+        prompt: 'Close your eyes for 2 minutes. Imagine placing one heavy burden — a regret, a label, a memory — into a river and watching it float away. Describe the experience.',
+        type: 'visualization',
+      },
+    ],
+  },
+  {
+    id: 'week-3-values',
+    week: 3,
+    title: 'What Matters Most',
+    description: 'Clarify the values that guide who you want to become. Values are your compass.',
+    category: 'values',
+    affirmation: 'I choose what I stand for.',
+    exercises: [
+      {
+        id: 'w3-e1',
+        title: 'Values Discovery',
+        prompt: 'From this list, pick your top 5 values: Honesty, Family, Health, Freedom, Creativity, Connection, Growth, Courage, Kindness, Purpose, Peace, Adventure, Faith, Loyalty, Respect. Why do these matter to you?',
+        hint: 'There are no wrong answers. Choose what feels true.',
+        type: 'reflection',
+      },
+      {
+        id: 'w3-e2',
+        title: 'Values in Action',
+        prompt: 'For each of your top 3 values, describe one small daily action that would honor that value. Example: if "Health" is a value, a daily walk counts.',
+        type: 'writing',
+      },
+      {
+        id: 'w3-e3',
+        title: 'Values Conflict Check',
+        prompt: 'Think of a recent decision that felt uncomfortable. Was it because it went against one of your values? Write about the conflict and what you\'d choose differently now.',
+        type: 'reflection',
+      },
+    ],
+  },
+  {
+    id: 'week-4-values',
+    week: 4,
+    title: 'Living Aligned',
+    description: 'Practice bringing your daily choices into alignment with what you truly value.',
+    category: 'values',
+    affirmation: 'Every choice is a chance to live my values.',
+    exercises: [
+      {
+        id: 'w4-e1',
+        title: 'Morning Values Check',
+        prompt: 'Each morning this week, pick one value to focus on. At the end of today, write about one moment where you lived that value — even imperfectly.',
+        type: 'action',
+      },
+      {
+        id: 'w4-e2',
+        title: 'The Person I Admire',
+        prompt: 'Think of someone you deeply admire. What values do they embody? Which of those values do you already share? Which would you like to grow into?',
+        type: 'reflection',
+      },
+      {
+        id: 'w4-e3',
+        title: 'Values Boundary',
+        prompt: 'Write about one boundary you need to set or strengthen to protect a core value. What would honoring that boundary look like this week?',
+        hint: 'Boundaries aren\'t walls — they\'re acts of self-respect.',
+        type: 'writing',
+      },
+    ],
+  },
+  {
+    id: 'week-5-purpose',
+    week: 5,
+    title: 'Finding Your Why',
+    description: 'Purpose gives recovery direction. Explore what gives your life meaning beyond sobriety.',
+    category: 'purpose',
+    affirmation: 'I am building a life worth protecting.',
+    exercises: [
+      {
+        id: 'w5-e1',
+        title: 'What Makes You Come Alive',
+        prompt: 'When was the last time you felt truly engaged in something — not numbing, but genuinely alive? Describe that moment. What were you doing? Who were you with?',
+        type: 'reflection',
+      },
+      {
+        id: 'w5-e2',
+        title: 'Contribution Map',
+        prompt: 'How could your experiences — including the hard ones — help someone else someday? Write about how your journey might become a source of strength for others.',
+        hint: 'Pain that is processed can become purpose.',
+        type: 'writing',
+      },
+      {
+        id: 'w5-e3',
+        title: 'Purpose Statement Draft',
+        prompt: 'Try writing a simple purpose statement: "I want to _____ so that _____." It doesn\'t have to be perfect. Just honest.',
+        type: 'writing',
+      },
+    ],
+  },
+  {
+    id: 'week-6-purpose',
+    week: 6,
+    title: 'Purpose in Practice',
+    description: 'Turn purpose from an idea into daily lived experience through small, meaningful actions.',
+    category: 'purpose',
+    affirmation: 'Small actions carry deep meaning.',
+    exercises: [
+      {
+        id: 'w6-e1',
+        title: 'One Meaningful Act',
+        prompt: 'Do one thing today that connects to your purpose — even something tiny. Help someone, create something, learn something. Write about what you did and why it mattered.',
+        type: 'action',
+      },
+      {
+        id: 'w6-e2',
+        title: 'Future Self Letter',
+        prompt: 'Write a letter from your future self — one year from now, living with purpose. What does your day look like? What are you proud of? What advice do you give present-you?',
+        type: 'visualization',
+      },
+      {
+        id: 'w6-e3',
+        title: 'Purpose Obstacles',
+        prompt: 'What fears or doubts stand between you and your purpose? Name them honestly. Then write one counter-thought for each fear.',
+        type: 'reflection',
+      },
+    ],
+  },
+  {
+    id: 'week-7-goals',
+    week: 7,
+    title: 'Dreaming Again',
+    description: 'Reconnect with the ability to dream about your future — addiction may have stolen that, but it\'s still there.',
+    category: 'life_goals',
+    affirmation: 'I deserve to dream about my future.',
+    exercises: [
+      {
+        id: 'w7-e1',
+        title: 'If Nothing Could Stop Me',
+        prompt: 'If fear, money, and the past didn\'t matter — what would you want your life to look like in 3 years? Describe it freely, without filtering.',
+        hint: 'Let yourself want things again.',
+        type: 'visualization',
+      },
+      {
+        id: 'w7-e2',
+        title: 'Goal Categories',
+        prompt: 'Write one goal for each area: Health, Relationships, Career/Purpose, Personal Growth, Joy/Fun. They can be small or big.',
+        type: 'writing',
+      },
+      {
+        id: 'w7-e3',
+        title: 'First Step Commitment',
+        prompt: 'Pick one goal from above. What is the very first, smallest step you could take this week? Commit to doing it and write about what happened.',
+        type: 'action',
+      },
+    ],
+  },
+  {
+    id: 'week-8-goals',
+    week: 8,
+    title: 'Building the Bridge',
+    description: 'Create a realistic path from where you are now to the life you\'re building. One step at a time.',
+    category: 'life_goals',
+    affirmation: 'I build my future one honest day at a time.',
+    exercises: [
+      {
+        id: 'w8-e1',
+        title: '90-Day Vision',
+        prompt: 'What could realistically change in the next 90 days if you stayed committed? Write a specific, achievable vision for 3 months from now.',
+        type: 'writing',
+      },
+      {
+        id: 'w8-e2',
+        title: 'Obstacle Planning',
+        prompt: 'For your biggest goal, list 3 obstacles that could derail you. For each one, write a plan: "If _____ happens, I will _____."',
+        hint: 'Planning for obstacles isn\'t pessimism — it\'s wisdom.',
+        type: 'reflection',
+      },
+      {
+        id: 'w8-e3',
+        title: 'Celebration Letter',
+        prompt: 'You\'ve completed 8 weeks of identity rebuilding. Write about what has shifted in how you see yourself. What surprised you? What are you proud of?',
+        type: 'writing',
+      },
+    ],
+  },
+];
+
+export const CATEGORY_INFO: Record<string, { label: string; color: string; darkColor: string }> = {
+  self_worth: { label: 'Self-Worth', color: '#FF8A80', darkColor: '#5C2A2A' },
+  values: { label: 'Values', color: '#82B1FF', darkColor: '#2A3D5C' },
+  purpose: { label: 'Purpose', color: '#B9F6CA', darkColor: '#2A5C3A' },
+  life_goals: { label: 'Life Goals', color: '#FFD180', darkColor: '#5C4A2A' },
+};

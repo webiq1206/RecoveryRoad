@@ -20,6 +20,7 @@ import {
   ChevronUp,
 } from 'lucide-react-native';
 import Colors from '@/constants/colors';
+import { useRequireProviderMode } from '@/hooks/useRequireProviderMode';
 import { useEnterprise } from '@/providers/EnterpriseProvider';
 import { EngagementHeatmapData, ComplianceSummary } from '@/types';
 
@@ -48,6 +49,7 @@ function formatDate(dateStr: string): string {
 }
 
 export default function EnterpriseHeatmaps() {
+  const canAccess = useRequireProviderMode();
   const { heatmapData, complianceSummaries } = useEnterprise();
   const [viewMode, setViewMode] = useState<ViewMode>('heatmap');
   const [expandedClient, setExpandedClient] = useState<string | null>(null);
@@ -154,6 +156,8 @@ export default function EnterpriseHeatmaps() {
       </View>
     );
   }, []);
+
+  if (!canAccess) return null;
 
   return (
     <View style={styles.container}>

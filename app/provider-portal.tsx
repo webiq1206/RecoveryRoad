@@ -40,6 +40,7 @@ import Colors from '@/constants/colors';
 import { useTherapist } from '@/providers/TherapistProvider';
 import { useSubscription } from '@/providers/SubscriptionProvider';
 import { PremiumSectionOverlay } from '@/components/PremiumGate';
+import { useRequireProviderMode } from '@/hooks/useRequireProviderMode';
 import { ConnectedClient, ProviderRole, ConsentScope } from '@/types';
 
 const ROLE_LABELS: Record<ProviderRole, string> = {
@@ -84,6 +85,7 @@ function getTrendIcon(trend: string) {
 
 export default function ProviderPortalScreen() {
   const router = useRouter();
+  const canAccess = useRequireProviderMode();
   const {
     isPortalEnabled,
     provider,
@@ -139,6 +141,8 @@ export default function ProviderPortalScreen() {
     }
     return result.sort((a, b) => b.riskLevel - a.riskLevel);
   }, [clients, filterStatus, searchQuery]);
+
+  if (!canAccess) return null;
 
   const handleSetup = useCallback(() => {
     if (!setupName.trim() || !setupEmail.trim()) {

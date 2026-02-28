@@ -35,6 +35,7 @@ import {
 } from 'lucide-react-native';
 import * as Haptics from 'expo-haptics';
 import Colors from '@/constants/colors';
+import { useRequireProviderMode } from '@/hooks/useRequireProviderMode';
 import { useCompliance } from '@/providers/ComplianceProvider';
 import { ComplianceRequirement, ComplianceRequirementType } from '@/types';
 
@@ -130,6 +131,7 @@ const rateStyles = StyleSheet.create({
 
 export default function ComplianceModeScreen() {
   const router = useRouter();
+  const canAccess = useRequireProviderMode();
   const {
     data,
     isEnabled,
@@ -165,6 +167,8 @@ export default function ComplianceModeScreen() {
       useNativeDriver: true,
     }).start();
   }, []);
+
+  if (!canAccess) return null;
 
   const handleEnableCompliance = useCallback(() => {
     if (!caseId.trim() || !officerName.trim()) {

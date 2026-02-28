@@ -37,6 +37,7 @@ import {
 } from 'lucide-react-native';
 import * as Haptics from 'expo-haptics';
 import Colors from '@/constants/colors';
+import { useRequireProviderMode } from '@/hooks/useRequireProviderMode';
 import { useTherapist } from '@/providers/TherapistProvider';
 import { ConnectedClient, ClientReport, WeeklyTrend, ConsentScope } from '@/types';
 
@@ -78,6 +79,7 @@ function getTimeAgo(dateStr: string): string {
 export default function ClientDetailScreen() {
   const { clientId } = useLocalSearchParams<{ clientId: string }>();
   const router = useRouter();
+  const canAccess = useRequireProviderMode();
   const { getClientById, getClientReports, generateClientReport, updateClientStatus, revokeClientAccess } = useTherapist();
 
   const client = getClientById(clientId ?? '');
@@ -89,6 +91,8 @@ export default function ClientDetailScreen() {
   useEffect(() => {
     Animated.timing(fadeAnim, { toValue: 1, duration: 400, useNativeDriver: true }).start();
   }, []);
+
+  if (!canAccess) return null;
 
   const handleGenerateReport = useCallback(() => {
     if (!clientId) return;

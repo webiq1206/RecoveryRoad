@@ -25,6 +25,7 @@ import {
 } from 'lucide-react-native';
 import * as Haptics from 'expo-haptics';
 import Colors from '@/constants/colors';
+import { useRequireProviderMode } from '@/hooks/useRequireProviderMode';
 import { useEnterprise } from '@/providers/EnterpriseProvider';
 
 const COLOR_PRESETS = [
@@ -37,6 +38,7 @@ const COLOR_PRESETS = [
 ];
 
 export default function EnterpriseWhiteLabel() {
+  const canAccess = useRequireProviderMode();
   const { whiteLabel, updateWhiteLabel, organization } = useEnterprise();
   const [appName, setAppName] = useState(whiteLabel.appName);
   const [tagline, setTagline] = useState(whiteLabel.tagline);
@@ -104,6 +106,8 @@ export default function EnterpriseWhiteLabel() {
     setIsEnabled(false);
     markChanged();
   }, [markChanged]);
+
+  if (!canAccess) return null;
 
   if (organization.tier !== 'enterprise') {
     return (

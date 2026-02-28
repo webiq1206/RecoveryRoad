@@ -23,6 +23,7 @@ import {
 } from 'lucide-react-native';
 import * as Haptics from 'expo-haptics';
 import Colors from '@/constants/colors';
+import { useRequireProviderMode } from '@/hooks/useRequireProviderMode';
 import { useEnterprise } from '@/providers/EnterpriseProvider';
 import { TIER_LABELS, TIER_PRICING } from '@/constants/enterprise';
 import { OrgTier } from '@/types';
@@ -42,6 +43,7 @@ function formatDate(dateStr: string): string {
 }
 
 export default function EnterpriseBilling() {
+  const canAccess = useRequireProviderMode();
   const { billing, organization, updateOrganization } = useEnterprise();
   const [showPlans, setShowPlans] = useState(false);
 
@@ -71,6 +73,8 @@ export default function EnterpriseBilling() {
     cancelled: Colors.textMuted,
     trialing: Colors.accentWarm,
   };
+
+  if (!canAccess) return null;
 
   return (
     <View style={styles.container}>

@@ -24,6 +24,7 @@ import {
   Eye,
 } from 'lucide-react-native';
 import Colors from '@/constants/colors';
+import { getOverallRiskPhrase } from '@/constants/emotionalRisk';
 import { useRecovery } from '@/providers/RecoveryProvider';
 import { DailyCheckIn } from '@/types';
 
@@ -407,22 +408,15 @@ export default function TriggersScreen() {
         <AnimatedCard delay={0} style={styles.riskOverviewCard}>
           <View style={styles.riskOverviewHeader}>
             <View style={styles.riskOverviewLeft}>
-              <View style={[styles.riskDot, { backgroundColor: riskColor }]} />
-              <Text style={styles.riskOverviewTitle}>Current Risk Level</Text>
+              <Shield size={18} color={Colors.primary} />
+              <Text style={styles.riskOverviewTitle}>How you're doing</Text>
             </View>
-            <Text style={[styles.riskOverviewValue, { color: riskColor }]}>
-              {recentCheckIns.length === 0 ? '\u2014' : `${overallRiskLevel}%`}
-            </Text>
           </View>
+          <Text style={styles.riskOverviewHeadline}>
+            {getOverallRiskPhrase(overallRiskLevel, recentCheckIns.length > 0).headline}
+          </Text>
           <Text style={styles.riskOverviewSubtext}>
-            {recentCheckIns.length === 0
-              ? 'Complete check-ins to see your risk level'
-              : overallRiskLevel > 65
-                ? 'Elevated risk detected \u2014 stay connected to your support tools'
-                : overallRiskLevel > 40
-                  ? 'Moderate risk \u2014 awareness is your strength right now'
-                  : 'Low risk \u2014 your efforts are showing results'
-            }
+            {getOverallRiskPhrase(overallRiskLevel, recentCheckIns.length > 0).reassurance}
           </Text>
         </AnimatedCard>
 
@@ -665,6 +659,13 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '600' as const,
     color: Colors.text,
+  },
+  riskOverviewHeadline: {
+    fontSize: 17,
+    fontWeight: '600' as const,
+    color: Colors.text,
+    marginTop: 8,
+    lineHeight: 24,
   },
   riskOverviewValue: {
     fontSize: 28,

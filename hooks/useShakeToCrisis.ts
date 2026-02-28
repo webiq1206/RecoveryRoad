@@ -1,0 +1,46 @@
+import React, { useEffect, useRef } from 'react';
+import { Platform } from 'react-native';
+import { useRouter } from 'expo-router';
+import * as Haptics from 'expo-haptics';
+
+const SHAKE_THRESHOLD = 2.2;
+const SHAKE_COOLDOWN_MS = 2000;
+
+/**
+ * Listens for device shake on native and opens crisis mode. No-op on web.
+ * Mount once at app root (e.g. in _layout) so it works from anywhere.
+ */
+export function useShakeToCrisis() {
+  const router = useRouter();
+  const lastShakeTime = useRef(0);
+  const lastAcc = useRef({ x: 0, y: 0, z: 0 });
+
+  useEffect(() => {
+    if (Platform.OS === 'web') return;
+
+    let subscription: { remove: () => void } | null = null;
+
+    import('expo-sensors').then(({ Accelerometer }) => {
+      Accelerometer.setUpdateInterval(100);
+      subscription = Accelerometer.addListener((data) => {
+        const { x, y, z } = data;
+        const prev = lastAcc.current;
+        const delta = Math.abs(x - prev.x) + Math.abs(y - prev.y) + Math.abs(z - prev.z);
+        lastAcc.current = { x, y, z };
+
+        if (delta > SHAKE_THRESHOLD) {
+          const now = Date.now();
+          if (now - lastShakeTime.current > SHAKE_COOLDOWN_MS) {
+            lastShakeTime.current = now;
+            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
+            router.push('/crisis-mode' as any);
+          }
+        }
+      });
+    }).catch(() => {});
+
+    return () => {
+      subscription?.remove();
+    };
+  }, [router]);
+}

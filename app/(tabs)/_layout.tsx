@@ -1,7 +1,9 @@
 import { Tabs } from "expo-router";
+import { View } from "react-native";
 import { Home, Compass, User, BookOpen, Users } from "lucide-react-native";
 import React, { useCallback } from "react";
 import Colors from "@/constants/colors";
+import { CrisisStrip } from "@/components/CrisisStrip";
 
 const TabIcon = React.memo(({ IconComponent, color, size }: { IconComponent: typeof Home; color: string; size: number }) => (
   <IconComponent color={color} size={size} />
@@ -29,23 +31,24 @@ export default function TabLayout() {
   ), []);
 
   return (
-    <Tabs
-      screenOptions={{
-        headerShown: false,
-        tabBarActiveTintColor: Colors.primary,
-        tabBarInactiveTintColor: Colors.textMuted,
-        tabBarStyle: {
-          backgroundColor: Colors.tabBar,
-          borderTopColor: Colors.border,
-          borderTopWidth: 0.5,
-        },
-        tabBarLabelStyle: {
-          fontSize: 11,
-          fontWeight: '600' as const,
-        },
-        lazy: true,
-      }}
-    >
+    <View style={{ flex: 1 }}>
+      <Tabs
+        screenOptions={{
+          headerShown: false,
+          tabBarActiveTintColor: Colors.primary,
+          tabBarInactiveTintColor: Colors.textMuted,
+          tabBarStyle: {
+            backgroundColor: Colors.tabBar,
+            borderTopColor: Colors.border,
+            borderTopWidth: 0.5,
+          },
+          tabBarLabelStyle: {
+            fontSize: 11,
+            fontWeight: '600' as const,
+          },
+          lazy: true,
+        }}
+      >
       <Tabs.Screen
         name="index"
         options={{ href: null }}
@@ -108,5 +111,7 @@ export default function TabLayout() {
       />
 
     </Tabs>
+      <CrisisStrip />
+    </View>
   );
 }

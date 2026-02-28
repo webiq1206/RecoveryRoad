@@ -36,6 +36,7 @@ import { useRecovery } from '@/providers/RecoveryProvider';
 import { useSubscription } from '@/providers/SubscriptionProvider';
 import { DailyCheckIn } from '@/types';
 import { PremiumSectionOverlay } from '@/components/PremiumGate';
+import { getStabilityPhrase, getMoodPhrase, getCravingsPhrase, getProtectionReadingSummary } from '@/constants/emotionalRisk';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const CHART_WIDTH = SCREEN_WIDTH - 72;
@@ -264,6 +265,32 @@ function TrendIcon({ trend, positiveDirection }: { trend: 'up' | 'down' | 'stabl
   return <Minus size={14} color={color} />;
 }
 
+function ProtectionReadingCard({
+  stabilityScore,
+  hasCheckIns,
+  onPress,
+}: {
+  stabilityScore: number;
+  hasCheckIns: boolean;
+  onPress: () => void;
+}) {
+  const { line, reassurance } = getProtectionReadingSummary(stabilityScore, hasCheckIns);
+  return (
+    <Pressable style={meterStyles.container} onPress={onPress} testID="progress-protection-reading-link">
+      <View style={meterStyles.header}>
+        <View style={meterStyles.headerLeft}>
+          <Shield size={18} color={Colors.primary} />
+          <Text style={meterStyles.title}>How your protection reads you</Text>
+        </View>
+        <ChevronRight size={18} color={Colors.textMuted} />
+      </View>
+      <Text style={meterStyles.desc}>{line}</Text>
+      <Text style={meterStyles.reassurance}>{reassurance}</Text>
+      <Text style={meterStyles.seeDetail}>See detailed patterns & factors</Text>
+    </Pressable>
+  );
+}
+
 const TRIGGER_DAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 const TRIGGER_TIME_BLOCKS = [
   { label: 'Morning', key: 'morning', icon: Sun, hours: [6, 7, 8, 9, 10, 11] },
@@ -305,7 +332,6 @@ export default function ProgressScreen() {
   const router = useRouter();
   const { profile, daysSober, checkIns, stabilityScore, journal, pledges, currentStreak } = useRecovery();
   const { hasFeature } = useSubscription();
-  const [triggerExpanded, setTriggerExpanded] = useState<boolean>(false);
 
   const pulseAnim = useRef(new Animated.Value(1)).current;
 
@@ -516,7 +542,7 @@ export default function ProgressScreen() {
             </View>
             <TrendIcon trend={stabilityData.trend} positiveDirection="up" />
           </View>
-          <Text style={styles.metricValue}>{stabilityScore}</Text>
+          <Text style={styles.metricValuePhrase}>{getStabilityPhrase(stabilityScore)}</Text>
           <Text style={styles.metricLabel}>Stability</Text>
         </View>
         <View style={[styles.metricCard, { flex: 1, marginLeft: 4, marginRight: 4 }]}>
@@ -526,8 +552,8 @@ export default function ProgressScreen() {
             </View>
             <TrendIcon trend={emotionalGrowth.trend} positiveDirection="up" />
           </View>
-          <Text style={styles.metricValue}>{emotionalGrowth.avgMood}</Text>
-          <Text style={styles.metricLabel}>Mood Avg</Text>
+          <Text style={styles.metricValuePhrase}>{getMoodPhrase(emotionalGrowth.avgMood)}</Text>
+          <Text style={styles.metricLabel}>Mood</Text>
         </View>
         <View style={[styles.metricCard, { flex: 1, marginLeft: 8 }]}>
           <View style={styles.metricHeader}>
@@ -536,7 +562,7 @@ export default function ProgressScreen() {
             </View>
             <TrendIcon trend={triggerData.trend} positiveDirection="down" />
           </View>
-          <Text style={styles.metricValue}>{triggerData.avgCraving}</Text>
+          <Text style={styles.metricValuePhrase}>{getCravingsPhrase(triggerData.avgCraving)}</Text>
           <Text style={styles.metricLabel}>Cravings</Text>
         </View>
       </View>
@@ -598,147 +624,75 @@ export default function ProgressScreen() {
         </View>
       )}
 
-      {hasFeature('predictive_engine') ? (
-        <VulnerabilityMeter score={vulnerabilityScore} />
-      ) : (
-        <View style={styles.premiumGateCard}>
-          <PremiumSectionOverlay
-            feature="predictive_engine"
-            title="Relapse Vulnerability Meter"
-            description="Unlock the predictive engine to see your real-time vulnerability score and get early warnings."
-          />
-        </View>
-      )}
+      <ProtectionReadingCard
+        stabilityScore={stabilityScore}
+        hasCheckIns={checkIns.length > 0}
+        onPress={() => {
+          Haptics.selectionAsync();
+          router.push('/relapse-detection' as any);
+        }}
+      />
 
       <View style={trigStyles.card}>
-        <Pressable
-          style={trigStyles.header}
-          onPress={() => {
-            Haptics.selectionAsync();
-            setTriggerExpanded(!triggerExpanded);
-          }}
-          testID="trigger-analysis-toggle"
-        >
-          <View style={trigStyles.headerLeft}>
-            <View style={[trigStyles.headerIconBg, { backgroundColor: triggerRiskColor + '18' }]}>
-              <Zap size={18} color={triggerRiskColor} />
-            </View>
-            <View style={trigStyles.headerTextWrap}>
-              <Text style={trigStyles.headerTitle}>Trigger Analysis</Text>
-              <Text style={trigStyles.headerSub}>
-                {recentCheckIns30.length === 0
-                  ? 'Complete check-ins to see patterns'
-                  : `Risk level: ${overallTriggerRisk}%`}
-              </Text>
-            </View>
+        <View style={trigStyles.headerStatic}>
+          <View style={[trigStyles.headerIconBg, { backgroundColor: triggerRiskColor + '18' }]}>
+            <Zap size={18} color={triggerRiskColor} />
           </View>
-          <View style={trigStyles.headerRight}>
-            {recentCheckIns30.length > 0 && (
-              <View style={[trigStyles.riskBadge, { backgroundColor: triggerRiskColor + '18' }]}>
-                <Text style={[trigStyles.riskBadgeText, { color: triggerRiskColor }]}>{overallTriggerRisk}</Text>
-              </View>
-            )}
-            {triggerExpanded ? <ChevronUp size={16} color={Colors.textMuted} /> : <ChevronDown size={16} color={Colors.textMuted} />}
-          </View>
-        </Pressable>
+          <Text style={trigStyles.headerTitle}>Trigger Patterns</Text>
+        </View>
 
-        {triggerExpanded && (
-          <View style={trigStyles.body}>
-            <View style={trigStyles.heatmapContainer}>
-              <View style={trigStyles.heatRow}>
-                <View style={trigStyles.heatLabelCell} />
-                {TRIGGER_TIME_BLOCKS.map(tb => {
-                  const Icon = tb.icon;
-                  return (
-                    <View key={tb.key} style={trigStyles.heatColHeader}>
-                      <Icon size={12} color={Colors.textSecondary} />
-                      <Text style={trigStyles.heatColLabel}>{tb.label.slice(0, 4)}</Text>
-                    </View>
-                  );
-                })}
-              </View>
-              {TRIGGER_DAYS.map((day, dayIdx) => (
-                <View key={day} style={trigStyles.heatRow}>
-                  <View style={trigStyles.heatLabelCell}>
-                    <Text style={trigStyles.heatDayLabel}>{day}</Text>
-                  </View>
-                  {TRIGGER_TIME_BLOCKS.map(tb => {
-                    const val = triggerHeatmap[dayIdx]?.[tb.key] ?? 0;
-                    const level = getHeatLevel(val);
-                    return (
-                      <View key={`${dayIdx}-${tb.key}`} style={trigStyles.heatCellWrap}>
-                        <View style={[trigStyles.heatCell, { backgroundColor: HEAT_COLORS[level] }]}>
-                          {val > 0 && (
-                            <Text style={[trigStyles.heatCellText, level >= 3 && { color: Colors.text }]}>
-                              {Math.round(val)}
-                            </Text>
-                          )}
-                        </View>
-                      </View>
-                    );
-                  })}
-                </View>
-              ))}
-              <View style={trigStyles.heatLegend}>
-                <Text style={trigStyles.heatLegendLabel}>Low</Text>
-                {HEAT_COLORS.map((color, i) => (
-                  <View key={i} style={[trigStyles.heatLegendBox, { backgroundColor: color }]} />
-                ))}
-                <Text style={trigStyles.heatLegendLabel}>High</Text>
-              </View>
-            </View>
-
-            {highRiskTimes.length > 0 && (
-              <View style={trigStyles.riskTimesCard}>
-                <Text style={trigStyles.riskTimesTitle}>High-Risk Windows</Text>
-                {highRiskTimes.map((rt, idx) => (
-                  <View key={idx} style={[trigStyles.riskTimeRow, idx === highRiskTimes.length - 1 && { borderBottomWidth: 0 }]}>
-                    <View style={trigStyles.riskTimeLeft}>
-                      <View style={[trigStyles.riskTimeDot, { backgroundColor: rt.value > 70 ? '#EF5350' : '#FFC107' }]} />
-                      <Text style={trigStyles.riskTimeText}>{rt.day} {rt.time}</Text>
-                    </View>
-                    <View style={[trigStyles.riskTimeBadge, { backgroundColor: rt.value > 70 ? 'rgba(239,83,80,0.15)' : 'rgba(255,193,7,0.15)' }]}>
-                      <Text style={[trigStyles.riskTimeBadgeText, { color: rt.value > 70 ? '#EF5350' : '#FFC107' }]}>{Math.round(rt.value)}%</Text>
-                    </View>
+        <View style={trigStyles.patternsBody}>
+          {(profile.recoveryProfile?.triggers ?? []).length > 0 ? (
+            <View style={trigStyles.patternRow}>
+              <Text style={trigStyles.patternLabel}>Top triggers</Text>
+              <View style={trigStyles.triggerChips}>
+                {(profile.recoveryProfile?.triggers ?? []).slice(0, 5).map((trigger, idx) => (
+                  <View key={idx} style={trigStyles.triggerChip}>
+                    <View style={trigStyles.triggerChipDot} />
+                    <Text style={trigStyles.triggerChipText}>{trigger}</Text>
                   </View>
                 ))}
               </View>
-            )}
-
-            <View style={trigStyles.insightsContainer}>
-              {triggerInsights.map(insight => {
-                const iconColor = insight.type === 'warning' ? '#EF5350' : insight.type === 'positive' ? '#66BB6A' : '#FFB347';
-                const bgColor = insight.type === 'warning' ? 'rgba(239,83,80,0.08)' : insight.type === 'positive' ? 'rgba(76,175,80,0.08)' : 'rgba(255,179,71,0.08)';
-                const IconComp = insight.type === 'warning' ? AlertTriangle : insight.type === 'positive' ? Shield : TrendingUp;
-                return (
-                  <View key={insight.id} style={[trigStyles.insightCard, { backgroundColor: bgColor }]}>
-                    <View style={trigStyles.insightRow}>
-                      <IconComp size={14} color={iconColor} />
-                      <View style={trigStyles.insightTextWrap}>
-                        <Text style={trigStyles.insightTitle}>{insight.title}</Text>
-                        <Text style={trigStyles.insightDesc}>{insight.description}</Text>
-                      </View>
-                    </View>
-                  </View>
-                );
-              })}
             </View>
+          ) : (
+            <View style={trigStyles.patternRow}>
+              <Text style={trigStyles.patternLabel}>Top triggers</Text>
+              <Text style={trigStyles.patternEmpty}>You can add triggers during onboarding or in settings.</Text>
+            </View>
+          )}
 
-            {(profile.recoveryProfile?.triggers ?? []).length > 0 && (
-              <View style={trigStyles.knownTriggersWrap}>
-                <Text style={trigStyles.knownTriggersLabel}>Known Triggers</Text>
-                <View style={trigStyles.triggerChips}>
-                  {(profile.recoveryProfile?.triggers ?? []).map((trigger, idx) => (
-                    <View key={idx} style={trigStyles.triggerChip}>
-                      <View style={trigStyles.triggerChipDot} />
-                      <Text style={trigStyles.triggerChipText}>{trigger}</Text>
-                    </View>
-                  ))}
-                </View>
+          {highRiskTimes.length > 0 ? (
+            <View style={trigStyles.patternRow}>
+              <Text style={trigStyles.patternLabel}>Peak risk times</Text>
+              <View style={trigStyles.peakTimesList}>
+                {highRiskTimes.slice(0, 3).map((rt, idx) => (
+                  <View key={idx} style={trigStyles.peakTimeRow}>
+                    <View style={[trigStyles.riskTimeDot, { backgroundColor: rt.value > 70 ? '#EF5350' : '#FFC107' }]} />
+                    <Text style={trigStyles.peakTimeText}>{rt.day} {rt.time}</Text>
+                    <Text style={[trigStyles.peakTimePct, { color: rt.value > 70 ? '#EF5350' : '#FFC107' }]}>{Math.round(rt.value)}%</Text>
+                  </View>
+                ))}
               </View>
-            )}
-          </View>
-        )}
+            </View>
+          ) : (
+            <View style={trigStyles.patternRow}>
+              <Text style={trigStyles.patternLabel}>Peak risk times</Text>
+              <Text style={trigStyles.patternEmpty}>Complete more check-ins to see when risk tends to rise.</Text>
+            </View>
+          )}
+
+          <Pressable
+            style={({ pressed }) => [trigStyles.fullAnalysisLink, pressed && { opacity: 0.8 }]}
+            onPress={() => {
+              Haptics.selectionAsync();
+              router.push('/(tabs)/triggers' as any);
+            }}
+            testID="progress-trigger-analysis-link"
+          >
+            <Text style={trigStyles.fullAnalysisLinkText}>View full trigger analysis</Text>
+            <ChevronRight size={18} color={Colors.primary} />
+          </Pressable>
+        </View>
       </View>
 
       <Pressable
@@ -774,8 +728,8 @@ export default function ProgressScreen() {
             <Eye size={16} color={Colors.primary} />
           </View>
           <View>
-            <Text style={styles.detectionLinkTitle}>Advanced Relapse Detection</Text>
-            <Text style={styles.detectionLinkSub}>Risk score, patterns, alerts & more</Text>
+            <Text style={styles.detectionLinkTitle}>How your protection is reading you</Text>
+            <Text style={styles.detectionLinkSub}>Patterns, factors & early support — when you want the details</Text>
           </View>
         </View>
         <ChevronRight size={16} color={Colors.textMuted} />
@@ -893,6 +847,18 @@ const meterStyles = StyleSheet.create({
     fontSize: 13,
     color: Colors.textSecondary,
     lineHeight: 18,
+  },
+  reassurance: {
+    fontSize: 12,
+    color: Colors.textMuted,
+    lineHeight: 17,
+    marginTop: 6,
+  },
+  seeDetail: {
+    fontSize: 13,
+    fontWeight: '600' as const,
+    color: Colors.primary,
+    marginTop: 10,
   },
 });
 
@@ -1062,6 +1028,12 @@ const styles = StyleSheet.create({
     fontWeight: '700' as const,
     color: Colors.text,
   },
+  metricValuePhrase: {
+    fontSize: 13,
+    fontWeight: '600' as const,
+    color: Colors.text,
+    marginBottom: 2,
+  },
   metricLabel: {
     fontSize: 11,
     color: Colors.textMuted,
@@ -1186,6 +1158,13 @@ const trigStyles = StyleSheet.create({
     borderWidth: 0.5,
     borderColor: Colors.border,
     overflow: 'hidden',
+  },
+  headerStatic: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    padding: 16,
+    paddingBottom: 0,
   },
   header: {
     flexDirection: 'row',
@@ -1413,5 +1392,57 @@ const trigStyles = StyleSheet.create({
     fontSize: 12,
     fontWeight: '500' as const,
     color: Colors.text,
+  },
+  patternsBody: {
+    padding: 16,
+    paddingTop: 12,
+    gap: 14,
+  },
+  patternRow: {
+    gap: 6,
+  },
+  patternLabel: {
+    fontSize: 12,
+    fontWeight: '600' as const,
+    color: Colors.textMuted,
+    letterSpacing: 0.5,
+  },
+  patternEmpty: {
+    fontSize: 12,
+    color: Colors.textSecondary,
+    fontStyle: 'italic',
+  },
+  peakTimesList: {
+    gap: 6,
+  },
+  peakTimeRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  peakTimeText: {
+    fontSize: 13,
+    fontWeight: '500' as const,
+    color: Colors.text,
+    flex: 1,
+  },
+  peakTimePct: {
+    fontSize: 12,
+    fontWeight: '700' as const,
+  },
+  fullAnalysisLink: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    paddingVertical: 12,
+    marginTop: 4,
+    borderTopWidth: 0.5,
+    borderTopColor: Colors.border,
+  },
+  fullAnalysisLinkText: {
+    fontSize: 14,
+    fontWeight: '600' as const,
+    color: Colors.primary,
   },
 });

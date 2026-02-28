@@ -30,6 +30,7 @@ import {
 } from 'lucide-react-native';
 import * as Haptics from 'expo-haptics';
 import Colors from '@/constants/colors';
+import { useRequireProviderMode } from '@/hooks/useRequireProviderMode';
 import { useEnterprise } from '@/providers/EnterpriseProvider';
 import { ExportableReport, ReportFormat } from '@/types';
 
@@ -52,6 +53,7 @@ function formatDate(dateStr: string): string {
 }
 
 export default function EnterpriseReports() {
+  const canAccess = useRequireProviderMode();
   const { reports, heatmapData, generateReport, currentPermissions } = useEnterprise();
   const [showGenerate, setShowGenerate] = useState(false);
   const [selectedFormat, setSelectedFormat] = useState<ReportFormat>('summary');
@@ -90,6 +92,8 @@ export default function EnterpriseReports() {
     if (status === 'generating') return <Clock size={14} color={Colors.accentWarm} />;
     return <AlertCircle size={14} color={Colors.danger} />;
   }, []);
+
+  if (!canAccess) return null;
 
   return (
     <View style={styles.container}>

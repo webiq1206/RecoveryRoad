@@ -3,19 +3,19 @@ import { View, Text, StyleSheet, TextInput, Pressable, ScrollView, Animated, Dim
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
-import { ShieldCheck, ChevronRight, ChevronLeft, Eye, EyeOff, Moon, Users, Target, AlertTriangle, Heart, Zap, Shield, Lock } from 'lucide-react-native';
+import { ShieldCheck, ChevronRight, ChevronLeft, Eye, EyeOff, Target, AlertTriangle, Heart, Zap, Shield, Lock } from 'lucide-react-native';
 import * as Haptics from 'expo-haptics';
 import Colors from '@/constants/colors';
 import { useRecovery } from '@/providers/RecoveryProvider';
 import { calculateRiskScore, calculateInterventionIntensity, calculateBaselineStability } from '@/providers/RecoveryProvider';
 import { ADDICTION_TYPES } from '@/constants/milestones';
 import { ONBOARDING_COPY, BRAND } from '@/constants/branding';
-import { RecoveryStage, StruggleLevel, SleepQualityLevel, SupportAvailability, RecoveryProfile, PrivacyControls } from '@/types';
+import { RecoveryStage, RecoveryProfile, PrivacyControls } from '@/types';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
-// 0 is the hero screen, 1–6 are the data-collection steps
-const TOTAL_STEPS = 7;
+// 0 = Welcome, 1 = Name, 2 = Addiction, 3 = Recovery stage, 4 = Triggers, 5 = Goals+Privacy
+const TOTAL_STEPS = 6;
 
 const RECOVERY_STAGES: { value: RecoveryStage; label: string; desc: string; icon: React.ReactNode }[] = [
   {
@@ -44,26 +44,10 @@ const RECOVERY_STAGES: { value: RecoveryStage; label: string; desc: string; icon
   },
 ];
 
-const STRUGGLE_LABELS = ['Minimal', 'Manageable', 'Moderate', 'Difficult', 'Overwhelming'];
-
 const COMMON_TRIGGERS = [
   'Stress', 'Loneliness', 'Boredom', 'Social pressure', 'Anxiety',
   'Celebration', 'Anger', 'Sadness', 'Fatigue', 'Pain',
   'Relationship conflict', 'Work pressure', 'Financial worry',
-];
-
-const SLEEP_OPTIONS: { value: SleepQualityLevel; label: string; emoji: string }[] = [
-  { value: 'poor', label: 'Poor', emoji: '😴' },
-  { value: 'fair', label: 'Fair', emoji: '😑' },
-  { value: 'good', label: 'Good', emoji: '😊' },
-  { value: 'excellent', label: 'Excellent', emoji: '✨' },
-];
-
-const SUPPORT_OPTIONS: { value: SupportAvailability; label: string; desc: string }[] = [
-  { value: 'none', label: 'None', desc: 'I\'m doing this alone' },
-  { value: 'limited', label: 'Limited', desc: 'A few people know' },
-  { value: 'moderate', label: 'Moderate', desc: 'I have some support' },
-  { value: 'strong', label: 'Strong', desc: 'Good support network' },
 ];
 
 const GOAL_OPTIONS = [
@@ -91,11 +75,7 @@ export default function OnboardingScreen() {
   const [isAnonymous, setIsAnonymous] = useState<boolean>(false);
   const [addictions, setAddictions] = useState<string[]>([]);
   const [recoveryStage, setRecoveryStage] = useState<RecoveryStage>('crisis');
-  const [struggleLevel, setStruggleLevel] = useState<StruggleLevel>(3);
-  const [relapseCount, setRelapseCount] = useState<string>('0');
   const [triggers, setTriggers] = useState<string[]>([]);
-  const [sleepQuality, setSleepQuality] = useState<SleepQualityLevel>('fair');
-  const [supportAvailability, setSupportAvailability] = useState<SupportAvailability>('limited');
   const [goals, setGoals] = useState<string[]>([]);
   const [privacyControls, setPrivacyControls] = useState<PrivacyControls>({
     isAnonymous: false,
@@ -139,14 +119,13 @@ export default function OnboardingScreen() {
   const handleComplete = useCallback(() => {
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
 
-    const relapses = parseInt(relapseCount, 10);
     const rp: RecoveryProfile = {
       recoveryStage,
-      struggleLevel,
-      relapseCount: isNaN(relapses) ? 0 : relapses,
+      struggleLevel: 3,
+      relapseCount: 0,
       triggers,
-      sleepQuality,
-      supportAvailability,
+      sleepQuality: 'fair',
+      supportAvailability: 'limited',
       goals,
       riskScore: 0,
       interventionIntensity: 'moderate',
@@ -173,27 +152,23 @@ export default function OnboardingScreen() {
       recoveryProfile: rp,
     });
 
-    // Go to protection profile immediately after onboarding; that screen will
-    // then route into Home and How To Use.
-    router.replace('/protection-profile' as any);
-  }, [name, isAnonymous, addictions, recoveryStage, struggleLevel, relapseCount, triggers, sleepQuality, supportAvailability, goals, privacyControls, updateProfile, router]);
+    router.replace('/first-day' as any);
+  }, [name, isAnonymous, addictions, recoveryStage, triggers, goals, privacyControls, updateProfile, router]);
 
   const canProceed = (): boolean => {
     switch (step) {
       case 0:
-        return true; // hero
+        return true;
       case 1:
-        return isAnonymous || name.trim().length > 0; // Identity
+        return isAnonymous || name.trim().length > 0;
       case 2:
-        return addictions.length > 0; // Addiction type
+        return addictions.length > 0;
       case 3:
-        return true; // Support level
+        return true;
       case 4:
-        return true; // Protection calibration
+        return triggers.length > 0;
       case 5:
-        return triggers.length > 0; // Risk & support map (requires at least one trigger)
-      case 6:
-        return goals.length > 0; // Rebuilding goal
+        return goals.length > 0;
       default:
         return true;
     }
@@ -237,7 +212,7 @@ export default function OnboardingScreen() {
       case 1:
         return (
           <View style={styles.stepContent}>
-            <Text style={styles.stepLabel}>STEP 1 OF 6</Text>
+            <Text style={styles.stepLabel}>STEP 1 OF 5</Text>
             <Text style={styles.stepTitle}>{ONBOARDING_COPY.steps.name.title}</Text>
             <Text style={styles.stepSubtitle}>{ONBOARDING_COPY.steps.name.subtitle}</Text>
 
@@ -280,7 +255,7 @@ export default function OnboardingScreen() {
       case 2:
         return (
           <View style={styles.stepContent}>
-            <Text style={styles.stepLabel}>STEP 2 OF 6</Text>
+            <Text style={styles.stepLabel}>STEP 2 OF 5</Text>
             <Text style={styles.stepTitle}>{ONBOARDING_COPY.steps.addiction.title}</Text>
             <Text style={styles.stepSubtitle}>{ONBOARDING_COPY.steps.addiction.subtitle}</Text>
             {addictions.length > 0 && (
@@ -306,10 +281,9 @@ export default function OnboardingScreen() {
         );
 
       case 3:
-        // Support level (renamed stage screen)
         return (
           <View style={styles.stepContent}>
-            <Text style={styles.stepLabel}>STEP 3 OF 6</Text>
+            <Text style={styles.stepLabel}>STEP 3 OF 5</Text>
             <Text style={styles.stepTitle}>{ONBOARDING_COPY.steps.stage.title}</Text>
             <Text style={styles.stepSubtitle}>{ONBOARDING_COPY.steps.stage.subtitle}</Text>
             <View style={styles.stageList}>
@@ -340,102 +314,11 @@ export default function OnboardingScreen() {
         );
 
       case 4:
-        // ProtectionCalibrationScreen: merge intensity + relapse + sleep
         return (
           <View style={styles.stepContent}>
-            <View style={styles.stepIconWrap}>
-              <ShieldCheck size={28} color={Colors.primary} />
-            </View>
-            <Text style={styles.stepLabel}>STEP 4 OF 6</Text>
-            <Text style={styles.stepTitle}>Protection calibration</Text>
-            <Text style={styles.stepSubtitle}>
-              Help us understand how intense your struggle has been so we can right‑size your protection.
-            </Text>
-
-            <View style={styles.struggleContainer}>
-              <Text style={styles.inputLabel}>CURRENT INTENSITY</Text>
-              <Text style={styles.struggleValue}>{struggleLevel}</Text>
-              <Text style={styles.struggleLabel}>{STRUGGLE_LABELS[struggleLevel - 1]}</Text>
-              <View style={styles.struggleDots}>
-                {([1, 2, 3, 4, 5] as StruggleLevel[]).map((level) => {
-                  const active = level <= struggleLevel;
-                  const dotColors = ['#4CAF50', '#8BC34A', '#FFC107', '#FF9800', '#EF5350'];
-                  return (
-                    <Pressable
-                      key={level}
-                      onPress={() => {
-                        Haptics.selectionAsync();
-                        setStruggleLevel(level);
-                      }}
-                      style={[
-                        styles.struggleDot,
-                        {
-                          backgroundColor: active ? dotColors[level - 1] : Colors.cardBackground,
-                          borderColor: active ? dotColors[level - 1] : Colors.border,
-                        },
-                      ]}
-                      testID={`struggle-${level}`}
-                    >
-                      <Text style={[styles.struggleDotText, { color: active ? '#FFF' : Colors.textMuted }]}>{level}</Text>
-                    </Pressable>
-                  );
-                })}
-              </View>
-            </View>
-
-            <View style={{ marginTop: 24 }}>
-              <Text style={styles.inputLabel}>RECENT RELAPSES (OPTIONAL)</Text>
-              <TextInput
-                style={styles.input}
-                placeholder="0"
-                placeholderTextColor={Colors.textMuted}
-                value={relapseCount}
-                onChangeText={setRelapseCount}
-                keyboardType="number-pad"
-                maxLength={4}
-                testID="relapse-count"
-              />
-            </View>
-
-            <View style={{ marginTop: 24 }}>
-              <Text style={styles.inputLabel}>SLEEP QUALITY</Text>
-              <View style={styles.sleepGrid}>
-                {SLEEP_OPTIONS.map((opt) => {
-                  const selected = sleepQuality === opt.value;
-                  return (
-                    <Pressable
-                      key={opt.value}
-                      style={[styles.sleepCard, selected && styles.sleepCardSelected]}
-                      onPress={() => {
-                        Haptics.selectionAsync();
-                        setSleepQuality(opt.value);
-                      }}
-                      testID={`sleep-${opt.value}`}
-                    >
-                      <Text style={styles.sleepEmoji}>{opt.emoji}</Text>
-                      <Text style={[styles.sleepLabel, selected && styles.sleepLabelSelected]}>{opt.label}</Text>
-                    </Pressable>
-                  );
-                })}
-              </View>
-            </View>
-          </View>
-        );
-
-      case 5:
-        // RiskAndSupportScreen: merge triggers + support
-        return (
-          <View style={styles.stepContent}>
-            <View style={styles.stepIconWrap}>
-              <Users size={28} color={Colors.primary} />
-            </View>
-            <Text style={styles.stepLabel}>STEP 5 OF 6</Text>
-            <Text style={styles.stepTitle}>Risk & support map</Text>
-            <Text style={styles.stepSubtitle}>
-              Map the situations that pull you off track and how much support you have around you.
-            </Text>
-
-            <Text style={styles.inputLabel}>COMMON TRIGGERS</Text>
+            <Text style={styles.stepLabel}>STEP 4 OF 5</Text>
+            <Text style={styles.stepTitle}>{ONBOARDING_COPY.steps.triggers.title}</Text>
+            <Text style={styles.stepSubtitle}>{ONBOARDING_COPY.steps.triggers.subtitle}</Text>
             {triggers.length > 0 && (
               <Text style={styles.selectionCount}>{triggers.length} selected</Text>
             )}
@@ -458,44 +341,17 @@ export default function OnboardingScreen() {
                 );
               })}
             </ScrollView>
-
-            <View style={{ marginTop: 16 }}>
-              <Text style={styles.inputLabel}>SUPPORT NETWORK</Text>
-              <View style={styles.supportList}>
-                {SUPPORT_OPTIONS.map((opt) => {
-                  const selected = supportAvailability === opt.value;
-                  return (
-                    <Pressable
-                      key={opt.value}
-                      style={[styles.supportCard, selected && styles.supportCardSelected]}
-                      onPress={() => {
-                        Haptics.selectionAsync();
-                        setSupportAvailability(opt.value);
-                      }}
-                      testID={`support-${opt.value}`}
-                    >
-                      <View style={styles.supportTextWrap}>
-                        <Text style={[styles.supportLabel, selected && styles.supportLabelSelected]}>{opt.label}</Text>
-                        <Text style={styles.supportDesc}>{opt.desc}</Text>
-                      </View>
-                      {selected && <View style={styles.radioActive} />}
-                      {!selected && <View style={styles.radioInactive} />}
-                    </Pressable>
-                  );
-                })}
-              </View>
-            </View>
           </View>
         );
 
-      case 6:
+      case 5:
         // Rebuilding goal
         return (
           <View style={styles.stepContent}>
             <View style={styles.stepIconWrap}>
               <Target size={28} color={Colors.primary} />
             </View>
-            <Text style={styles.stepLabel}>STEP 6 OF 6</Text>
+            <Text style={styles.stepLabel}>STEP 5 OF 5</Text>
             <Text style={styles.stepTitle}>{ONBOARDING_COPY.steps.goals.title}</Text>
             <Text style={styles.stepSubtitle}>{ONBOARDING_COPY.steps.goals.subtitle}</Text>
             {goals.length > 0 && (

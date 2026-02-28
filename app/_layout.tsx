@@ -17,10 +17,12 @@ import { SecurityProvider, useSecurity } from "@/providers/SecurityProvider";
 import { StageDetectionProvider } from "@/providers/StageDetectionProvider";
 import { RetentionProvider } from "@/providers/RetentionProvider";
 import { EnterpriseProvider } from "@/providers/EnterpriseProvider";
+import { ProviderModeProvider } from "@/providers/ProviderModeProvider";
 import { NotificationProvider } from "@/providers/NotificationProvider";
 import ErrorBoundary from "@/components/ErrorBoundary";
 import LockScreen from "@/components/LockScreen";
 import Colors from "@/constants/colors";
+import { useShakeToCrisis } from "@/hooks/useShakeToCrisis";
 import { trpc, trpcClient } from "@/lib/trpc";
 
 SplashScreen.preventAutoHideAsync();
@@ -46,6 +48,7 @@ const modalAnimation = isWeb ? 'none' as const : 'slide_from_bottom' as const;
 const fadeAnimation = isWeb ? 'none' as const : 'fade' as const;
 
 function RootLayoutNav() {
+  useShakeToCrisis();
   return (
     <Stack
       screenOptions={{
@@ -88,6 +91,7 @@ function RootLayoutNav() {
       <Stack.Screen name="early-warning-explained" options={{ title: 'Early Warning', animation: defaultAnimation }} />
       <Stack.Screen name="recovery-insights-explained" options={{ title: 'Recovery Insights', animation: defaultAnimation }} />
       <Stack.Screen name="protection-profile" options={{ title: 'Protection Profile', animation: defaultAnimation }} />
+      <Stack.Screen name="first-day" options={{ title: 'Your First Day', headerShown: false, animation: defaultAnimation }} />
     </Stack>
   );
 }
@@ -116,9 +120,11 @@ function SecuredApp() {
                       <ComplianceProvider>
                         <RetentionProvider>
                           <EnterpriseProvider>
-                            <NotificationProvider>
-                              <RootLayoutNav />
-                            </NotificationProvider>
+                            <ProviderModeProvider>
+                              <NotificationProvider>
+                                <RootLayoutNav />
+                              </NotificationProvider>
+                            </ProviderModeProvider>
                           </EnterpriseProvider>
                         </RetentionProvider>
                       </ComplianceProvider>

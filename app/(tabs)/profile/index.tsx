@@ -1,12 +1,13 @@
 import React, { useState, useCallback, useMemo, useRef, useEffect } from 'react';
 import { View, Text, StyleSheet, ScrollView, Pressable, Switch, Alert, Animated, TextInput, Modal } from 'react-native';
-import { User, Shield, Eye, EyeOff, Target, TrendingUp, Bell, BellOff, Lock, Unlock, MessageCircle, BarChart3, ChevronRight, Sparkles, Clock, Heart, AlertTriangle, Sun, Moon as MoonIcon, ShieldAlert, Award, Crown, RotateCcw, Calendar, DollarSign, BookOpen, Check, X, Stethoscope, Lightbulb, Layers, Radio, RefreshCw, Scale, Gauge, PauseCircle, PlayCircle, Activity } from 'lucide-react-native';
+import { User, Shield, Eye, EyeOff, Target, TrendingUp, Bell, BellOff, Lock, Unlock, MessageCircle, BarChart3, ChevronRight, Sparkles, Clock, Heart, AlertTriangle, Sun, Moon as MoonIcon, ShieldAlert, Award, Crown, RotateCcw, Calendar, DollarSign, BookOpen, Check, X, Stethoscope, Lightbulb, Layers, Radio, RefreshCw, Scale, Gauge, PauseCircle, PlayCircle, Activity, Building2 } from 'lucide-react-native';
 import * as Haptics from 'expo-haptics';
 import Colors from '@/constants/colors';
 import { useRecovery } from '@/providers/RecoveryProvider';
 import { useEngagement } from '@/providers/EngagementProvider';
 import { useSubscription } from '@/providers/SubscriptionProvider';
 import { useNotifications } from '@/providers/NotificationProvider';
+import { useProviderMode } from '@/providers/ProviderModeProvider';
 import { RecoveryStage, PrivacyControls, NotificationIntensityLevel } from '@/types';
 import { ADDICTION_TYPES } from '@/constants/milestones';
 import { NOTIFICATION_INTENSITY_CONFIG, NotificationIntensity } from '@/constants/notifications';
@@ -35,6 +36,7 @@ export default function ProfileScreen() {
     resumeNotifications,
     isPermissionGranted,
   } = useNotifications();
+  const { providerModeEnabled, setProviderModeEnabled } = useProviderMode();
   const router = require('expo-router').useRouter();
 
   const [editingField, setEditingField] = useState<string | null>(null);
@@ -854,6 +856,30 @@ export default function ProfileScreen() {
         </Pressable>
       )}
 
+      {/* Provider Mode — only from Profile settings; gates provider/enterprise screens */}
+      <Text style={[styles.sectionLabel, { marginTop: 28 }]}>PROVIDER MODE</Text>
+      <View style={styles.settingRow}>
+        <View style={styles.settingLeft}>
+          <View style={[styles.settingIcon, { backgroundColor: 'rgba(90,106,122,0.12)' }]}>
+            <Building2 size={17} color={Colors.textSecondary} />
+          </View>
+          <View>
+            <Text style={styles.settingLabel}>Provider Mode</Text>
+            <Text style={styles.settingValue}>Show provider portal, compliance & enterprise screens</Text>
+          </View>
+        </View>
+        <Switch
+          value={providerModeEnabled}
+          onValueChange={(v) => {
+            Haptics.selectionAsync();
+            setProviderModeEnabled(v);
+          }}
+          trackColor={{ false: Colors.border, true: Colors.primary + '80' }}
+          thumbColor={providerModeEnabled ? Colors.primary : Colors.textMuted}
+          testID="provider-mode-toggle"
+        />
+      </View>
+
       {/* Security */}
       <Text style={[styles.sectionLabel, { marginTop: 28 }]}>SECURITY</Text>
 
@@ -877,6 +903,8 @@ export default function ProfileScreen() {
         <ChevronRight size={16} color={Colors.textMuted} />
       </Pressable>
 
+      {providerModeEnabled && (
+        <>
       <Pressable
         style={({ pressed }) => [styles.settingRow, pressed && { opacity: 0.85 }]}
         onPress={() => {
@@ -896,6 +924,8 @@ export default function ProfileScreen() {
         </View>
         <ChevronRight size={16} color={Colors.textMuted} />
       </Pressable>
+        </>
+      )}
 
       {/* Help */}
       <Text style={[styles.sectionLabel, { marginTop: 28 }]}>HELP</Text>
@@ -1000,6 +1030,8 @@ export default function ProfileScreen() {
         <ChevronRight size={16} color={Colors.textMuted} />
       </Pressable>
 
+      {providerModeEnabled && (
+        <>
       {/* Provider Tools */}
       <Text style={[styles.sectionLabel, { marginTop: 28 }]}>PROVIDER TOOLS</Text>
 
@@ -1022,6 +1054,28 @@ export default function ProfileScreen() {
         </View>
         <ChevronRight size={16} color={Colors.textMuted} />
       </Pressable>
+
+      <Pressable
+        style={({ pressed }) => [styles.settingRow, pressed && { opacity: 0.85 }]}
+        onPress={() => {
+          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+          router.push('/enterprise-dashboard' as any);
+        }}
+        testID="enterprise-dashboard-link"
+      >
+        <View style={styles.settingLeft}>
+          <View style={[styles.settingIcon, { backgroundColor: 'rgba(66,165,245,0.12)' }]}>
+            <Building2 size={17} color="#42A5F5" />
+          </View>
+          <View>
+            <Text style={styles.settingLabel}>Enterprise Dashboard</Text>
+            <Text style={styles.settingValue}>Analytics, reports, billing & white label</Text>
+          </View>
+        </View>
+        <ChevronRight size={16} color={Colors.textMuted} />
+      </Pressable>
+        </>
+      )}
 
       {/* Danger Zone */}
       <Text style={[styles.sectionLabel, { marginTop: 28 }]}>DANGER ZONE</Text>

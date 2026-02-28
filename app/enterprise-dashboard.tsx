@@ -37,6 +37,7 @@ import {
 } from 'lucide-react-native';
 import * as Haptics from 'expo-haptics';
 import Colors from '@/constants/colors';
+import { useRequireProviderMode } from '@/hooks/useRequireProviderMode';
 import { useEnterprise } from '@/providers/EnterpriseProvider';
 import { ROLE_LABELS, TIER_LABELS } from '@/constants/enterprise';
 import { EnterpriseRole, OrgMember } from '@/types';
@@ -72,6 +73,7 @@ function getTimeAgo(dateStr: string): string {
 
 export default function EnterpriseDashboard() {
   const router = useRouter();
+  const canAccess = useRequireProviderMode();
   const {
     organization,
     members,
@@ -143,6 +145,8 @@ export default function EnterpriseDashboard() {
   }, [acknowledgeAlert]);
 
   const roleOptions: EnterpriseRole[] = ['therapist', 'case_manager', 'clinical_director', 'billing_admin', 'viewer'];
+
+  if (!canAccess) return null;
 
   return (
     <View style={styles.container}>

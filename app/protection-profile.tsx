@@ -5,7 +5,8 @@ import { useRouter } from 'expo-router';
 import { ShieldAlert, ShieldCheck, Shield, TrendingUp, AlertTriangle, ChevronRight } from 'lucide-react-native';
 import Colors from '@/constants/colors';
 import { useRecovery } from '@/providers/RecoveryProvider';
-import { calculateProtectionFromProfile, ProtectionStatus } from '@/lib/protectionScore';
+import { calculateProtectionScore, type ProtectionStatus } from '@/utils/protectionScore';
+import { ProtectionScoreCircle } from '@/components/ProtectionScoreCircle';
 
 function getProtectionBadgeMeta(level: ProtectionStatus) {
   switch (level) {
@@ -47,28 +48,20 @@ export default function ProtectionProfileScreen() {
   const { profile } = useRecovery();
 
   const rp = profile.recoveryProfile;
-  const { protectionScore, protectionStatus } = useMemo(
-    () => calculateProtectionFromProfile(rp),
-    [rp],
-  );
-  const protectionLevel = protectionStatus;
-  const badgeMeta = useMemo(() => getProtectionBadgeMeta(protectionLevel), [protectionLevel]);
-
+  const { protectionScore, protectionStatus } = useMemo(() => {
+    const r = calculateProtectionScore({
+      intensity: rp.struggleLevel,
+      sleepQuality: rp.sleepQuality,
+      triggers: rp.triggers ?? [],
+      supportLevel: rp.supportAvailability,
+    });
+    return { protectionScore: r.score, protectionStatus: r.status };
+  }, [rp.struggleLevel, rp.sleepQuality, rp.triggers, rp.supportAvailability]);
   const topRiskDrivers = useMemo(() => {
-    const items: string[] = [];
+    return rp.triggers.slice(0, 3);
+  }, [rp.triggers]);
 
-    if (rp.triggers.length > 0) {
-      items.push(...rp.triggers.slice(0, 3));
-    }
-
-    if (rp.sleepQuality === 'poor' || rp.sleepQuality === 'fair') {
-      items.unshift('Fragmented or low‑quality sleep');
-    }
-
-    return items.slice(0, 3);
-  }, [rp.triggers, rp.sleepQuality]);
-
-  const strengthIndicators = useMemo(() => {
+  const strengths = useMemo(() => {
     const items: string[] = [];
 
     if (rp.supportAvailability === 'strong') {
@@ -85,14 +78,11 @@ export default function ProtectionProfileScreen() {
       items.push(`You’ve named rebuilding goals like “${rp.goals[0]}”`);
     }
 
-    return items;
+    return items.slice(0, 3);
   }, [rp.supportAvailability, rp.goals]);
 
   const handleStartPlan = () => {
     router.replace('/(tabs)/(home)' as any);
-    setTimeout(() => {
-      router.push('/how-to-use' as any);
-    }, 600);
   };
 
   return (
@@ -109,21 +99,11 @@ export default function ProtectionProfileScreen() {
       >
         <Text style={styles.title}>Your Protection Profile</Text>
         <Text style={styles.subtitle}>
-          This is your starting protection plan based on what you shared. You can revisit and
-          update it anytime.
+          Based on what you shared. Revisit anytime from Profile.
         </Text>
 
-        <View style={styles.card}>
-          <Text style={styles.sectionLabel}>PROTECTION LEVEL</Text>
-          <View style={styles.badgeRow}>
-            <View style={[styles.levelChip, { backgroundColor: badgeMeta.chipBg }]}>
-              {badgeMeta.icon}
-              <Text style={[styles.levelText, { color: badgeMeta.labelColor }]}>
-                {protectionLevel}
-              </Text>
-            </View>
-          </View>
-          <Text style={styles.cardBody}>{badgeMeta.desc}</Text>
+        <View style={styles.scoreSection}>
+          <ProtectionScoreCircle score={protectionScore} status={protectionStatus} size={160} />
         </View>
 
         <View style={styles.card}>
@@ -144,8 +124,8 @@ export default function ProtectionProfileScreen() {
         </View>
 
         <View style={styles.card}>
-          <Text style={styles.sectionLabel}>STRENGTH INDICATORS</Text>
-          {strengthIndicators.map((item, idx) => (
+          <Text style={styles.sectionLabel}>YOUR STRENGTHS</Text>
+          {strengths.map((item, idx) => (
             <View key={`${item}-${idx}`} style={styles.bulletRow}>
               <View style={[styles.bulletDot, { backgroundColor: Colors.primary }]} />
               <Text style={styles.bulletText}>{item}</Text>
@@ -225,6 +205,10 @@ const styles = StyleSheet.create({
     color: Colors.textSecondary,
     marginTop: 4,
     marginBottom: 8,
+  },
+  scoreSection: {
+    alignItems: 'center',
+    marginVertical: 8,
   },
   sectionLabel: {
     fontSize: 11,

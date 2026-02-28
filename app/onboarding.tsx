@@ -11,10 +11,11 @@ import { calculateRiskScore, calculateInterventionIntensity, calculateBaselineSt
 import { ADDICTION_TYPES } from '@/constants/milestones';
 import { ONBOARDING_COPY, BRAND } from '@/constants/branding';
 import { RecoveryStage, RecoveryProfile, PrivacyControls } from '@/types';
+import type { StruggleLevel, SleepQualityLevel, SupportAvailability } from '@/types';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
-// 0 = Welcome, 1 = Name, 2 = Addiction, 3 = Recovery stage, 4 = Triggers, 5 = Goals+Privacy
+// 6 screens: Identity, Addiction, RecoveryPosition, ProtectionCalibration, RiskAndSupport, RebuildGoal
 const TOTAL_STEPS = 6;
 
 const RECOVERY_STAGES: { value: RecoveryStage; label: string; desc: string; icon: React.ReactNode }[] = [
@@ -50,6 +51,20 @@ const COMMON_TRIGGERS = [
   'Relationship conflict', 'Work pressure', 'Financial worry',
 ];
 
+const SLEEP_OPTIONS: { value: SleepQualityLevel; label: string; emoji: string }[] = [
+  { value: 'poor', label: 'Poor', emoji: '😴' },
+  { value: 'fair', label: 'Fair', emoji: '😐' },
+  { value: 'good', label: 'Good', emoji: '🙂' },
+  { value: 'excellent', label: 'Excellent', emoji: '😊' },
+];
+
+const SUPPORT_OPTIONS: { value: SupportAvailability; label: string; desc: string }[] = [
+  { value: 'none', label: 'No support network', desc: 'I\'m on my own right now' },
+  { value: 'limited', label: 'Limited support', desc: 'A few people I can reach' },
+  { value: 'moderate', label: 'Moderate support', desc: 'Some regular support' },
+  { value: 'strong', label: 'Strong support', desc: 'Reliable network around me' },
+];
+
 const GOAL_OPTIONS = [
   'Stay sober one day at a time',
   'Improve my health',
@@ -77,6 +92,9 @@ export default function OnboardingScreen() {
   const [recoveryStage, setRecoveryStage] = useState<RecoveryStage>('crisis');
   const [triggers, setTriggers] = useState<string[]>([]);
   const [goals, setGoals] = useState<string[]>([]);
+  const [struggleLevel, setStruggleLevel] = useState<StruggleLevel>(3);
+  const [sleepQuality, setSleepQuality] = useState<SleepQualityLevel>('fair');
+  const [supportAvailability, setSupportAvailability] = useState<SupportAvailability>('limited');
   const [privacyControls, setPrivacyControls] = useState<PrivacyControls>({
     isAnonymous: false,
     shareProgress: false,
@@ -121,11 +139,11 @@ export default function OnboardingScreen() {
 
     const rp: RecoveryProfile = {
       recoveryStage,
-      struggleLevel: 3,
+      struggleLevel,
       relapseCount: 0,
       triggers,
-      sleepQuality: 'fair',
-      supportAvailability: 'limited',
+      sleepQuality,
+      supportAvailability,
       goals,
       riskScore: 0,
       interventionIntensity: 'moderate',
@@ -152,17 +170,17 @@ export default function OnboardingScreen() {
       recoveryProfile: rp,
     });
 
-    router.replace('/first-day' as any);
-  }, [name, isAnonymous, addictions, recoveryStage, triggers, goals, privacyControls, updateProfile, router]);
+    router.replace('/protection-profile' as any);
+  }, [name, isAnonymous, addictions, recoveryStage, triggers, goals, struggleLevel, sleepQuality, supportAvailability, privacyControls, updateProfile, router]);
 
   const canProceed = (): boolean => {
     switch (step) {
       case 0:
-        return true;
-      case 1:
         return isAnonymous || name.trim().length > 0;
-      case 2:
+      case 1:
         return addictions.length > 0;
+      case 2:
+        return true;
       case 3:
         return true;
       case 4:
@@ -181,9 +199,10 @@ export default function OnboardingScreen() {
 
   const renderStep = () => {
     switch (step) {
-      case 0:
+      case 0: {
+        // IdentityScreen: welcome + name + anonymous
         return (
-          <View style={styles.stepContent}>
+          <ScrollView style={styles.stepContent} showsVerticalScrollIndicator={false} contentContainerStyle={styles.optionsListContent}>
             <View style={styles.heroContainer}>
               <Image
                 source={require('@/assets/images/app-icon.png')}
@@ -206,13 +225,8 @@ export default function OnboardingScreen() {
                 <Text style={styles.trustText}>Anonymous option</Text>
               </View>
             </View>
-          </View>
-        );
 
-      case 1:
-        return (
-          <View style={styles.stepContent}>
-            <Text style={styles.stepLabel}>STEP 1 OF 5</Text>
+            <Text style={[styles.stepLabel, { marginTop: 24 }]}>STEP 1 OF {TOTAL_STEPS}</Text>
             <Text style={styles.stepTitle}>{ONBOARDING_COPY.steps.name.title}</Text>
             <Text style={styles.stepSubtitle}>{ONBOARDING_COPY.steps.name.subtitle}</Text>
 
@@ -249,13 +263,14 @@ export default function OnboardingScreen() {
                 />
               </>
             )}
-          </View>
+          </ScrollView>
         );
+      }
 
-      case 2:
+      case 1:
         return (
           <View style={styles.stepContent}>
-            <Text style={styles.stepLabel}>STEP 2 OF 5</Text>
+            <Text style={styles.stepLabel}>STEP 2 OF {TOTAL_STEPS}</Text>
             <Text style={styles.stepTitle}>{ONBOARDING_COPY.steps.addiction.title}</Text>
             <Text style={styles.stepSubtitle}>{ONBOARDING_COPY.steps.addiction.subtitle}</Text>
             {addictions.length > 0 && (
@@ -280,10 +295,10 @@ export default function OnboardingScreen() {
           </View>
         );
 
-      case 3:
+      case 2:
         return (
           <View style={styles.stepContent}>
-            <Text style={styles.stepLabel}>STEP 3 OF 5</Text>
+            <Text style={styles.stepLabel}>STEP 3 OF {TOTAL_STEPS}</Text>
             <Text style={styles.stepTitle}>{ONBOARDING_COPY.steps.stage.title}</Text>
             <Text style={styles.stepSubtitle}>{ONBOARDING_COPY.steps.stage.subtitle}</Text>
             <View style={styles.stageList}>
@@ -313,20 +328,81 @@ export default function OnboardingScreen() {
           </View>
         );
 
-      case 4:
+      case 3: {
+        // ProtectionCalibrationScreen: intensity (1-5) + sleep quality
         return (
-          <View style={styles.stepContent}>
-            <Text style={styles.stepLabel}>STEP 4 OF 5</Text>
+          <ScrollView style={styles.stepContent} showsVerticalScrollIndicator={false} contentContainerStyle={styles.optionsListContent}>
+            <Text style={styles.stepLabel}>STEP 4 OF {TOTAL_STEPS}</Text>
+            <Text style={styles.stepTitle}>{ONBOARDING_COPY.steps.struggle.title}</Text>
+            <Text style={styles.stepSubtitle}>{ONBOARDING_COPY.steps.struggle.subtitle}</Text>
+            <View style={styles.struggleContainer}>
+              <Text style={styles.struggleValue}>{struggleLevel}</Text>
+              <Text style={styles.struggleLabel}>
+                {struggleLevel === 1 && 'Managing okay'}
+                {struggleLevel === 2 && 'Some strain'}
+                {struggleLevel === 3 && 'Moderate struggle'}
+                {struggleLevel === 4 && 'High intensity'}
+                {struggleLevel === 5 && 'Crisis level'}
+              </Text>
+              <View style={styles.struggleDots}>
+                {([1, 2, 3, 4, 5] as const).map((n) => {
+                  const selected = struggleLevel === n;
+                  return (
+                    <Pressable
+                      key={n}
+                      style={[
+                        styles.struggleDot,
+                        { borderColor: selected ? Colors.primary : Colors.border, backgroundColor: selected ? 'rgba(46,196,182,0.12)' : Colors.cardBackground },
+                      ]}
+                      onPress={() => {
+                        Haptics.selectionAsync();
+                        setStruggleLevel(n);
+                      }}
+                      testID={`struggle-${n}`}
+                    >
+                      <Text style={[styles.struggleDotText, { color: selected ? Colors.primary : Colors.text }]}>{n}</Text>
+                    </Pressable>
+                  );
+                })}
+              </View>
+            </View>
+
+            <Text style={[styles.stepLabel, { marginTop: 32 }]}>{ONBOARDING_COPY.steps.sleep.title}</Text>
+            <Text style={styles.stepSubtitle}>{ONBOARDING_COPY.steps.sleep.subtitle}</Text>
+            <View style={styles.sleepGrid}>
+              {SLEEP_OPTIONS.map((opt) => {
+                const selected = sleepQuality === opt.value;
+                return (
+                  <Pressable
+                    key={opt.value}
+                    style={[styles.sleepCard, selected && styles.sleepCardSelected]}
+                    onPress={() => {
+                      Haptics.selectionAsync();
+                      setSleepQuality(opt.value);
+                    }}
+                    testID={`sleep-${opt.value}`}
+                  >
+                    <Text style={styles.sleepEmoji}>{opt.emoji}</Text>
+                    <Text style={[styles.sleepLabel, selected && styles.sleepLabelSelected]}>{opt.label}</Text>
+                  </Pressable>
+                );
+              })}
+            </View>
+          </ScrollView>
+        );
+      }
+
+      case 4: {
+        // RiskAndSupportScreen: triggers + support level
+        return (
+          <ScrollView style={styles.stepContent} showsVerticalScrollIndicator={false} contentContainerStyle={styles.optionsListContent}>
+            <Text style={styles.stepLabel}>STEP 5 OF {TOTAL_STEPS}</Text>
             <Text style={styles.stepTitle}>{ONBOARDING_COPY.steps.triggers.title}</Text>
             <Text style={styles.stepSubtitle}>{ONBOARDING_COPY.steps.triggers.subtitle}</Text>
             {triggers.length > 0 && (
               <Text style={styles.selectionCount}>{triggers.length} selected</Text>
             )}
-            <ScrollView
-              style={styles.optionsList}
-              showsVerticalScrollIndicator={false}
-              contentContainerStyle={styles.chipsWrap}
-            >
+            <View style={styles.chipsWrap}>
               {COMMON_TRIGGERS.map((trigger) => {
                 const selected = triggers.includes(trigger);
                 return (
@@ -340,18 +416,45 @@ export default function OnboardingScreen() {
                   </Pressable>
                 );
               })}
-            </ScrollView>
-          </View>
+            </View>
+
+            <Text style={[styles.stepLabel, { marginTop: 24 }]}>Support network</Text>
+            <Text style={styles.stepTitle}>{ONBOARDING_COPY.steps.support.title}</Text>
+            <Text style={styles.stepSubtitle}>{ONBOARDING_COPY.steps.support.subtitle}</Text>
+            <View style={styles.supportList}>
+              {SUPPORT_OPTIONS.map((opt) => {
+                const selected = supportAvailability === opt.value;
+                return (
+                  <Pressable
+                    key={opt.value}
+                    style={[styles.supportCard, selected && styles.supportCardSelected]}
+                    onPress={() => {
+                      Haptics.selectionAsync();
+                      setSupportAvailability(opt.value);
+                    }}
+                    testID={`support-${opt.value}`}
+                  >
+                    <View style={styles.supportTextWrap}>
+                      <Text style={[styles.supportLabel, selected && styles.supportLabelSelected]}>{opt.label}</Text>
+                      <Text style={styles.supportDesc}>{opt.desc}</Text>
+                    </View>
+                    {selected && <View style={styles.radioActive} />}
+                    {!selected && <View style={styles.radioInactive} />}
+                  </Pressable>
+                );
+              })}
+            </View>
+          </ScrollView>
         );
+      }
 
       case 5:
-        // Rebuilding goal
         return (
           <View style={styles.stepContent}>
             <View style={styles.stepIconWrap}>
               <Target size={28} color={Colors.primary} />
             </View>
-            <Text style={styles.stepLabel}>STEP 5 OF 5</Text>
+            <Text style={styles.stepLabel}>STEP {TOTAL_STEPS} OF {TOTAL_STEPS}</Text>
             <Text style={styles.stepTitle}>{ONBOARDING_COPY.steps.goals.title}</Text>
             <Text style={styles.stepSubtitle}>{ONBOARDING_COPY.steps.goals.subtitle}</Text>
             {goals.length > 0 && (
@@ -421,9 +524,9 @@ export default function OnboardingScreen() {
         <View style={styles.progressBarBg}>
           <Animated.View style={[styles.progressBarFill, { width: progressWidth }]} />
         </View>
-        {step > 0 && (
+        {step >= 0 && (
           <Text style={styles.progressText}>
-            {step}/{TOTAL_STEPS - 1}
+            {step + 1}/{TOTAL_STEPS}
           </Text>
         )}
       </View>

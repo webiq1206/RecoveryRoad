@@ -3,16 +3,16 @@ import { View, Text, StyleSheet, ScrollView, Pressable } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter, Redirect } from 'expo-router';
 import {
-  ArrowRight, BookOpen, MessageCircle, Sparkles,
-  Sun, Sunset, Moon,
+  ArrowRight, BookOpen, Sparkles,
+  Sun, Sunset, Moon, ShieldAlert, AlertTriangle, TrendingUp, Users,
 } from 'lucide-react-native';
-import { getRecoveryStage, getRiskLevel } from '@/constants/companion';
-import { getCrisisRiskCopy, getElevatedRiskCopy } from '@/constants/emotionalRisk';
 import * as Haptics from 'expo-haptics';
 import Colors from '@/constants/colors';
 import { useRecovery } from '@/providers/RecoveryProvider';
 import { useSubscription } from '@/providers/SubscriptionProvider';
 import { HomeLoadingSkeleton } from '@/components/LoadingSkeleton';
+import { ProtectionScoreCircle } from '@/components/ProtectionScoreCircle';
+import { calculateProtectionScore } from '@/utils/protectionScore';
 import { CheckInTimeOfDay } from '@/types';
 
 function getTimeOfDay(): CheckInTimeOfDay {
@@ -46,141 +46,6 @@ function getEmotionalState(score: number): { label: string; emoji: string } {
   return { label: 'In Need of Support', emoji: '🆘' };
 }
 
-type PrimaryFocus = {
-  title: string;
-  description: string;
-  action: string;
-  route: string;
-  label: string;
-  accentColor: string;
-  borderColor: string;
-  iconBgColor: string;
-};
-
-function getPrimaryFocus(
-  period: CheckInTimeOfDay,
-  hasMorningCheckIn: boolean,
-  hasAfternoonCheckIn: boolean,
-  hasEveningCheckIn: boolean,
-  hasPledge: boolean,
-  riskLevel: string,
-  stabilityScore: number,
-  daysSober: number,
-): PrimaryFocus {
-  const crisisFocus: PrimaryFocus = {
-    ...getCrisisRiskCopy(),
-    route: '/crisis-mode',
-    label: 'PRIORITY',
-    accentColor: '#EF5350',
-    borderColor: 'rgba(239,83,80,0.3)',
-    iconBgColor: 'rgba(239,83,80,0.15)',
-  };
-  const elevatedFocus: PrimaryFocus = {
-    ...getElevatedRiskCopy(),
-    route: '/crisis-mode',
-    label: 'STAY GROUNDED',
-    accentColor: '#FF9800',
-    borderColor: 'rgba(255,152,0,0.25)',
-    iconBgColor: 'rgba(255,152,0,0.12)',
-  };
-
-  if (riskLevel === 'high' || riskLevel === 'crisis') return crisisFocus;
-  if (riskLevel === 'elevated') return elevatedFocus;
-
-  const morningTheme = {
-    label: 'MORNING',
-    accentColor: '#E6A23C',
-    borderColor: 'rgba(230,162,60,0.28)',
-    iconBgColor: 'rgba(230,162,60,0.14)',
-  };
-  const afternoonTheme = {
-    label: 'AFTERNOON',
-    accentColor: Colors.primary,
-    borderColor: 'rgba(46,196,182,0.25)',
-    iconBgColor: 'rgba(46,196,182,0.12)',
-  };
-  const eveningTheme = {
-    label: 'EVENING',
-    accentColor: '#7C8CF8',
-    borderColor: 'rgba(124,140,248,0.25)',
-    iconBgColor: 'rgba(124,140,248,0.14)',
-  };
-
-  if (period === 'morning') {
-    if (!hasMorningCheckIn) {
-      return {
-        ...morningTheme,
-        title: 'Morning Check-In',
-        description: 'A quick scan sets your protection for the day. Mood, cravings, sleep — we use it to keep you safe.',
-        action: 'Start Morning Check-In',
-        route: '/daily-checkin',
-      };
-    }
-    if (!hasPledge) {
-      return {
-        ...morningTheme,
-        title: "Today's Pledge",
-        description: "Set your intention for the day. A short pledge reinforces your commitment and keeps your streak alive.",
-        action: "I'll Take the Pledge",
-        route: '/(tabs)/pledges',
-      };
-    }
-    return {
-      ...morningTheme,
-      title: 'Capture the Moment',
-      description: "You're set for the morning. A few lines in your journal can turn insight into lasting growth.",
-      action: 'Open Journal',
-      route: '/(tabs)/journal',
-    };
-  }
-
-  if (period === 'afternoon') {
-    if (!hasAfternoonCheckIn) {
-      return {
-        ...afternoonTheme,
-        title: 'Afternoon Check-In',
-        description: "Midday pulse check. How are cravings, stress, and mood? It only takes a minute.",
-        action: 'Start Afternoon Check-In',
-        route: '/daily-checkin',
-      };
-    }
-    if (!hasPledge) {
-      return {
-        ...afternoonTheme,
-        title: "Today's Pledge",
-        description: "You haven't taken today's pledge yet. Lock in your intention and protect your streak.",
-        action: "I'll Take the Pledge",
-        route: '/(tabs)/pledges',
-      };
-    }
-    return {
-      ...afternoonTheme,
-      title: 'Steady Progress',
-      description: "You're on track. A quick journal entry can help you notice what's working.",
-      action: 'Open Journal',
-      route: '/(tabs)/journal',
-    };
-  }
-
-  // evening
-  if (!hasEveningCheckIn) {
-    return {
-      ...eveningTheme,
-      title: 'Evening Check-In',
-      description: "Close the loop. Rate your day — mood, cravings, stress — so your protection stays accurate.",
-      action: 'Start Evening Check-In',
-      route: '/daily-checkin',
-    };
-  }
-  return {
-    ...eveningTheme,
-    title: 'Wind Down + Reflect',
-    description: "Day's done. A short reflection or journal entry helps you process and sleep better.",
-    action: 'Reflect in Journal',
-    route: '/(tabs)/journal',
-  };
-}
-
 export default function HomeScreen() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
@@ -191,41 +56,36 @@ export default function HomeScreen() {
     isLoading,
     todayCheckIn,
     todayCheckIns,
-    todayPledge,
     checkIns,
     stabilityScore,
   } = useRecovery();
   const { hasFeature } = useSubscription();
 
-  const riskLevel = useMemo(() => getRiskLevel(checkIns, daysSober), [checkIns, daysSober]);
+  const { protectionScore, protectionStatus } = useMemo(() => {
+    const rp = profile.recoveryProfile;
+    const r = calculateProtectionScore({
+      intensity: rp.struggleLevel,
+      sleepQuality: rp.sleepQuality,
+      triggers: rp.triggers ?? [],
+      supportLevel: rp.supportAvailability,
+    });
+    return { protectionScore: r.score, protectionStatus: r.status };
+  }, [
+    profile.recoveryProfile.struggleLevel,
+    profile.recoveryProfile.sleepQuality,
+    profile.recoveryProfile.triggers,
+    profile.recoveryProfile.supportAvailability,
+  ]);
+  const showAlertBanner = protectionScore < 40;
+
   const period = useMemo(() => getTimeOfDay(), []);
   const greeting = useMemo(() => getGreeting(period), [period]);
   const greetingSubtext = useMemo(() => getGreetingSubtext(period), [period]);
-
-  const hasMorningCheckIn = useMemo(() => todayCheckIns.some(c => c.timeOfDay === 'morning'), [todayCheckIns]);
-  const hasAfternoonCheckIn = useMemo(() => todayCheckIns.some(c => c.timeOfDay === 'afternoon'), [todayCheckIns]);
-  const hasEveningCheckIn = useMemo(() => todayCheckIns.some(c => c.timeOfDay === 'evening'), [todayCheckIns]);
 
   const displayScore = useMemo(() => {
     if (todayCheckIn) return todayCheckIn.stabilityScore;
     return stabilityScore;
   }, [todayCheckIn, stabilityScore]);
-
-  const primaryFocus = useMemo(
-    () => getPrimaryFocus(
-      period,
-      hasMorningCheckIn,
-      hasAfternoonCheckIn,
-      hasEveningCheckIn,
-      !!todayPledge,
-      riskLevel,
-      displayScore,
-      daysSober,
-    ),
-    [period, hasMorningCheckIn, hasAfternoonCheckIn, hasEveningCheckIn, todayPledge, riskLevel, displayScore, daysSober],
-  );
-
-  const PeriodIcon = period === 'morning' ? Sun : period === 'afternoon' ? Sunset : Moon;
 
   const emotionalState = useMemo(() => getEmotionalState(displayScore), [displayScore]);
 
@@ -254,66 +114,112 @@ export default function HomeScreen() {
         ]}
         showsVerticalScrollIndicator={false}
       >
-        {/* 1. Greeting header + minimal stats (day count + streak only) */}
+        {/* Conditional alert banner when protection score is low */}
+        {showAlertBanner && (
+          <View style={styles.alertBanner}>
+            <ShieldAlert size={20} color="#FFF" />
+            <Text style={styles.alertBannerText}>
+              High alert — your protection needs extra support today. Stay connected and use your tools.
+            </Text>
+          </View>
+        )}
+
+        {/* Greeting */}
         <View style={styles.header}>
           <Text style={styles.greeting}>
             {greeting}, {profile.name || 'Friend'}
           </Text>
           <Text style={styles.greetingSubtext}>{greetingSubtext}</Text>
-          <Text style={styles.stats}>
-            {daysSober} days protected · {currentStreak} day streak
-          </Text>
         </View>
 
-        {/* 2. ONE contextual primary action card */}
-        <Pressable
-          style={({ pressed }) => [
-            styles.primaryCard,
-            {
-              borderColor: primaryFocus.borderColor,
-            },
-            pressed && styles.primaryCardPressed,
-          ]}
-          onPress={() => {
-            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-            router.push(primaryFocus.route as any);
-          }}
-          testID="today-focus-action"
-        >
-          <View style={styles.primaryCardHeader}>
-            <View style={[styles.primaryCardIconBg, { backgroundColor: primaryFocus.iconBgColor }]}>
-              <PeriodIcon size={20} color={primaryFocus.accentColor} />
-            </View>
-            <Text style={[styles.primaryCardLabel, { color: primaryFocus.accentColor }]}>{primaryFocus.label}</Text>
-          </View>
-          <Text style={styles.primaryCardTitle}>{primaryFocus.title}</Text>
-          <Text style={styles.primaryCardDesc}>{primaryFocus.description}</Text>
-          <View style={[styles.primaryCardBtn, { backgroundColor: primaryFocus.accentColor }]}>
-            <Text style={styles.primaryCardBtnText}>{primaryFocus.action}</Text>
-            <ArrowRight size={18} color={Colors.white} />
-          </View>
-        </Pressable>
+        {/* Primary: Protection Score */}
+        <View style={styles.scoreSection}>
+          <ProtectionScoreCircle
+            score={protectionScore}
+            status={protectionStatus}
+            size={140}
+          />
+        </View>
 
-        {/* 3. Two secondary quick-action buttons: Companion + Journal */}
-        <View style={styles.quickActionsRow}>
+        {/* Secondary stats: $ saved, active streak */}
+        <View style={styles.secondaryStats}>
+          <View style={styles.secondaryStatItem}>
+            <Text style={styles.secondaryStatValue}>${(profile.dailySavings ?? 0).toFixed(0)}</Text>
+            <Text style={styles.secondaryStatLabel}>saved</Text>
+          </View>
+          <View style={styles.secondaryStatDivider} />
+          <View style={styles.secondaryStatItem}>
+            <Text style={styles.secondaryStatValue}>{currentStreak}</Text>
+            <Text style={styles.secondaryStatLabel}>day streak</Text>
+          </View>
+        </View>
+
+        {/* Today's Protection Plan — 3 required actions */}
+        <Text style={styles.planSectionTitle}>Today's Protection Plan</Text>
+        <View style={styles.planCard}>
           <Pressable
-            style={({ pressed }) => [
-              styles.quickActionBtn,
-              pressed && styles.quickActionPressed,
-            ]}
+            style={({ pressed }) => [styles.planRow, pressed && styles.planRowPressed]}
             onPress={() => {
               Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-              if (hasFeature('ai_companion')) {
-                router.push('/companion-chat' as any);
-              } else {
-                router.push('/premium-upgrade' as any);
-              }
+              router.push('/daily-checkin' as any);
             }}
-            testID="companion-chat-cta"
+            testID="plan-checkin"
           >
-            <MessageCircle size={22} color={Colors.primary} />
-            <Text style={styles.quickActionText}>Companion</Text>
+            <View style={styles.planIconWrap}>
+              <Sun size={18} color={Colors.primary} />
+            </View>
+            <View style={styles.planTextWrap}>
+              <Text style={styles.planRowTitle}>
+                {period === 'morning' ? 'Morning' : period === 'afternoon' ? 'Afternoon' : 'Evening'} Check-In
+              </Text>
+              <Text style={styles.planRowSubtitle}>
+                Set how you're arriving and one gentle intention.
+              </Text>
+            </View>
+            <ArrowRight size={18} color={Colors.textMuted} />
           </Pressable>
+          <Pressable
+            style={({ pressed }) => [styles.planRow, pressed && styles.planRowPressed]}
+            onPress={() => {
+              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+              router.push('/(tabs)/triggers' as any);
+            }}
+            testID="plan-triggers"
+          >
+            <View style={styles.planIconWrap}>
+              <AlertTriangle size={18} color={Colors.primary} />
+            </View>
+            <View style={styles.planTextWrap}>
+              <Text style={styles.planRowTitle}>Trigger Review</Text>
+              <Text style={styles.planRowSubtitle}>
+                Plan around one situation today.
+              </Text>
+            </View>
+            <ArrowRight size={18} color={Colors.textMuted} />
+          </Pressable>
+          <Pressable
+            style={({ pressed }) => [styles.planRow, pressed && styles.planRowPressed]}
+            onPress={() => {
+              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+              router.push('/(tabs)/rebuild' as any);
+            }}
+            testID="plan-rebuild"
+          >
+            <View style={styles.planIconWrap}>
+              <TrendingUp size={18} color={Colors.primary} />
+            </View>
+            <View style={styles.planTextWrap}>
+              <Text style={styles.planRowTitle}>One Rebuild Action</Text>
+              <Text style={styles.planRowSubtitle}>
+                One small action toward your goal.
+              </Text>
+            </View>
+            <ArrowRight size={18} color={Colors.textMuted} />
+          </Pressable>
+        </View>
+
+        {/* Optional tools: Journal, Crisis Mode, Community */}
+        <View style={styles.quickActionsRow}>
           <Pressable
             style={({ pressed }) => [
               styles.quickActionBtn,
@@ -328,9 +234,37 @@ export default function HomeScreen() {
             <BookOpen size={22} color={Colors.primary} />
             <Text style={styles.quickActionText}>Journal</Text>
           </Pressable>
+          <Pressable
+            style={({ pressed }) => [
+              styles.quickActionBtn,
+              pressed && styles.quickActionPressed,
+            ]}
+            onPress={() => {
+              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+              router.push('/crisis-mode' as any);
+            }}
+            testID="crisis-mode-cta"
+          >
+            <AlertTriangle size={22} color={Colors.primary} />
+            <Text style={styles.quickActionText}>Crisis Mode</Text>
+          </Pressable>
+          <Pressable
+            style={({ pressed }) => [
+              styles.quickActionBtn,
+              pressed && styles.quickActionPressed,
+            ]}
+            onPress={() => {
+              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+              router.push('/(tabs)/community' as any);
+            }}
+            testID="community-cta"
+          >
+            <Users size={22} color={Colors.primary} />
+            <Text style={styles.quickActionText}>Community</Text>
+          </Pressable>
         </View>
 
-        {/* 4. Collapsed Today's Pulse (emoji/words, no numerical meters) */}
+        {/* Today's Pulse (optional summary) */}
         <View style={styles.pulseCard}>
           <View style={styles.pulseHeader}>
             <Sparkles size={14} color={Colors.textMuted} />
@@ -362,7 +296,7 @@ const styles = StyleSheet.create({
     paddingTop: 16,
   },
   header: {
-    marginBottom: 20,
+    marginBottom: 12,
   },
   greeting: {
     fontSize: 24,
@@ -376,67 +310,101 @@ const styles = StyleSheet.create({
     marginBottom: 6,
     fontStyle: 'italic',
   },
-  stats: {
-    fontSize: 14,
-    color: Colors.textSecondary,
-    fontWeight: '500',
-  },
-  primaryCard: {
-    backgroundColor: Colors.cardBackground,
-    borderRadius: 20,
-    padding: 20,
-    marginBottom: 16,
-    borderWidth: 1,
-  },
-  primaryCardPressed: {
-    opacity: 0.95,
-  },
-  primaryCardHeader: {
+  alertBanner: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
-    marginBottom: 12,
+    gap: 10,
+    backgroundColor: '#EF5350',
+    borderRadius: 12,
+    padding: 14,
+    marginBottom: 16,
   },
-  primaryCardIconBg: {
-    width: 32,
-    height: 32,
-    borderRadius: 10,
+  alertBannerText: {
+    flex: 1,
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#FFF',
+  },
+  scoreSection: {
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  secondaryStats: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: Colors.cardBackground,
+    borderRadius: 14,
+    paddingVertical: 12,
+    paddingHorizontal: 20,
+    marginBottom: 20,
+    borderWidth: 1,
+    borderColor: Colors.border,
+  },
+  secondaryStatItem: {
+    flex: 1,
+    alignItems: 'center',
+  },
+  secondaryStatValue: {
+    fontSize: 20,
+    fontWeight: '700',
+    color: Colors.text,
+  },
+  secondaryStatLabel: {
+    fontSize: 12,
+    color: Colors.textSecondary,
+    marginTop: 2,
+  },
+  secondaryStatDivider: {
+    width: 1,
+    height: 28,
+    backgroundColor: Colors.border,
+  },
+  planSectionTitle: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: Colors.textMuted,
+    letterSpacing: 1,
+    marginBottom: 10,
+  },
+  planCard: {
+    backgroundColor: Colors.cardBackground,
+    borderRadius: 16,
+    padding: 4,
+    marginBottom: 16,
+    borderWidth: 1,
+    borderColor: Colors.border,
+  },
+  planRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 14,
+    paddingHorizontal: 12,
+    gap: 12,
+  },
+  planRowPressed: {
+    opacity: 0.9,
+  },
+  planIconWrap: {
+    width: 40,
+    height: 40,
+    borderRadius: 12,
     backgroundColor: 'rgba(46,196,182,0.12)',
     alignItems: 'center',
     justifyContent: 'center',
   },
-  primaryCardLabel: {
-    fontSize: 10,
-    fontWeight: '700',
-    color: Colors.primary,
-    letterSpacing: 2,
+  planTextWrap: {
+    flex: 1,
   },
-  primaryCardTitle: {
-    fontSize: 18,
-    fontWeight: '700',
-    color: Colors.text,
-    marginBottom: 6,
-    lineHeight: 24,
-  },
-  primaryCardDesc: {
-    fontSize: 14,
-    color: Colors.textSecondary,
-    lineHeight: 20,
-    marginBottom: 16,
-  },
-  primaryCardBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 8,
-    backgroundColor: Colors.primary,
-    borderRadius: 14,
-    paddingVertical: 14,
-  },
-  primaryCardBtnText: {
+  planRowTitle: {
     fontSize: 15,
     fontWeight: '600',
-    color: Colors.white,
+    color: Colors.text,
+  },
+  planRowSubtitle: {
+    fontSize: 12,
+    color: Colors.textSecondary,
+    marginTop: 2,
   },
   quickActionsRow: {
     flexDirection: 'row',

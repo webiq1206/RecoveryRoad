@@ -4,7 +4,7 @@
  */
 
 export type ProtectionStatus =
-  | 'High Alert'
+  | 'Extra support'
   | 'Guarded'
   | 'Strengthening'
   | 'Stable';
@@ -68,7 +68,7 @@ export function calculateProtectionScore(data: ProtectionScoreInput): Protection
 
   let status: ProtectionStatus;
   if (score < 40) {
-    status = 'High Alert';
+    status = 'Extra support';
   } else if (score < 60) {
     status = 'Guarded';
   } else if (score < 80) {

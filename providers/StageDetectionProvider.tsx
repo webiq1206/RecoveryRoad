@@ -235,7 +235,7 @@ function buildTransitionReason(fromStage: RecoveryStage, toStage: RecoveryStage,
     if (negativeFactors.length > 0) {
       return `Your ${negativeFactors.join(', ').toLowerCase()} suggest you could use more support right now. This is not a setback — it's self-awareness.`;
     }
-    return "Your recent patterns suggest more support would help. Adjusting to give you what you need — this isn't failure, it's care.";
+    return "Your recent patterns suggest more support would help. Adjusting to give you what you need — you're still building; this is care.";
   }
 }
 

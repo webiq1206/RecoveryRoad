@@ -21,6 +21,7 @@ import { ProviderModeProvider } from "@/providers/ProviderModeProvider";
 import { NotificationProvider } from "@/providers/NotificationProvider";
 import ErrorBoundary from "@/components/ErrorBoundary";
 import LockScreen from "@/components/LockScreen";
+import RelapseFlowGate from "@/components/RelapseFlowGate";
 import Colors from "@/constants/colors";
 import { useShakeToCrisis } from "@/hooks/useShakeToCrisis";
 import { trpc, trpcClient } from "@/lib/trpc";
@@ -50,7 +51,8 @@ const fadeAnimation = isWeb ? 'none' as const : 'fade' as const;
 function RootLayoutNav() {
   useShakeToCrisis();
   return (
-    <Stack
+    <>
+      <Stack
       screenOptions={{
         headerBackTitle: "Back",
         headerStyle: { backgroundColor: Colors.background },
@@ -93,6 +95,8 @@ function RootLayoutNav() {
       <Stack.Screen name="protection-profile" options={{ title: 'Protection Profile', animation: defaultAnimation }} />
       <Stack.Screen name="first-day" options={{ title: 'Your First Day', headerShown: false, animation: defaultAnimation }} />
     </Stack>
+      <RelapseFlowGate />
+    </>
   );
 }
 

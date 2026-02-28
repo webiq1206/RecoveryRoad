@@ -63,7 +63,7 @@ export default function TabLayout() {
       <Tabs.Screen
         name="progress"
         options={{
-          title: "Journey",
+          title: "Timeline",
           tabBarIcon: renderJourneyIcon,
         }}
       />

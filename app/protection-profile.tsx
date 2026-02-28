@@ -10,12 +10,12 @@ import { ProtectionScoreCircle } from '@/components/ProtectionScoreCircle';
 
 function getProtectionBadgeMeta(level: ProtectionStatus) {
   switch (level) {
-    case 'High Alert':
+    case 'Extra support':
       return {
         icon: <ShieldAlert size={22} color="#EF5350" />,
         labelColor: '#EF5350',
         chipBg: 'rgba(239,83,80,0.12)',
-        desc: 'Your system is on high alert. Today needs extra protection.',
+        desc: "You're still building. Today may need extra support.",
       };
     case 'Guarded':
       return {

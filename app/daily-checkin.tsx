@@ -16,6 +16,7 @@ import { X, ChevronRight, Check, Activity, Brain, Moon, MapPin, Heart, Zap, Sun,
 import * as Haptics from 'expo-haptics';
 import Colors from '@/constants/colors';
 import { useRecovery } from '@/providers/RecoveryProvider';
+import { calculateStability } from '@/utils/stabilityEngine';
 import { useRetention } from '@/providers/RetentionProvider';
 import { DailyCheckIn, CheckInTimeOfDay } from '@/types';
 import {
@@ -314,6 +315,7 @@ export default function DailyCheckInScreen() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const {
+    profile,
     addCheckIn,
     todayCheckIns,
     morningCheckIn,
@@ -376,23 +378,22 @@ export default function DailyCheckInScreen() {
   }, [sleepLocked]);
 
   const stabilityScore = useMemo(() => {
+    const rp = profile?.recoveryProfile;
     const mood = values.mood;
-    const cravingInverse = 100 - values.cravingLevel;
-    const stressInverse = 100 - values.stress;
-    const sleep = values.sleepQuality;
-    const env = values.environment;
     const emotional = values.emotionalState;
-
-    const score = Math.round(
-      (mood * 0.2) +
-      (cravingInverse * 0.25) +
-      (stressInverse * 0.15) +
-      (sleep * 0.15) +
-      (env * 0.1) +
-      (emotional * 0.15)
-    );
-    return Math.max(0, Math.min(100, score));
-  }, [values]);
+    const intensity = Math.min(5, Math.max(1, Math.round(1 + (100 - (mood + emotional) / 2) / 100 * 4)));
+    const sleepNum = values.sleepQuality;
+    const sleepQuality: 'poor' | 'okay' | 'good' = sleepNum <= 33 ? 'poor' : sleepNum <= 66 ? 'okay' : 'good';
+    const input = {
+      intensity,
+      sleepQuality,
+      triggers: rp?.triggers ?? [],
+      supportLevel: rp?.supportAvailability ?? 'limited',
+      dailyActionsCompleted: 1,
+      relapseLogged: false,
+    };
+    return calculateStability(input).score;
+  }, [values, profile?.recoveryProfile]);
 
   const periodConfig = PERIOD_CONFIG[currentCheckInPeriod];
 

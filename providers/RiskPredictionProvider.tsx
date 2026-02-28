@@ -746,7 +746,7 @@ export const [RiskPredictionProvider, useRiskPrediction] = createContextHook(() 
       case 'high':
         return "You're carrying a lot right now, and that takes real courage. Your tools and your people are right here — lean on them.";
       case 'elevated':
-        return "Some things are asking for your attention. That's not a failure — it's awareness. Small, steady steps keep you moving forward.";
+        return "Some things are asking for your attention. That's not a setback — it's awareness. Small, steady steps keep you moving forward.";
       case 'guarded':
         return "You're navigating things well. A few signals are worth keeping an eye on, and your daily habits are making a real difference.";
       case 'low':

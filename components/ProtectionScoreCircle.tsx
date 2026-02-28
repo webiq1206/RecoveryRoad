@@ -11,7 +11,7 @@ export interface ProtectionScoreCircleProps {
 
 function getStatusColor(status: ProtectionStatus): string {
   switch (status) {
-    case 'High Alert':
+    case 'Extra support':
       return '#EF5350';
     case 'Guarded':
       return '#FF9800';

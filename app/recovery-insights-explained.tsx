@@ -215,7 +215,7 @@ export default function RecoveryInsightsExplainedScreen() {
         <View style={styles.spacer} />
         <Text style={styles.subHeading}>How the score grows</Text>
         <Text style={styles.bodyText}>
-          The Control Loop is heavily influenced by consistency. Honoring your pledge day after day creates a compounding effect. Missing a pledge doesn't reset your progress, but maintaining streaks accelerates growth.
+          The Control Loop is heavily influenced by consistency. Honoring your pledge day after day creates a compounding effect. Missing a pledge doesn't erase your progress, but maintaining consistency accelerates growth.
         </Text>
         <View style={styles.spacer} />
         <Text style={styles.tipText}>

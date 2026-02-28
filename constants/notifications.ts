@@ -160,7 +160,7 @@ export const BEHAVIORAL_TEMPLATES: BehavioralNotificationTemplate[] = [
     messages: [
       "Cravings have been elevated. This is temporary — ride the wave.",
       "Your brain is signaling, but you get to choose. Pause before you act.",
-      "High cravings don't mean failure. They mean your body is still healing.",
+      "High cravings don't mean you're back to zero. They mean your body is still healing.",
       "This urge will peak and pass. You've proven you can outlast it.",
     ],
     priority: 'critical',

@@ -23,6 +23,14 @@ export interface RecoveryProfile {
   baselineStabilityScore: number;
 }
 
+export type TimelineEventType = 'relapse' | 'crisis_activation';
+
+export interface TimelineEvent {
+  id: string;
+  type: TimelineEventType;
+  date: string; // YYYY-MM-DD
+}
+
 export interface UserProfile {
   name: string;
   addictions: string[];

@@ -38,7 +38,7 @@ export function getCrisisRiskCopy(): { title: string; description: string; actio
 export function getElevatedRiskCopy(): { title: string; description: string; action: string } {
   return {
     title: 'Your system noticed some tension',
-    description: 'A brief grounding exercise can help reset your nervous system. Your tools are ready whenever you are.',
+    description: 'A brief grounding exercise can help calm your nervous system. Your tools are ready whenever you are.',
     action: 'Start Grounding',
   };
 }

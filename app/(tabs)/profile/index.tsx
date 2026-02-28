@@ -22,7 +22,7 @@ const STAGE_CONFIG: Record<RecoveryStage, { label: string; color: string; icon: 
 const STAGE_ORDER: RecoveryStage[] = ['crisis', 'stabilize', 'rebuild', 'maintain'];
 
 export default function ProfileScreen() {
-  const { profile, updateProfile, daysSober, checkIns, stabilityScore, journal, pledges, currentStreak, resetAllData } = useRecovery();
+  const { profile, updateProfile, daysSober, checkIns, stabilityScore, journal, pledges, currentStreak, resetAllData, logRelapse } = useRecovery();
   const { growthDimensions, overallGrowthScore, notificationPreferences, updateNotificationPrefs, streak } = useEngagement();
   const { isPremium, cancelSubscription } = useSubscription();
   const {
@@ -209,14 +209,14 @@ export default function ProfileScreen() {
     setShowDateModal(false);
   }, [tempMonth, tempDay, tempYear, getDaysInMonth, updateProfile]);
 
-  const handleReset = useCallback(() => {
+  const handleClearData = useCallback(() => {
     Alert.alert(
-      'Reset All Data',
-      'This will permanently delete all your recovery data including pledges, journal entries, and settings. This cannot be undone.',
+      'Clear All Data',
+      "You're still building. Clearing data only removes what's stored here — it doesn't change your progress. This will permanently delete all your recovery data including pledges, journal entries, and settings. This cannot be undone.",
       [
         { text: 'Cancel', style: 'cancel' },
         {
-          text: 'Reset Everything',
+          text: 'Clear everything',
           style: 'destructive',
           onPress: () => {
             Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
@@ -928,6 +928,41 @@ export default function ProfileScreen() {
       )}
 
       {/* Help */}
+      <Text style={[styles.sectionLabel, { marginTop: 28 }]}>RECOVERY</Text>
+
+      <Pressable
+        style={({ pressed }) => [styles.settingRow, pressed && { opacity: 0.85 }]}
+        onPress={() => {
+          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+          Alert.alert(
+            'Log a setback',
+            "Recording a setback doesn't erase your progress. You'll see supportive next steps and can strengthen your system.",
+            [
+              { text: 'Cancel', style: 'cancel' },
+              {
+                text: 'Log setback',
+                style: 'default',
+                onPress: () => {
+                  logRelapse();
+                },
+              },
+            ]
+          );
+        }}
+        testID="log-relapse-link"
+      >
+        <View style={styles.settingLeft}>
+          <View style={[styles.settingIcon, { backgroundColor: 'rgba(239,83,80,0.12)' }]}>
+            <Heart size={17} color="#EF5350" />
+          </View>
+          <View>
+            <Text style={styles.settingLabel}>Today was hard — log a setback</Text>
+            <Text style={styles.settingValue}>One event doesn't erase your progress</Text>
+          </View>
+        </View>
+        <ChevronRight size={16} color={Colors.textMuted} />
+      </Pressable>
+
       <Text style={[styles.sectionLabel, { marginTop: 28 }]}>HELP</Text>
 
       <Pressable
@@ -1080,14 +1115,14 @@ export default function ProfileScreen() {
       {/* Danger Zone */}
       <Text style={[styles.sectionLabel, { marginTop: 28 }]}>DANGER ZONE</Text>
 
-      <Pressable style={styles.dangerRow} onPress={handleReset}>
+      <Pressable style={styles.dangerRow} onPress={handleClearData}>
         <View style={styles.settingLeft}>
           <View style={[styles.settingIcon, { backgroundColor: 'rgba(239,83,80,0.12)' }]}>
             <RotateCcw size={17} color={Colors.danger} />
           </View>
           <View>
-            <Text style={[styles.settingLabel, { color: Colors.danger }]}>Reset All Data</Text>
-            <Text style={styles.settingValue}>Delete all data and start over</Text>
+            <Text style={[styles.settingLabel, { color: Colors.danger }]}>Clear All Data</Text>
+            <Text style={styles.settingValue}>You're still building — clearing only removes stored data</Text>
           </View>
         </View>
       </Pressable>

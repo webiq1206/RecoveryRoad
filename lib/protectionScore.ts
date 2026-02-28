@@ -1,6 +1,6 @@
 import { RecoveryProfile, SleepQualityLevel, SupportAvailability } from '@/types';
 
-export type ProtectionStatus = 'High Alert' | 'Guarded' | 'Strengthening' | 'Stable';
+export type ProtectionStatus = 'Extra support' | 'Guarded' | 'Strengthening' | 'Stable';
 
 export interface ProtectionScoreInput {
   intensity?: number | null; // 1–5
@@ -73,7 +73,7 @@ export function calculateProtectionScore(input: ProtectionScoreInput): Protectio
 
   let protectionStatus: ProtectionStatus;
   if (protectionScore < 40) {
-    protectionStatus = 'High Alert';
+    protectionStatus = 'Extra support';
   } else if (protectionScore < 60) {
     protectionStatus = 'Guarded';
   } else if (protectionScore < 80) {

@@ -2,7 +2,8 @@ import createContextHook from '@nkzw/create-context-hook';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useState, useEffect, useCallback, useMemo } from 'react';
-import { UserProfile, Pledge, JournalEntry, MediaItem, WorkbookAnswer, EmergencyContact, DailyCheckIn, CheckInTimeOfDay, RebuildData, ReplacementHabit, RoutineBlock, PurposeGoal, ConfidenceMilestone, AccountabilityData, CommitmentContract, AccountabilityPartner, DriftAlert, ContractCheckIn, RecoveryProfile, PrivacyControls, IdentityProgramData, IdentityExerciseResponse, IdentityValue } from '@/types';
+import { UserProfile, Pledge, JournalEntry, MediaItem, WorkbookAnswer, EmergencyContact, DailyCheckIn, CheckInTimeOfDay, RebuildData, ReplacementHabit, RoutineBlock, PurposeGoal, ConfidenceMilestone, AccountabilityData, CommitmentContract, AccountabilityPartner, DriftAlert, ContractCheckIn, RecoveryProfile, PrivacyControls, IdentityProgramData, IdentityExerciseResponse, IdentityValue, TimelineEvent } from '@/types';
+import { calculateStability } from '@/utils/stabilityEngine';
 
 const STORAGE_KEYS = {
   PROFILE: 'recovery_profile',
@@ -14,6 +15,7 @@ const STORAGE_KEYS = {
   CHECK_INS: 'recovery_check_ins',
   REBUILD: 'recovery_rebuild',
   ACCOUNTABILITY: 'recovery_accountability',
+  TIMELINE_EVENTS: 'recovery_timeline_events',
 };
 
 const DEFAULT_PRIVACY: PrivacyControls = {
@@ -111,8 +113,15 @@ export function calculateInterventionIntensity(riskScore: number): 'low' | 'mode
 }
 
 export function calculateBaselineStability(rp: RecoveryProfile): number {
-  const riskInverse = 100 - calculateRiskScore(rp);
-  return Math.max(10, Math.min(90, Math.round(riskInverse)));
+  const input = {
+    intensity: rp.struggleLevel,
+    sleepQuality: (rp.sleepQuality === 'fair' ? 'okay' : rp.sleepQuality === 'excellent' ? 'good' : rp.sleepQuality === 'poor' ? 'poor' : 'good') as 'poor' | 'okay' | 'good',
+    triggers: rp.triggers ?? [],
+    supportLevel: rp.supportAvailability,
+    dailyActionsCompleted: 0,
+    relapseLogged: (rp.relapseCount ?? 0) > 0,
+  };
+  return calculateStability(input).score;
 }
 
 async function loadStorageItem<T>(key: string, fallback: T): Promise<T> {
@@ -141,6 +150,8 @@ export const [RecoveryProvider, useRecovery] = createContextHook(() => {
   const [checkIns, setCheckIns] = useState<DailyCheckIn[]>([]);
   const [rebuildData, setRebuildData] = useState<RebuildData>(DEFAULT_REBUILD);
   const [accountabilityData, setAccountabilityData] = useState<AccountabilityData>(DEFAULT_ACCOUNTABILITY);
+  const [showRelapseModal, setShowRelapseModal] = useState(false);
+  const [timelineEvents, setTimelineEvents] = useState<TimelineEvent[]>([]);
 
   const profileQuery = useQuery({
     queryKey: ['profile'],
@@ -199,6 +210,12 @@ export const [RecoveryProvider, useRecovery] = createContextHook(() => {
     staleTime: Infinity,
   });
 
+  const timelineEventsQuery = useQuery({
+    queryKey: ['timelineEvents'],
+    queryFn: () => loadStorageItem<TimelineEvent[]>(STORAGE_KEYS.TIMELINE_EVENTS, []),
+    staleTime: Infinity,
+  });
+
   useEffect(() => {
     if (profileQuery.data) setProfile(profileQuery.data);
   }, [profileQuery.data]);
@@ -234,6 +251,10 @@ export const [RecoveryProvider, useRecovery] = createContextHook(() => {
   useEffect(() => {
     if (accountabilityQuery.data) setAccountabilityData(accountabilityQuery.data);
   }, [accountabilityQuery.data]);
+
+  useEffect(() => {
+    if (timelineEventsQuery.data) setTimelineEvents(timelineEventsQuery.data);
+  }, [timelineEventsQuery.data]);
 
   const saveProfileMutation = useMutation({
     mutationFn: (newProfile: UserProfile) => saveStorageItem(STORAGE_KEYS.PROFILE, newProfile),
@@ -304,6 +325,14 @@ export const [RecoveryProvider, useRecovery] = createContextHook(() => {
     onSuccess: (data) => {
       setAccountabilityData(data);
       queryClient.setQueryData(['accountability'], data);
+    },
+  });
+
+  const saveTimelineEventsMutation = useMutation({
+    mutationFn: (events: TimelineEvent[]) => saveStorageItem(STORAGE_KEYS.TIMELINE_EVENTS, events),
+    onSuccess: (data) => {
+      setTimelineEvents(data);
+      queryClient.setQueryData(['timelineEvents'], data);
     },
   });
 
@@ -633,6 +662,26 @@ export const [RecoveryProvider, useRecovery] = createContextHook(() => {
     return true;
   }, [accountabilityData]);
 
+  const logRelapse = useCallback(() => {
+    const rp = profile.recoveryProfile ?? DEFAULT_RECOVERY_PROFILE;
+    const updatedProfile: UserProfile = {
+      ...profile,
+      recoveryProfile: { ...rp, relapseCount: (rp.relapseCount ?? 0) + 1 },
+    };
+    setProfile(updatedProfile);
+    saveProfileMutation.mutate(updatedProfile);
+    const today = new Date().toISOString().split('T')[0];
+    const event: TimelineEvent = { id: `relapse-${Date.now()}`, type: 'relapse', date: today };
+    const updatedEvents = [event, ...timelineEvents];
+    setTimelineEvents(updatedEvents);
+    saveTimelineEventsMutation.mutate(updatedEvents);
+    setShowRelapseModal(true);
+  }, [profile, timelineEvents]);
+
+  const dismissRelapseModal = useCallback(() => {
+    setShowRelapseModal(false);
+  }, []);
+
   const todayCheckIns = useMemo(() => {
     const today = new Date().toISOString().split('T')[0];
     return checkIns.filter(c => c.date === today);
@@ -661,11 +710,23 @@ export const [RecoveryProvider, useRecovery] = createContextHook(() => {
   }, [todayCheckIns, currentCheckInPeriod]);
 
   const stabilityScore = useMemo(() => {
-    const recent = checkIns.slice(0, 7);
-    if (recent.length === 0) return 50;
+    const sorted = [...checkIns].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+    const recent = sorted.slice(0, 7);
+    if (recent.length === 0) {
+      const rp = profile.recoveryProfile;
+      const input = {
+        intensity: rp.struggleLevel,
+        sleepQuality: (rp.sleepQuality === 'fair' ? 'okay' : rp.sleepQuality === 'excellent' ? 'good' : rp.sleepQuality === 'poor' ? 'poor' : 'good') as 'poor' | 'okay' | 'good',
+        triggers: rp.triggers ?? [],
+        supportLevel: rp.supportAvailability,
+        dailyActionsCompleted: 0,
+        relapseLogged: (rp.relapseCount ?? 0) > 0,
+      };
+      return calculateStability(input).score;
+    }
     const avg = recent.reduce((sum, c) => sum + c.stabilityScore, 0) / recent.length;
     return Math.round(avg);
-  }, [checkIns]);
+  }, [checkIns, profile.recoveryProfile]);
 
   const resetAllData = useCallback(async () => {
     await AsyncStorage.multiRemove([
@@ -678,6 +739,7 @@ export const [RecoveryProvider, useRecovery] = createContextHook(() => {
       STORAGE_KEYS.CHECK_INS,
       STORAGE_KEYS.REBUILD,
       STORAGE_KEYS.ACCOUNTABILITY,
+      STORAGE_KEYS.TIMELINE_EVENTS,
     ]);
     setProfile(DEFAULT_PROFILE);
     setPledges([]);
@@ -688,6 +750,8 @@ export const [RecoveryProvider, useRecovery] = createContextHook(() => {
     setCheckIns([]);
     setRebuildData(DEFAULT_REBUILD);
     setAccountabilityData(DEFAULT_ACCOUNTABILITY);
+    setTimelineEvents([]);
+    setShowRelapseModal(false);
     queryClient.clear();
   }, [queryClient]);
 
@@ -787,6 +851,10 @@ export const [RecoveryProvider, useRecovery] = createContextHook(() => {
     deletePartner,
     dismissAlert,
     useStreakProtection,
+    timelineEvents,
+    logRelapse,
+    showRelapseModal,
+    dismissRelapseModal,
   }), [
     profile, pledges, journal, media, workbookAnswers,
     todayPledge, currentStreak, daysSober, isLoading,
@@ -805,5 +873,6 @@ export const [RecoveryProvider, useRecovery] = createContextHook(() => {
     accountabilityData, addContract, updateContract, deleteContract,
     checkInContract, addPartner, updatePartner, deletePartner,
     dismissAlert, useStreakProtection,
+    timelineEvents, logRelapse, showRelapseModal, dismissRelapseModal,
   ]);
 });

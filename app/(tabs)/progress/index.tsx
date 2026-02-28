@@ -328,400 +328,179 @@ interface TriggerPatternInsight {
   description: string;
 }
 
-export default function ProgressScreen() {
+function StabilityTimelineScreen() {
   const router = useRouter();
-  const { profile, daysSober, checkIns, stabilityScore, journal, pledges, currentStreak } = useRecovery();
-  const { hasFeature } = useSubscription();
+  const { profile, checkIns, pledges, rebuildData } = useRecovery();
 
-  const pulseAnim = useRef(new Animated.Value(1)).current;
-
-  useEffect(() => {
-    const loop = Animated.loop(
-      Animated.sequence([
-        Animated.timing(pulseAnim, { toValue: 1.04, duration: 1800, useNativeDriver: true }),
-        Animated.timing(pulseAnim, { toValue: 1, duration: 1800, useNativeDriver: true }),
-      ])
-    );
-    loop.start();
-    return () => loop.stop();
-  }, []);
-
-  const sobrietyData = useMemo(() => {
-    const weeks = Math.floor(daysSober / 7);
-    const months = Math.floor(daysSober / 30);
-    const years = Math.floor(daysSober / 365);
-    return { days: daysSober, weeks, months, years };
-  }, [daysSober]);
-
-  const stage = useMemo(() => getRecoveryStage(daysSober), [daysSober]);
-
-  const emotionalGrowth = useMemo(() => {
-    const sorted = [...checkIns].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
-    const moods = sorted.map((c: DailyCheckIn) => c.mood);
-    const avgMood = moods.length > 0 ? moods.reduce((a: number, b: number) => a + b, 0) / moods.length : 50;
-    const trend = computeTrend(moods);
-    return { moods: moods.slice(0, 7), avgMood: Math.round(avgMood), trend };
-  }, [checkIns]);
-
-  const triggerData = useMemo(() => {
-    const sorted = [...checkIns].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
-    const cravings = sorted.map((c: DailyCheckIn) => c.cravingLevel);
-    const avgCraving = cravings.length > 0 ? cravings.reduce((a: number, b: number) => a + b, 0) / cravings.length : 50;
-    const trend = computeTrend(cravings);
-    return { cravings: cravings.slice(0, 7), avgCraving: Math.round(avgCraving), trend };
-  }, [checkIns]);
-
-  const stabilityData = useMemo(() => {
-    const sorted = [...checkIns].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
-    const scores = sorted.map((c: DailyCheckIn) => c.stabilityScore);
-    const trend = computeTrend(scores);
-    return { scores: scores.slice(0, 7), trend };
-  }, [checkIns]);
-
-  const vulnerabilityScore = useMemo(() => {
-    if (checkIns.length === 0) return 40;
-    const recent = [...checkIns]
-      .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
-      .slice(0, 3);
-    const avgCraving = recent.reduce((s, c) => s + c.cravingLevel, 0) / recent.length;
-    const avgStress = recent.reduce((s, c) => s + c.stress, 0) / recent.length;
-    const avgSleep = recent.reduce((s, c) => s + c.sleepQuality, 0) / recent.length;
-    const avgMood = recent.reduce((s, c) => s + c.mood, 0) / recent.length;
-    const rawScore = (avgCraving * 0.35) + (avgStress * 0.25) + ((100 - avgSleep) * 0.2) + ((100 - avgMood) * 0.2);
-    const streakBonus = Math.min(currentStreak * 2, 15);
-    return Math.max(0, Math.min(100, Math.round(rawScore - streakBonus)));
-  }, [checkIns, currentStreak]);
-
-  const reinforcementMessage = useMemo(() => getReinforcementMessage(daysSober), [daysSober]);
-
-  const recentCheckIns30 = useMemo(() => {
-    const thirtyDaysAgo = new Date();
-    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
-    return checkIns.filter(c => new Date(c.date) >= thirtyDaysAgo);
-  }, [checkIns]);
-
-  const triggerHeatmap = useMemo<TriggerHeatmapData>(() => {
-    const data: TriggerHeatmapData = {};
-    for (let d = 0; d < 7; d++) {
-      data[d] = {};
-      for (const tb of TRIGGER_TIME_BLOCKS) {
-        data[d][tb.key] = 0;
-      }
+  // 30-day stability scores (oldest to newest for graph), with null for missing days
+  const thirtyDayData = useMemo(() => {
+    const today = new Date();
+    const dayKeys: string[] = [];
+    for (let i = 29; i >= 0; i--) {
+      const d = new Date(today);
+      d.setDate(d.getDate() - i);
+      dayKeys.push(d.toISOString().split('T')[0]);
     }
-    if (recentCheckIns30.length === 0) return data;
-    const counts: Record<string, number> = {};
-    recentCheckIns30.forEach(ci => {
-      const date = new Date(ci.completedAt || ci.date);
-      const dayOfWeek = (date.getDay() + 6) % 7;
-      const hour = date.getHours();
-      const timeBlock = TRIGGER_TIME_BLOCKS.find(tb => (tb.hours as readonly number[]).includes(hour));
-      if (!timeBlock) return;
-      const key = `${dayOfWeek}-${timeBlock.key}`;
-      const riskValue = ((ci.cravingLevel + ci.stress + (100 - ci.mood)) / 3);
-      if (!counts[key]) counts[key] = 0;
-      const prevTotal = (data[dayOfWeek][timeBlock.key] || 0) * counts[key];
-      counts[key]++;
-      data[dayOfWeek][timeBlock.key] = (prevTotal + riskValue) / counts[key];
+    const byDate = new Map<string, number>();
+    const sorted = [...checkIns].sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+    sorted.forEach(c => {
+      const day = c.date;
+      if (dayKeys.includes(day)) byDate.set(day, c.stabilityScore);
     });
-    return data;
-  }, [recentCheckIns30]);
+    return dayKeys.map(d => byDate.get(d) ?? null);
+  }, [checkIns]);
 
-  const highRiskTimes = useMemo(() => {
-    const risks: { day: string; time: string; value: number }[] = [];
-    for (let d = 0; d < 7; d++) {
-      for (const tb of TRIGGER_TIME_BLOCKS) {
-        const val = triggerHeatmap[d]?.[tb.key] ?? 0;
-        if (val > 50) {
-          risks.push({ day: TRIGGER_DAYS[d], time: tb.label, value: val });
-        }
-      }
-    }
-    return risks.sort((a, b) => b.value - a.value).slice(0, 3);
-  }, [triggerHeatmap]);
+  const stabilityScoresForChart = useMemo(() => thirtyDayData.map(v => v ?? 50), [thirtyDayData]);
 
-  const triggerInsights = useMemo<TriggerPatternInsight[]>(() => {
-    if (recentCheckIns30.length < 3) {
-      return [{ id: 'need-data', type: 'pattern', title: 'Building your pattern map', description: 'Complete more daily check-ins to identify trigger patterns.' }];
+  const dailyPlansCompleted = useMemo(() => {
+    const today = new Date();
+    let count = 0;
+    for (let i = 0; i < 30; i++) {
+      const d = new Date(today);
+      d.setDate(d.getDate() - (29 - i));
+      const dateStr = d.toISOString().split('T')[0];
+      const hasCheckIn = checkIns.some(c => c.date === dateStr);
+      const hasPledge = pledges.some(p => p.date === dateStr);
+      if (hasCheckIn || hasPledge) count++;
     }
-    const result: TriggerPatternInsight[] = [];
-    const avgCraving = recentCheckIns30.reduce((s, c) => s + c.cravingLevel, 0) / recentCheckIns30.length;
-    const avgStress = recentCheckIns30.reduce((s, c) => s + c.stress, 0) / recentCheckIns30.length;
-    const avgMood = recentCheckIns30.reduce((s, c) => s + c.mood, 0) / recentCheckIns30.length;
-    if (avgCraving > 65) {
-      result.push({ id: 'high-craving', type: 'warning', title: 'Elevated craving pattern', description: 'Cravings have been consistently high. Consider engaging crisis tools.' });
-    }
-    if (avgStress > 60 && avgCraving > 50) {
-      result.push({ id: 'stress-link', type: 'pattern', title: 'Stress-craving connection', description: 'When stress rises, cravings follow. Try breathing exercises.' });
-    }
-    if (highRiskTimes.length > 0) {
-      const top = highRiskTimes[0];
-      result.push({ id: 'peak-time', type: 'pattern', title: `${top.day} ${top.time.toLowerCase()}s are high-risk`, description: 'Having a plan for these times can make a difference.' });
-    }
-    if (avgCraving < 30 && avgMood > 60) {
-      result.push({ id: 'positive', type: 'positive', title: 'Strong stability pattern', description: 'Low cravings and good mood. Keep building on what works.' });
-    }
-    if (result.length === 0) {
-      result.push({ id: 'stable', type: 'positive', title: 'Patterns look balanced', description: 'No concerning patterns. Keep up daily check-ins.' });
-    }
-    return result;
-  }, [recentCheckIns30, highRiskTimes]);
+    return count;
+  }, [checkIns, pledges]);
 
-  const overallTriggerRisk = useMemo(() => {
-    if (recentCheckIns30.length === 0) return 0;
-    const recent = recentCheckIns30.slice(0, 7);
-    const avgCraving = recent.reduce((s, c) => s + c.cravingLevel, 0) / recent.length;
-    const avgStress = recent.reduce((s, c) => s + c.stress, 0) / recent.length;
-    const avgMood = recent.reduce((s, c) => s + c.mood, 0) / recent.length;
-    return Math.round((avgCraving * 0.4 + avgStress * 0.3 + (100 - avgMood) * 0.3));
-  }, [recentCheckIns30]);
+  const relapseCount = profile.recoveryProfile?.relapseCount ?? 0;
+  const crisisActivationsCount = 0;
 
-  const triggerRiskColor = overallTriggerRisk > 65 ? '#EF5350' : overallTriggerRisk > 40 ? '#FFC107' : Colors.primary;
+  const sevenDayChange = useMemo(() => {
+    const scores = [...checkIns].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()).slice(0, 7).map(c => c.stabilityScore);
+    if (scores.length < 2) return 0;
+    const recent = scores.slice(0, 3).reduce((a, b) => a + b, 0) / Math.min(3, scores.length);
+    const older = scores.slice(3, 7);
+    if (older.length === 0) return 0;
+    const olderAvg = older.reduce((a, b) => a + b, 0) / older.length;
+    return Math.round(recent - olderAvg);
+  }, [checkIns]);
+
+  const weeklyPlansCompleted = useMemo(() => {
+    const today = new Date();
+    let count = 0;
+    for (let i = 0; i < 7; i++) {
+      const d = new Date(today);
+      d.setDate(d.getDate() - (6 - i));
+      const dateStr = d.toISOString().split('T')[0];
+      if (checkIns.some(c => c.date === dateStr) || pledges.some(p => p.date === dateStr)) count++;
+    }
+    return count;
+  }, [checkIns, pledges]);
+
+  const rebuildActionsCount = useMemo(() => rebuildData.habits.reduce((s, h) => s + (h.streak || 0), 0), [rebuildData.habits]);
+
+  const consistentCheckInDays = useMemo(() => {
+    const today = new Date();
+    let streak = 0;
+    for (let i = 0; i < 365; i++) {
+      const d = new Date(today);
+      d.setDate(d.getDate() - i);
+      const dateStr = d.toISOString().split('T')[0];
+      const has = checkIns.some(c => c.date === dateStr) || pledges.some(p => p.date === dateStr);
+      if (has) streak++;
+      else break;
+    }
+    return streak;
+  }, [checkIns, pledges]);
+
+  const badge7CheckIns = consistentCheckInDays >= 7;
+  const badge14NoCrisis = consistentCheckInDays >= 14 || crisisActivationsCount === 0;
+  const badge10Rebuild = rebuildActionsCount >= 10;
+
+  const planCompletedSet = useMemo(() => {
+    const set = new Set<string>();
+    checkIns.forEach(c => set.add(c.date));
+    pledges.forEach(p => set.add(p.date));
+    return set;
+  }, [checkIns, pledges]);
 
   return (
     <ScrollView
       style={styles.container}
       contentContainerStyle={styles.content}
       showsVerticalScrollIndicator={false}
-      testID="progress-screen"
+      testID="stability-timeline-screen"
     >
-      <Animated.View style={[styles.sobrietyHero, { transform: [{ scale: pulseAnim }] }]}>
-        <View style={styles.heroGlow} />
-        <View style={styles.heroInner}>
-          <Clock size={20} color={Colors.primary} />
-          <Text style={styles.heroLabel}>Time Reclaimed</Text>
-          <Text style={styles.heroDays}>{sobrietyData.days}</Text>
-          <Text style={styles.heroDaysLabel}>days sober</Text>
-          <View style={styles.heroMetaRow}>
-            {sobrietyData.years > 0 && (
-              <View style={styles.heroMetaItem}>
-                <Text style={styles.heroMetaValue}>{sobrietyData.years}</Text>
-                <Text style={styles.heroMetaLabel}>{sobrietyData.years === 1 ? 'year' : 'years'}</Text>
-              </View>
-            )}
-            {sobrietyData.months > 0 && (
-              <View style={styles.heroMetaItem}>
-                <Text style={styles.heroMetaValue}>{sobrietyData.months}</Text>
-                <Text style={styles.heroMetaLabel}>{sobrietyData.months === 1 ? 'month' : 'months'}</Text>
-              </View>
-            )}
-            <View style={styles.heroMetaItem}>
-              <Text style={styles.heroMetaValue}>{sobrietyData.weeks}</Text>
-              <Text style={styles.heroMetaLabel}>{sobrietyData.weeks === 1 ? 'week' : 'weeks'}</Text>
-            </View>
-          </View>
-        </View>
-      </Animated.View>
-
-      <View style={styles.reinforcementCard}>
-        <Sparkles size={16} color="#FFD54F" />
-        <Text style={styles.reinforcementText}>{reinforcementMessage}</Text>
+      <View style={styles.taglineCard}>
+        <Text style={styles.tagline}>You are building stability.</Text>
       </View>
 
-      <View style={styles.stageCard}>
-        <View style={styles.stageHeader}>
-          <Activity size={18} color={stage.color} />
-          <Text style={styles.stageTitle}>Recovery Stage</Text>
-        </View>
-        <Text style={[styles.stageName, { color: stage.color }]}>{stage.label}</Text>
-        <Text style={styles.stageDesc}>{stage.desc}</Text>
-        <View style={styles.stageProgressOuter}>
-          <View style={[styles.stageProgressFill, { width: `${stage.progress * 100}%`, backgroundColor: stage.color }]} />
-        </View>
-        {stage.nextStage && (
-          <Text style={styles.stageNext}>
-            Next: {stage.nextStage.label} ({stage.nextStage.minDays - daysSober} days away)
-          </Text>
+      <View style={styles.chartCard}>
+        <Text style={styles.chartTitle}>30-day stability</Text>
+        {stabilityScoresForChart.length >= 2 ? (
+          <StabilityTimelineLineChart
+            data={stabilityScoresForChart}
+            color={Colors.primary}
+            planCompletedSet={planCompletedSet}
+            relapseCount={relapseCount}
+            crisisCount={crisisActivationsCount}
+          />
+        ) : (
+          <View style={styles.emptyChart}>
+            <Text style={styles.emptyChartText}>Complete daily check-ins to see your stability over time.</Text>
+          </View>
         )}
       </View>
 
-      <View style={styles.metricsRow}>
-        <View style={[styles.metricCard, { flex: 1, marginRight: 8 }]}>
-          <View style={styles.metricHeader}>
-            <View style={[styles.metricIconBg, { backgroundColor: '#2EC4B620' }]}>
-              <Zap size={16} color={Colors.primary} />
-            </View>
-            <TrendIcon trend={stabilityData.trend} positiveDirection="up" />
+      <View style={styles.momentumCard}>
+        <Text style={styles.momentumTitle}>Momentum summary</Text>
+        <View style={styles.momentumRow}>
+          <View style={styles.momentumItem}>
+            <Text style={styles.momentumValue}>{sevenDayChange >= 0 ? '+' : ''}{sevenDayChange}</Text>
+            <Text style={styles.momentumLabel}>7-day change</Text>
           </View>
-          <Text style={styles.metricValuePhrase}>{getStabilityPhrase(stabilityScore)}</Text>
-          <Text style={styles.metricLabel}>Stability</Text>
+          <View style={styles.momentumDivider} />
+          <View style={styles.momentumItem}>
+            <Text style={styles.momentumValue}>{weeklyPlansCompleted}</Text>
+            <Text style={styles.momentumLabel}>Weekly plans completed</Text>
+          </View>
         </View>
-        <View style={[styles.metricCard, { flex: 1, marginLeft: 4, marginRight: 4 }]}>
-          <View style={styles.metricHeader}>
-            <View style={[styles.metricIconBg, { backgroundColor: '#66BB6A20' }]}>
-              <Heart size={16} color="#66BB6A" />
-            </View>
-            <TrendIcon trend={emotionalGrowth.trend} positiveDirection="up" />
+        <View style={styles.momentumRow}>
+          <View style={styles.momentumItem}>
+            <Text style={styles.momentumValue}>{crisisActivationsCount}</Text>
+            <Text style={styles.momentumLabel}>Crisis activations</Text>
           </View>
-          <Text style={styles.metricValuePhrase}>{getMoodPhrase(emotionalGrowth.avgMood)}</Text>
-          <Text style={styles.metricLabel}>Mood</Text>
-        </View>
-        <View style={[styles.metricCard, { flex: 1, marginLeft: 8 }]}>
-          <View style={styles.metricHeader}>
-            <View style={[styles.metricIconBg, { backgroundColor: '#EF535020' }]}>
-              <Brain size={16} color="#EF5350" />
-            </View>
-            <TrendIcon trend={triggerData.trend} positiveDirection="down" />
+          <View style={styles.momentumDivider} />
+          <View style={styles.momentumItem}>
+            <Text style={styles.momentumValue}>{relapseCount}</Text>
+            <Text style={styles.momentumLabel}>Setbacks (total)</Text>
           </View>
-          <Text style={styles.metricValuePhrase}>{getCravingsPhrase(triggerData.avgCraving)}</Text>
-          <Text style={styles.metricLabel}>Cravings</Text>
         </View>
       </View>
 
-      {hasFeature('advanced_analytics') ? (
-        <>
-          <View style={styles.chartCard}>
-            <View style={styles.chartHeader}>
-              <Heart size={16} color="#66BB6A" />
-              <Text style={styles.chartTitle}>Emotional Growth</Text>
-              <TrendIcon trend={emotionalGrowth.trend} positiveDirection="up" />
-            </View>
-            {emotionalGrowth.moods.length > 0 ? (
-              <MiniBarChart data={emotionalGrowth.moods} color="#66BB6A" maxVal={100} />
-            ) : (
-              <View style={styles.emptyChart}>
-                <Text style={styles.emptyChartText}>Complete daily check-ins to see trends</Text>
-              </View>
-            )}
+      <View style={styles.badgesCard}>
+        <Text style={styles.badgesTitle}>Milestones</Text>
+        <View style={styles.badgeRow}>
+          <View style={[styles.badgeIcon, badge7CheckIns && styles.badgeUnlocked]}>
+            <Activity size={20} color={badge7CheckIns ? '#4CAF50' : Colors.textMuted} />
           </View>
-
-          <View style={styles.chartCard}>
-            <View style={styles.chartHeader}>
-              <Brain size={16} color="#EF5350" />
-              <Text style={styles.chartTitle}>Trigger Reduction</Text>
-              <TrendIcon trend={triggerData.trend} positiveDirection="down" />
-            </View>
-            {triggerData.cravings.length > 0 ? (
-              <MiniBarChart data={triggerData.cravings} color="#EF5350" maxVal={100} />
-            ) : (
-              <View style={styles.emptyChart}>
-                <Text style={styles.emptyChartText}>Complete daily check-ins to see trends</Text>
-              </View>
-            )}
-          </View>
-
-          <View style={styles.chartCard}>
-            <View style={styles.chartHeader}>
-              <TrendingUp size={16} color={Colors.primary} />
-              <Text style={styles.chartTitle}>Stability Trend</Text>
-              <TrendIcon trend={stabilityData.trend} positiveDirection="up" />
-            </View>
-            {stabilityData.scores.length >= 2 ? (
-              <MiniLineChart data={stabilityData.scores} color={Colors.primary} />
-            ) : (
-              <View style={styles.emptyChart}>
-                <Text style={styles.emptyChartText}>Need at least 2 check-ins for trend</Text>
-              </View>
-            )}
-          </View>
-        </>
-      ) : (
-        <View style={styles.premiumGateCard}>
-          <PremiumSectionOverlay
-            feature="advanced_analytics"
-            title="Advanced Analytics"
-            description="Unlock detailed emotional growth charts, trigger reduction trends, and stability analysis to understand your recovery deeply."
-          />
+          <Text style={styles.badgeLabel}>7 days consistent check-ins</Text>
+          {badge7CheckIns ? <Text style={styles.badgeDone}>Done</Text> : <Text style={styles.badgeCount}>{consistentCheckInDays}/7</Text>}
         </View>
-      )}
-
-      <ProtectionReadingCard
-        stabilityScore={stabilityScore}
-        hasCheckIns={checkIns.length > 0}
-        onPress={() => {
-          Haptics.selectionAsync();
-          router.push('/relapse-detection' as any);
-        }}
-      />
-
-      <View style={trigStyles.card}>
-        <View style={trigStyles.headerStatic}>
-          <View style={[trigStyles.headerIconBg, { backgroundColor: triggerRiskColor + '18' }]}>
-            <Zap size={18} color={triggerRiskColor} />
+        <View style={styles.badgeRow}>
+          <View style={[styles.badgeIcon, badge14NoCrisis && styles.badgeUnlocked]}>
+            <Shield size={20} color={badge14NoCrisis ? '#4CAF50' : Colors.textMuted} />
           </View>
-          <Text style={trigStyles.headerTitle}>Trigger Patterns</Text>
+          <Text style={styles.badgeLabel}>14 days without crisis activation</Text>
+          {badge14NoCrisis ? <Text style={styles.badgeDone}>Done</Text> : <Text style={styles.badgeCount}>Building</Text>}
         </View>
-
-        <View style={trigStyles.patternsBody}>
-          {(profile.recoveryProfile?.triggers ?? []).length > 0 ? (
-            <View style={trigStyles.patternRow}>
-              <Text style={trigStyles.patternLabel}>Top triggers</Text>
-              <View style={trigStyles.triggerChips}>
-                {(profile.recoveryProfile?.triggers ?? []).slice(0, 5).map((trigger, idx) => (
-                  <View key={idx} style={trigStyles.triggerChip}>
-                    <View style={trigStyles.triggerChipDot} />
-                    <Text style={trigStyles.triggerChipText}>{trigger}</Text>
-                  </View>
-                ))}
-              </View>
-            </View>
-          ) : (
-            <View style={trigStyles.patternRow}>
-              <Text style={trigStyles.patternLabel}>Top triggers</Text>
-              <Text style={trigStyles.patternEmpty}>You can add triggers during onboarding or in settings.</Text>
-            </View>
-          )}
-
-          {highRiskTimes.length > 0 ? (
-            <View style={trigStyles.patternRow}>
-              <Text style={trigStyles.patternLabel}>Peak risk times</Text>
-              <View style={trigStyles.peakTimesList}>
-                {highRiskTimes.slice(0, 3).map((rt, idx) => (
-                  <View key={idx} style={trigStyles.peakTimeRow}>
-                    <View style={[trigStyles.riskTimeDot, { backgroundColor: rt.value > 70 ? '#EF5350' : '#FFC107' }]} />
-                    <Text style={trigStyles.peakTimeText}>{rt.day} {rt.time}</Text>
-                    <Text style={[trigStyles.peakTimePct, { color: rt.value > 70 ? '#EF5350' : '#FFC107' }]}>{Math.round(rt.value)}%</Text>
-                  </View>
-                ))}
-              </View>
-            </View>
-          ) : (
-            <View style={trigStyles.patternRow}>
-              <Text style={trigStyles.patternLabel}>Peak risk times</Text>
-              <Text style={trigStyles.patternEmpty}>Complete more check-ins to see when risk tends to rise.</Text>
-            </View>
-          )}
-
-          <Pressable
-            style={({ pressed }) => [trigStyles.fullAnalysisLink, pressed && { opacity: 0.8 }]}
-            onPress={() => {
-              Haptics.selectionAsync();
-              router.push('/(tabs)/triggers' as any);
-            }}
-            testID="progress-trigger-analysis-link"
-          >
-            <Text style={trigStyles.fullAnalysisLinkText}>View full trigger analysis</Text>
-            <ChevronRight size={18} color={Colors.primary} />
-          </Pressable>
+        <View style={styles.badgeRow}>
+          <View style={[styles.badgeIcon, badge10Rebuild && styles.badgeUnlocked]}>
+            <Zap size={20} color={badge10Rebuild ? '#4CAF50' : Colors.textMuted} />
+          </View>
+          <Text style={styles.badgeLabel}>10 rebuild actions completed</Text>
+          {badge10Rebuild ? <Text style={styles.badgeDone}>Done</Text> : <Text style={styles.badgeCount}>{rebuildActionsCount}/10</Text>}
         </View>
       </View>
 
       <Pressable
         style={styles.detectionLink}
-        onPress={() => {
-          Haptics.selectionAsync();
-          router.push('/retention-insights' as any);
-        }}
-        testID="progress-retention-insights-link"
-      >
-        <View style={styles.detectionLinkLeft}>
-          <View style={[styles.detectionLinkIcon, { backgroundColor: '#FFD54F15' }]}>
-            <Sparkles size={16} color="#FFD54F" />
-          </View>
-          <View>
-            <Text style={styles.detectionLinkTitle}>Recovery Insights</Text>
-            <Text style={styles.detectionLinkSub}>Emotional loops, micro-progress & confidence</Text>
-          </View>
-        </View>
-        <ChevronRight size={16} color={Colors.textMuted} />
-      </Pressable>
-
-      <Pressable
-        style={styles.detectionLink}
-        onPress={() => {
-          Haptics.selectionAsync();
-          router.push('/relapse-detection' as any);
-        }}
-        testID="progress-relapse-detection-link"
+        onPress={() => { Haptics.selectionAsync(); router.push('/relapse-detection' as any); }}
+        testID="timeline-relapse-detection-link"
       >
         <View style={styles.detectionLinkLeft}>
           <View style={styles.detectionLinkIcon}>
@@ -729,36 +508,125 @@ export default function ProgressScreen() {
           </View>
           <View>
             <Text style={styles.detectionLinkTitle}>How your protection is reading you</Text>
-            <Text style={styles.detectionLinkSub}>Patterns, factors & early support — when you want the details</Text>
+            <Text style={styles.detectionLinkSub}>Patterns and early support</Text>
           </View>
         </View>
         <ChevronRight size={16} color={Colors.textMuted} />
       </Pressable>
 
-      <View style={styles.summaryCard}>
-        <Text style={styles.summaryTitle}>Your Journey So Far</Text>
-        <View style={styles.summaryRow}>
-          <View style={styles.summaryItem}>
-            <Text style={styles.summaryValue}>{checkIns.length}</Text>
-            <Text style={styles.summaryLabel}>Check-ins</Text>
-          </View>
-          <View style={styles.summaryDivider} />
-          <View style={styles.summaryItem}>
-            <Text style={styles.summaryValue}>{journal.length}</Text>
-            <Text style={styles.summaryLabel}>Journal Entries</Text>
-          </View>
-          <View style={styles.summaryDivider} />
-          <View style={styles.summaryItem}>
-            <Text style={styles.summaryValue}>{currentStreak}</Text>
-            <Text style={styles.summaryLabel}>Day Streak</Text>
-          </View>
-        </View>
-      </View>
-
       <View style={{ height: 40 }} />
     </ScrollView>
   );
 }
+
+function StabilityTimelineLineChart({
+  data,
+  color,
+  planCompletedSet,
+  relapseCount,
+  crisisCount,
+}: {
+  data: number[];
+  color: string;
+  planCompletedSet: Set<string>;
+  relapseCount: number;
+  crisisCount: number;
+}) {
+  const points = data.length >= 2 ? data : [];
+  if (points.length < 2) {
+    return (
+      <View style={[chartStyles.container, { height: CHART_HEIGHT, alignItems: 'center', justifyContent: 'center' }]}>
+        <Text style={{ color: Colors.textMuted, fontSize: 12 }}>Need more data</Text>
+      </View>
+    );
+  }
+  const max = Math.max(...points, 1);
+  const min = Math.min(...points, 0);
+  const range = max - min || 1;
+  const stepX = CHART_WIDTH / (points.length - 1);
+  const today = new Date();
+
+  return (
+    <View style={[chartStyles.container, { height: CHART_HEIGHT + 24 }]}>
+      <View style={{ height: CHART_HEIGHT, width: CHART_WIDTH, position: 'relative' }}>
+        {points.map((val, i) => {
+          if (i === points.length - 1) return null;
+          const x1 = i * stepX;
+          const y1 = CHART_HEIGHT - ((val - min) / range) * (CHART_HEIGHT - 8) - 4;
+          const x2 = (i + 1) * stepX;
+          const y2 = CHART_HEIGHT - ((points[i + 1] - min) / range) * (CHART_HEIGHT - 8) - 4;
+          const dx = x2 - x1;
+          const dy = y2 - y1;
+          const length = Math.sqrt(dx * dx + dy * dy);
+          const angle = Math.atan2(dy, dx) * (180 / Math.PI);
+          return (
+            <View
+              key={`line-${i}`}
+              style={{
+                position: 'absolute',
+                left: x1,
+                top: y1,
+                width: length,
+                height: 2.5,
+                backgroundColor: color,
+                borderRadius: 1.5,
+                transform: [{ rotate: `${angle}deg` }],
+                transformOrigin: 'left center',
+                opacity: 0.8,
+              }}
+            />
+          );
+        })}
+        {points.map((val, i) => {
+          const x = i * stepX;
+          const y = CHART_HEIGHT - ((val - min) / range) * (CHART_HEIGHT - 8) - 4;
+          const dayOffset = points.length - 1 - i;
+          const d = new Date(today);
+          d.setDate(d.getDate() - dayOffset);
+          const dateStr = d.toISOString().split('T')[0];
+          const planDone = planCompletedSet.has(dateStr);
+          return (
+            <View key={`dot-${i}`}>
+              <View
+                style={{
+                  position: 'absolute',
+                  left: x - 4,
+                  top: y - 4,
+                  width: 8,
+                  height: 8,
+                  borderRadius: 4,
+                  backgroundColor: i === points.length - 1 ? color : 'transparent',
+                  borderWidth: 2,
+                  borderColor: color,
+                }}
+              />
+              {planDone && (
+                <View
+                  style={{
+                    position: 'absolute',
+                    left: x - 5,
+                    top: CHART_HEIGHT - 2,
+                    width: 10,
+                    height: 10,
+                    borderRadius: 5,
+                    backgroundColor: '#4CAF50',
+                  }}
+                />
+              )}
+            </View>
+          );
+        })}
+      </View>
+      <View style={[chartStyles.labelsRow, { marginTop: 8 }]}>
+        <Text style={chartStyles.label}>30d ago</Text>
+        <Text style={[chartStyles.label, { flex: 1, textAlign: 'center' }]}>Stability score</Text>
+        <Text style={chartStyles.label}>Today</Text>
+      </View>
+    </View>
+  );
+}
+
+export default StabilityTimelineScreen;
 
 const chartStyles = StyleSheet.create({
   container: {
@@ -870,6 +738,20 @@ const styles = StyleSheet.create({
   content: {
     padding: 20,
     paddingBottom: 100,
+  },
+  taglineCard: {
+    backgroundColor: Colors.cardBackground,
+    borderRadius: 16,
+    padding: 18,
+    marginBottom: 14,
+    borderWidth: 0.5,
+    borderColor: Colors.border,
+  },
+  tagline: {
+    fontSize: 16,
+    fontWeight: '600' as const,
+    color: Colors.text,
+    textAlign: 'center',
   },
   sobrietyHero: {
     borderRadius: 20,
@@ -1064,6 +946,90 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   emptyChartText: {
+    fontSize: 12,
+    color: Colors.textMuted,
+  },
+  momentumCard: {
+    backgroundColor: Colors.cardBackground,
+    borderRadius: 16,
+    padding: 18,
+    marginBottom: 14,
+    borderWidth: 0.5,
+    borderColor: Colors.border,
+  },
+  momentumTitle: {
+    fontSize: 15,
+    fontWeight: '600' as const,
+    color: Colors.text,
+    marginBottom: 14,
+  },
+  momentumRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  momentumItem: {
+    flex: 1,
+    alignItems: 'center',
+  },
+  momentumValue: {
+    fontSize: 18,
+    fontWeight: '700' as const,
+    color: Colors.primary,
+  },
+  momentumLabel: {
+    fontSize: 11,
+    color: Colors.textMuted,
+    marginTop: 2,
+  },
+  momentumDivider: {
+    width: 1,
+    height: 28,
+    backgroundColor: Colors.border,
+  },
+  badgesCard: {
+    backgroundColor: Colors.cardBackground,
+    borderRadius: 16,
+    padding: 18,
+    marginBottom: 14,
+    borderWidth: 0.5,
+    borderColor: Colors.border,
+  },
+  badgesTitle: {
+    fontSize: 15,
+    fontWeight: '600' as const,
+    color: Colors.text,
+    marginBottom: 14,
+  },
+  badgeRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 12,
+    gap: 12,
+  },
+  badgeIcon: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: Colors.surface,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  badgeUnlocked: {
+    backgroundColor: Colors.primary + '18',
+  },
+  badgeLabel: {
+    flex: 1,
+    fontSize: 14,
+    color: Colors.text,
+    fontWeight: '500' as const,
+  },
+  badgeDone: {
+    fontSize: 12,
+    fontWeight: '600' as const,
+    color: '#4CAF50',
+  },
+  badgeCount: {
     fontSize: 12,
     color: Colors.textMuted,
   },

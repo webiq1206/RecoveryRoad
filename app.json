@@ -1,7 +1,7 @@
 {
   "expo": {
     "name": "Recovery Companion",
-    "slug": "recovery-companion",
+    "slug": "recovery-companion-app-clone",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",

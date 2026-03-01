@@ -65,9 +65,12 @@ async function checkBiometricAvailability(): Promise<boolean> {
 }
 
 async function authenticateWithBiometric(): Promise<boolean> {
-  if (Platform.OS === 'web') return false;
+  if (Platform.OS !== 'ios' && Platform.OS !== 'android') {
+    return false;
+  }
+
   try {
-    const LocalAuth = await import('expo-local-authentication');
+    const LocalAuth = require('expo-local-authentication');
     const result = await LocalAuth.authenticateAsync({
       promptMessage: 'Verify your identity',
       cancelLabel: 'Use PIN',

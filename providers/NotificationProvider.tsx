@@ -4,6 +4,10 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { Platform, AppState } from 'react-native';
 import * as Notifications from 'expo-notifications';
+import Constants from 'expo-constants';
+
+const isExpoGo =
+  Constants.executionEnvironment === 'storeClient';
 import {
   BehavioralNotificationState,
   BehavioralNotificationRecord,
@@ -23,8 +27,7 @@ import {
 } from '@/constants/notifications';
 
 const STORAGE_KEY = 'behavioral_notification_state';
-
-if (Platform.OS !== 'web') {
+if (Platform.OS !== 'web' && !isExpoGo) {
   Notifications.setNotificationHandler({
     handleNotification: async () => ({
       shouldShowAlert: true,
@@ -234,6 +237,7 @@ export const [NotificationProvider, useNotifications] = createContextHook(() => 
 
   useEffect(() => {
     const init = async () => {
+      if (isExpoGo) return;
       const granted = await requestPermissions();
       if (granted) {
         await setupNotificationChannel();
@@ -247,7 +251,7 @@ export const [NotificationProvider, useNotifications] = createContextHook(() => 
   }, []);
 
   useEffect(() => {
-    if (Platform.OS === 'web') return;
+    if (Platform.OS === 'web' || isExpoGo) return;
 
     const responseSubscription = Notifications.addNotificationResponseReceivedListener(response => {
       console.log('[Notifications] User tapped notification:', response.notification.request.identifier);

@@ -86,6 +86,7 @@ export default function OnboardingScreen() {
   const progressAnim = useRef(new Animated.Value(0)).current;
 
   const [step, setStep] = useState<number>(0);
+  const [hasStarted, setHasStarted] = useState<boolean>(false);
   const [name, setName] = useState<string>('');
   const [isAnonymous, setIsAnonymous] = useState<boolean>(false);
   const [addictions, setAddictions] = useState<string[]>([]);
@@ -518,6 +519,62 @@ export default function OnboardingScreen() {
     }
   };
 
+  if (!hasStarted) {
+    return (
+      <View style={[styles.container, { paddingTop: insets.top + 12, paddingBottom: insets.bottom + 16 }]}>
+        <ScrollView
+          style={styles.stepContent}
+          showsVerticalScrollIndicator={false}
+          contentContainerStyle={styles.optionsListContent}
+        >
+          <View style={styles.heroContainer}>
+            <Image
+              source={require('@/assets/images/app-icon.png')}
+              style={styles.heroAppIcon}
+              resizeMode="contain"
+            />
+          </View>
+          <Text style={styles.heroAppName}>Recovery Companion</Text>
+          <Text style={styles.heroTitle}>{ONBOARDING_COPY.hero.title}</Text>
+          <Text style={styles.heroSubtitle}>
+            {ONBOARDING_COPY.hero.subtitle}
+          </Text>
+          <View style={styles.trustBadges}>
+            <View style={styles.trustItem}>
+              <Lock size={14} color={Colors.primary} />
+              <Text style={styles.trustText}>Private & encrypted</Text>
+            </View>
+            <View style={styles.trustItem}>
+              <EyeOff size={14} color={Colors.primary} />
+              <Text style={styles.trustText}>Anonymous option</Text>
+            </View>
+          </View>
+        </ScrollView>
+
+        <View style={styles.bottomRow}>
+          <Pressable
+            style={styles.nextBtn}
+            onPress={() => {
+              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+              setHasStarted(true);
+            }}
+            testID="begin-setup-btn"
+          >
+            <LinearGradient
+              colors={[Colors.primary, Colors.primaryDark]}
+              style={styles.nextBtnGradient}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 0 }}
+            >
+              <Text style={styles.nextText}>{ONBOARDING_COPY.hero.cta}</Text>
+              <ChevronRight size={18} color={Colors.white} />
+            </LinearGradient>
+          </Pressable>
+        </View>
+      </View>
+    );
+  }
+
   return (
     <View style={[styles.container, { paddingTop: insets.top + 12, paddingBottom: insets.bottom + 16 }]}>
       <View style={styles.progressBarContainer}>
@@ -559,7 +616,7 @@ export default function OnboardingScreen() {
               end={{ x: 1, y: 0 }}
             >
               <Text style={[styles.nextText, !canProceed() && styles.nextTextDisabled]}>
-                {step === 0 ? ONBOARDING_COPY.hero.cta : 'Continue'}
+                {step === 0 ? 'Continue' : 'Continue'}
               </Text>
               <ChevronRight size={18} color={canProceed() ? Colors.white : Colors.textMuted} />
             </LinearGradient>

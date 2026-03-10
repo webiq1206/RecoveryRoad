@@ -59,7 +59,7 @@ bun run start -- --ios
 
 This project is built with the most popular native mobile cross-platform technical stack:
 
-- **React Native** - Cross-platform native mobile development framework created by Meta and used for Instagram, Airbnb, and lots of top apps in the App Store
+- **React Native** - Cross-platform native mobile development framework created by Meta and used by Instagram, Airbnb, and lots of top apps in the App Store
 - **Expo** - Extension of React Native + platform used by Discord, Shopify, Coinbase, Telsa, Starlink, Eightsleep, and more
 - **Expo Router** - File-based routing system for React Native with support for web, server functions and SSR
 - **TypeScript** - Type-safe JavaScript
@@ -296,7 +296,7 @@ For mobile apps, you'll configure your app's deep linking scheme in `app.json`.
 ### **App not loading on device?**
 
 1. Make sure your phone and computer are on the same WiFi network
-2. Try using tunnel mode: `bun start -- --tunnel`
+2. Try using tunnel mode: `bun run start -- --tunnel`
 3. Check if your firewall is blocking the connection
 
 ### **Build failing?**

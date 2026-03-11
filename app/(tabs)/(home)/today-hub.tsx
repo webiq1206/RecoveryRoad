@@ -16,6 +16,7 @@ import * as Haptics from 'expo-haptics';
 import Colors from '@/constants/colors';
 import { useRecovery } from '@/providers/RecoveryProvider';
 import { useRiskPrediction } from '@/providers/RiskPredictionProvider';
+import { useStageDetection } from '@/providers/StageDetectionProvider';
 import { HomeLoadingSkeleton } from '@/components/LoadingSkeleton';
 import { RecoveryStabilityPanel } from '@/components/RecoveryStabilityPanel';
 import { calculateStability } from '@/utils/stabilityEngine';
@@ -69,6 +70,7 @@ export default function TodayHubScreen() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const { profile, isLoading, checkIns } = useRecovery();
+  const { currentStage, currentProgram } = useStageDetection();
   const {
     riskCategory,
     riskLabel,
@@ -109,14 +111,16 @@ export default function TodayHubScreen() {
       generateTodayPlan({
         stabilityScore: stabilityResult.score,
         relapseRisk: riskCategory,
-        recoveryStage: profile.recoveryProfile.recoveryStage,
+        recoveryStage: currentStage ?? profile.recoveryProfile.recoveryStage,
         missedEngagementScore: missedEngagement,
         triggerRiskScore: currentPrediction?.triggerRisk ?? 0,
+        stageProgramDay: currentProgram?.day,
+        stageProgramDuration: currentProgram?.duration,
       }),
     [
       stabilityResult.score,
       riskCategory,
-      profile.recoveryProfile.recoveryStage,
+      currentStage,
       missedEngagement,
       currentPrediction?.triggerRisk,
     ],

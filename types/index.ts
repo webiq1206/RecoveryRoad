@@ -790,6 +790,12 @@ export interface StageConfig {
   interventionTiming: 'immediate' | 'proactive' | 'scheduled' | 'on_demand';
   accentColor: string;
   iconName: string;
+  program: {
+    durationDays: number;
+    weeklyObjectives: string[];
+    recommendedExercises: string[];
+    dailyPractices: string[];
+  };
 }
 
 export interface StageDetectionData {

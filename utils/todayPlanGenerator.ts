@@ -27,7 +27,112 @@ export type TodayPlanInput = {
   recoveryStage: RecoveryStage;
   missedEngagementScore: number; // 0–100, higher = more missed actions
   triggerRiskScore: number; // 0–100, higher = more trigger exposure
+  stageProgramDay?: number; // 1-based day in current stage program
+  stageProgramDuration?: number; // total days in current stage program
 };
+
+function addActionIfMissing(
+  list: TodayPlanAction[],
+  action: TodayPlanAction,
+): void {
+  if (!list.find(a => a.id === action.id)) {
+    list.push(action);
+  }
+}
+
+function applyStageProgramActions(
+  input: TodayPlanInput,
+  priorityActions: TodayPlanAction[],
+  optionalActions: TodayPlanAction[],
+): void {
+  const { recoveryStage, stageProgramDay, stageProgramDuration } = input;
+  if (!stageProgramDay || !stageProgramDuration || stageProgramDuration <= 0) {
+    return;
+  }
+
+  const day = Math.min(stageProgramDay, stageProgramDuration);
+  const weekIndex = Math.floor((day - 1) / 7); // 0-based
+
+  if (recoveryStage === 'crisis') {
+    addActionIfMissing(priorityActions, {
+      id: 'crisis-program-grounding',
+      title: 'Crisis grounding block',
+      subtitle: 'Spend a few focused minutes with safety and grounding tools.',
+      route: '/crisis-mode',
+      kind: 'crisis',
+    });
+
+    if (weekIndex >= 0) {
+      addActionIfMissing(optionalActions, {
+        id: 'crisis-program-support-contact',
+        title: 'Safe support touchpoint',
+        subtitle: 'Send a brief text or call to one safe person.',
+        route: '/emergency',
+        kind: 'connection',
+      });
+    }
+  } else if (recoveryStage === 'stabilize') {
+    addActionIfMissing(priorityActions, {
+      id: 'stabilize-program-checkin',
+      title: 'Daily stabilize check-in',
+      subtitle: 'Lock in a simple check-in rhythm while things settle.',
+      route: '/daily-checkin',
+      kind: 'awareness',
+    });
+
+    if (weekIndex >= 1) {
+      addActionIfMissing(priorityActions, {
+        id: 'stabilize-program-trigger-review',
+        title: 'Identify today’s triggers',
+        subtitle: 'Name one trigger and decide how you’ll handle it.',
+        route: '/(tabs)/triggers',
+        kind: 'awareness',
+      });
+    }
+
+    addActionIfMissing(optionalActions, {
+      id: 'stabilize-program-sleep-step',
+      title: 'One sleep-supporting choice',
+      subtitle: 'Choose a small change tonight that gives your brain rest.',
+      route: '/daily-checkin',
+      kind: 'coping',
+    });
+  } else if (recoveryStage === 'rebuild') {
+    addActionIfMissing(priorityActions, {
+      id: 'rebuild-program-routine',
+      title: 'Rebuild routine block',
+      subtitle: 'Complete one routine block that supports the life you’re building.',
+      route: '/(tabs)/rebuild',
+      kind: 'growth',
+    });
+
+    if (weekIndex >= 1) {
+      addActionIfMissing(optionalActions, {
+        id: 'rebuild-program-habit',
+        title: 'Practice a replacement habit',
+        subtitle: 'Swap one old pattern for a healthier habit in a real moment.',
+        route: '/(tabs)/rebuild',
+        kind: 'growth',
+      });
+    }
+  } else if (recoveryStage === 'maintain') {
+    addActionIfMissing(priorityActions, {
+      id: 'maintain-program-connection',
+      title: 'Protective connection moment',
+      subtitle: 'Invest a few minutes in a relationship that protects your recovery.',
+      route: '/(tabs)/community',
+      kind: 'connection',
+    });
+
+    addActionIfMissing(optionalActions, {
+      id: 'maintain-program-scan',
+      title: 'Quick early-warning scan',
+      subtitle: 'Check stress, sleep, and isolation so you catch small shifts early.',
+      route: '/recovery-snapshot',
+      kind: 'awareness',
+    });
+  }
+}
 
 function getStabilityBand(score: number): 'high' | 'medium' | 'low' {
   if (score > 70) return 'high';
@@ -236,6 +341,8 @@ export function generateTodayPlan(input: TodayPlanInput): TodayPlan {
       kind: 'awareness',
     });
   }
+
+  applyStageProgramActions(input, priorityActions, optionalActions);
 
   return {
     priorityActions,

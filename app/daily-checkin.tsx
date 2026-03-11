@@ -18,7 +18,7 @@ import Colors from '@/constants/colors';
 import { useRecovery } from '@/providers/RecoveryProvider';
 import { calculateStability } from '@/utils/stabilityEngine';
 import { useRetention } from '@/providers/RetentionProvider';
-import { DailyCheckIn, CheckInTimeOfDay } from '@/types';
+import { DailyCheckIn, CheckInTimeOfDay, EmotionalTag } from '@/types';
 import {
   getRecoveryStage,
   getRiskLevel,
@@ -46,6 +46,15 @@ const METRICS: SliderMetric[] = [
   { key: 'sleepQuality', label: 'Sleep', icon: <Moon size={18} color="#7C8CF8" />, color: '#7C8CF8', lowLabel: 'Poor', highLabel: 'Restful' },
   { key: 'environment', label: 'Environment', icon: <MapPin size={18} color="#2EC4B6" />, color: '#2EC4B6', lowLabel: 'Risky', highLabel: 'Safe' },
   { key: 'emotionalState', label: 'Emotions', icon: <Brain size={18} color="#CE93D8" />, color: '#CE93D8', lowLabel: 'Unstable', highLabel: 'Balanced' },
+];
+
+const EMOTIONAL_TAGS: { key: EmotionalTag; label: string; helper: string }[] = [
+  { key: 'anxious', label: 'Anxious', helper: 'on edge, keyed up, worried' },
+  { key: 'lonely', label: 'Lonely', helper: 'disconnected, unseen, isolated' },
+  { key: 'ashamed', label: 'Ashamed', helper: 'guilty, embarrassed, self-blaming' },
+  { key: 'angry', label: 'Angry', helper: 'irritated, resentful, frustrated' },
+  { key: 'hopeful', label: 'Hopeful', helper: 'light, optimistic, possibility' },
+  { key: 'numb', label: 'Numb', helper: 'shut down, flat, checked out' },
 ];
 
 const PERIOD_CONFIG: Record<CheckInTimeOfDay, { label: string; icon: React.ReactNode; color: string; greeting: string }> = {
@@ -348,6 +357,8 @@ export default function DailyCheckInScreen() {
     environment: 50,
     emotionalState: 50,
   });
+  const [selectedTags, setSelectedTags] = useState<EmotionalTag[]>([]);
+  const [phase, setPhase] = useState<'metrics' | 'tags'>('metrics');
   const [submitted, setSubmitted] = useState(false);
   const [reflection, setReflection] = useState('');
   const [emotionalNote, setEmotionalNote] = useState('');
@@ -397,7 +408,26 @@ export default function DailyCheckInScreen() {
 
   const periodConfig = PERIOD_CONFIG[currentCheckInPeriod];
 
+  const handleToggleTag = useCallback((tag: EmotionalTag) => {
+    setSelectedTags((prev) => {
+      const exists = prev.includes(tag);
+      if (exists) {
+        return prev.filter((t) => t !== tag);
+      }
+      if (prev.length >= 3) {
+        return prev;
+      }
+      return [...prev, tag];
+    });
+  }, []);
+
   const handleSubmit = useCallback(() => {
+    if (phase === 'metrics') {
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+      setPhase('tags');
+      return;
+    }
+
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
 
     const score = stabilityScore;
@@ -419,6 +449,7 @@ export default function DailyCheckInScreen() {
       stabilityScore: score,
       reflection: ref,
       completedAt: new Date().toISOString(),
+      emotionalTags: selectedTags.length ? selectedTags : undefined,
     };
 
     console.log('[CheckIn] Submitted for period:', currentCheckInPeriod, checkIn);
@@ -431,7 +462,7 @@ export default function DailyCheckInScreen() {
       Animated.timing(resultSlide, { toValue: 0, duration: 500, useNativeDriver: true }),
       Animated.spring(scoreScale, { toValue: 1, friction: 4, tension: 60, useNativeDriver: true }),
     ]).start();
-  }, [stabilityScore, values, addCheckIn, currentCheckInPeriod]);
+  }, [phase, stabilityScore, values, checkIns, daysSober, currentCheckInPeriod, selectedTags, addCheckIn, triggerReliefLoop, resultFade, resultSlide, scoreScale]);
 
   const handleClose = useCallback(() => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
@@ -678,34 +709,73 @@ export default function DailyCheckInScreen() {
           })}
         </View>
 
-        <Text style={styles.prompt}>{periodConfig.greeting}. How are you?</Text>
-        <Text style={styles.promptSub}>
-          {isMorning
-            ? 'Slide to adjust each area. Be honest \u2014 this is just for you.'
-            : 'Sleep carries over from your morning check-in. Adjust the rest.'}
-        </Text>
+        {phase === 'metrics' ? (
+          <>
+            <Text style={styles.prompt}>{periodConfig.greeting}. How are you?</Text>
+            <Text style={styles.promptSub}>
+              {isMorning
+                ? 'Slide to adjust each area. Be honest \u2014 this is just for you.'
+                : 'Sleep carries over from your morning check-in. Adjust the rest.'}
+            </Text>
 
-        <View style={styles.liveScore}>
-          <Text style={styles.liveScoreLabel}>Stability</Text>
-          <Text style={[styles.liveScoreValue, { color: getScoreColor(stabilityScore) }]}>
-            {stabilityScore}
-          </Text>
-        </View>
+            <View style={styles.liveScore}>
+              <Text style={styles.liveScoreLabel}>Stability</Text>
+              <Text style={[styles.liveScoreValue, { color: getScoreColor(stabilityScore) }]}>
+                {stabilityScore}
+              </Text>
+            </View>
 
-        <View style={styles.slidersContainer}>
-          {METRICS.map((metric) => {
-            const isSleepAndLocked = metric.key === 'sleepQuality' && sleepLocked;
-            return (
-              <CustomSlider
-                key={metric.key}
-                metric={metric}
-                value={values[metric.key]}
-                onValueChange={(val) => handleValueChange(metric.key, val)}
-                locked={isSleepAndLocked}
-              />
-            );
-          })}
-        </View>
+            <View style={styles.slidersContainer}>
+              {METRICS.map((metric) => {
+                const isSleepAndLocked = metric.key === 'sleepQuality' && sleepLocked;
+                return (
+                  <CustomSlider
+                    key={metric.key}
+                    metric={metric}
+                    value={values[metric.key]}
+                    onValueChange={(val) => handleValueChange(metric.key, val)}
+                    locked={isSleepAndLocked}
+                  />
+                );
+              })}
+            </View>
+          </>
+        ) : (
+          <View style={styles.tagsStepContainer}>
+            <Text style={styles.prompt}>Which emotions stand out right now?</Text>
+            <Text style={styles.promptSub}>
+              Pick up to three. This helps your companion notice emotional patterns over time.
+            </Text>
+
+            <View style={styles.tagsGrid}>
+              {EMOTIONAL_TAGS.map((tag) => {
+                const isSelected = selectedTags.includes(tag.key);
+                return (
+                  <Pressable
+                    key={tag.key}
+                    onPress={() => handleToggleTag(tag.key)}
+                    style={({ pressed }) => [
+                      styles.tagChip,
+                      isSelected && styles.tagChipSelected,
+                      pressed && { opacity: 0.85, transform: [{ scale: 0.97 }] },
+                    ]}
+                  >
+                    <Text style={[styles.tagChipLabel, isSelected && styles.tagChipLabelSelected]}>
+                      {tag.label}
+                    </Text>
+                    <Text style={[styles.tagChipHelper, isSelected && styles.tagChipHelperSelected]}>
+                      {tag.helper}
+                    </Text>
+                  </Pressable>
+                );
+              })}
+            </View>
+
+            <Text style={styles.tagsFooterText}>
+              You can skip this if nothing fits. Your honesty here helps the app learn when to step in supportively.
+            </Text>
+          </View>
+        )}
       </Animated.ScrollView>
 
       <View style={[styles.submitBar, { paddingBottom: insets.bottom + 16 }]}>
@@ -714,7 +784,9 @@ export default function DailyCheckInScreen() {
           onPress={handleSubmit}
           testID="checkin-submit"
         >
-          <Text style={styles.submitButtonText}>Complete {periodConfig.label} Check-In</Text>
+          <Text style={styles.submitButtonText}>
+            {phase === 'metrics' ? 'Next: Tag Emotions' : `Complete ${periodConfig.label} Check-In`}
+          </Text>
           <ChevronRight size={20} color={Colors.white} />
         </Pressable>
       </View>
@@ -822,6 +894,50 @@ const styles = StyleSheet.create({
   },
   slidersContainer: {
     gap: 4,
+  },
+  tagsStepContainer: {
+    marginTop: 12,
+  },
+  tagsGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 10,
+  },
+  tagChip: {
+    flexBasis: '48%',
+    backgroundColor: Colors.cardBackground,
+    borderRadius: 14,
+    paddingVertical: 10,
+    paddingHorizontal: 12,
+    borderWidth: 0.5,
+    borderColor: Colors.border,
+  },
+  tagChipSelected: {
+    backgroundColor: 'rgba(124, 140, 248, 0.12)',
+    borderColor: '#7C8CF8',
+  },
+  tagChipLabel: {
+    fontSize: 14,
+    fontWeight: '600' as const,
+    color: Colors.text,
+    marginBottom: 4,
+  },
+  tagChipLabelSelected: {
+    color: '#7C8CF8',
+  },
+  tagChipHelper: {
+    fontSize: 11,
+    color: Colors.textSecondary,
+    lineHeight: 16,
+  },
+  tagChipHelperSelected: {
+    color: Colors.text,
+  },
+  tagsFooterText: {
+    fontSize: 12,
+    color: Colors.textSecondary,
+    marginTop: 16,
+    lineHeight: 18,
   },
   submitBar: {
     position: 'absolute',

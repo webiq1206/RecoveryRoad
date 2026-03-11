@@ -171,6 +171,14 @@ export interface PrivateGroup {
 
 export type CheckInTimeOfDay = 'morning' | 'afternoon' | 'evening';
 
+export type EmotionalTag =
+  | 'anxious'
+  | 'lonely'
+  | 'ashamed'
+  | 'angry'
+  | 'hopeful'
+  | 'numb';
+
 export interface DailyCheckIn {
   id: string;
   date: string;
@@ -184,6 +192,7 @@ export interface DailyCheckIn {
   stabilityScore: number;
   reflection: string;
   completedAt: string;
+  emotionalTags?: EmotionalTag[];
 }
 
 export interface TrustedContact {

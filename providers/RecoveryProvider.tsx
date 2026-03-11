@@ -37,6 +37,11 @@ const DEFAULT_RECOVERY_PROFILE: RecoveryProfile = {
   riskScore: 50,
   interventionIntensity: 'moderate',
   baselineStabilityScore: 50,
+  baselineStability: 50,
+  relapseRiskLevel: 'moderate',
+  emotionalBaseline: 3,
+  cravingBaseline: 3,
+  supportLevel: 'medium',
 };
 
 const DEFAULT_PROFILE: UserProfile = {

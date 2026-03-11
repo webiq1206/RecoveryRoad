@@ -21,6 +21,13 @@ export interface RecoveryProfile {
   riskScore: number;
   interventionIntensity: 'low' | 'moderate' | 'high' | 'critical';
   baselineStabilityScore: number;
+
+  // Onboarding recovery assessment fields
+  baselineStability?: number;
+  relapseRiskLevel?: 'low' | 'moderate' | 'high' | 'critical';
+  emotionalBaseline?: number;
+  cravingBaseline?: number;
+  supportLevel?: 'low' | 'medium' | 'high';
 }
 
 export type TimelineEventType = 'relapse' | 'crisis_activation';

@@ -20,144 +20,49 @@ import { HomeLoadingSkeleton } from '@/components/LoadingSkeleton';
 import { RecoveryStabilityPanel } from '@/components/RecoveryStabilityPanel';
 import { calculateStability } from '@/utils/stabilityEngine';
 import type { StabilityZoneId } from '@/components/RecoveryStabilityPanel';
+import {
+  generateTodayPlan,
+  type TodayPlan,
+  type TodayPlanAction,
+} from '@/utils/todayPlanGenerator';
 
-type TodayPlanAction = {
-  id: string;
-  title: string;
-  subtitle: string;
-  route: string;
-  icon: React.ComponentType<{ size?: number; color?: string }>;
-  emphasis?: 'primary' | 'secondary';
+type IconComponent = React.ComponentType<{ size?: number; color?: string }>;
+
+type UiTodayPlanAction = TodayPlanAction & {
+  icon: IconComponent;
 };
 
-type TodayPlan = {
-  zoneId: StabilityZoneId;
-  actions: TodayPlanAction[];
+type UiTodayPlan = TodayPlan & {
+  priorityActions: UiTodayPlanAction[];
+  optionalActions: UiTodayPlanAction[];
 };
 
-function getStabilityZoneId(score: number): StabilityZoneId {
-  if (score >= 70) return 'green';
-  if (score >= 50) return 'yellow';
-  if (score >= 30) return 'orange';
-  return 'red';
-}
+const ACTION_ICON_MAP: Record<string, IconComponent> = {
+  'daily-checkin': Sun,
+  'grounding-checkin': Sun,
+  'rebuild-step': BookOpenCheck,
+  'connection-touchpoint': Users,
+  'supportive-connection': Users,
+  'trigger-review': AlertTriangle,
+  'trigger-planning': AlertTriangle,
+  'coping-exercise': Brain,
+  'brief-journal': Brain,
+  'crisis-tools': AlertTriangle,
+  'reach-out-support': PhoneCall,
+  'relapse-plan': BookOpenCheck,
+};
 
-function buildTodayPlan(zoneId: StabilityZoneId): TodayPlan {
-  switch (zoneId) {
-    case 'green':
-      return {
-        zoneId,
-        actions: [
-          {
-            id: 'checkin',
-            title: 'Daily check-in',
-            subtitle: 'Lock in what\'s working today.',
-            route: '/daily-checkin',
-            icon: Sun,
-            emphasis: 'primary',
-          },
-          {
-            id: 'rebuild',
-            title: 'One rebuild action',
-            subtitle: 'Take one step toward your next milestone.',
-            route: '/(tabs)/rebuild',
-            icon: BookOpenCheck,
-          },
-          {
-            id: 'connection',
-            title: 'Connection touchpoint',
-            subtitle: 'Reach out to one safe person or community space.',
-            route: '/(tabs)/community',
-            icon: Users,
-          },
-        ],
-      };
-    case 'yellow':
-      return {
-        zoneId,
-        actions: [
-          {
-            id: 'checkin',
-            title: 'Grounding check-in',
-            subtitle: 'Name how you are and what you need.',
-            route: '/daily-checkin',
-            icon: Sun,
-            emphasis: 'primary',
-          },
-          {
-            id: 'coping',
-            title: 'Coping exercise',
-            subtitle: 'Use a quick grounding practice to settle your system.',
-            route: '/crisis-mode',
-            icon: Brain,
-          },
-          {
-            id: 'triggers',
-            title: 'Trigger review',
-            subtitle: 'Plan around one situation that could pull you off track.',
-            route: '/(tabs)/triggers',
-            icon: AlertTriangle,
-          },
-        ],
-      };
-    case 'orange':
-      return {
-        zoneId,
-        actions: [
-          {
-            id: 'stability-checkin',
-            title: 'Stability check-in',
-            subtitle: 'Slow down, breathe, and get honest with yourself.',
-            route: '/daily-checkin',
-            icon: Sun,
-            emphasis: 'primary',
-          },
-          {
-            id: 'support',
-            title: 'Ask for support',
-            subtitle: 'Text or call someone in your support circle.',
-            route: '/emergency',
-            icon: PhoneCall,
-          },
-          {
-            id: 'crisis-tools',
-            title: 'Stability tools',
-            subtitle: 'Use grounding and safety tools before urges rise further.',
-            route: '/crisis-mode',
-            icon: Heart,
-          },
-        ],
-      };
-    case 'red':
-    default:
-      return {
-        zoneId: 'red',
-        actions: [
-          {
-            id: 'crisis',
-            title: 'Crisis Mode',
-            subtitle: 'You are not alone. Go to safety tools now.',
-            route: '/crisis-mode',
-            icon: AlertTriangle,
-            emphasis: 'primary',
-          },
-          {
-            id: 'call-support',
-            title: 'Call support contact',
-            subtitle: 'Reach out to a trusted person or professional.',
-            route: '/emergency',
-            icon: PhoneCall,
-          },
-          {
-            id: 'grounding',
-            title: 'Grounding exercise',
-            subtitle: 'Use a short exercise to ride this wave.',
-            route: '/crisis-mode',
-            icon: Brain,
-          },
-        ],
-      };
-  }
+function attachIcons(plan: TodayPlan): UiTodayPlan {
+  const mapAction = (action: TodayPlanAction): UiTodayPlanAction => ({
+    ...action,
+    icon: ACTION_ICON_MAP[action.id] ?? Sun,
+  });
+
+  return {
+    ...plan,
+    priorityActions: plan.priorityActions.map(mapAction),
+    optionalActions: plan.optionalActions.map(mapAction),
+  };
 }
 
 export default function TodayHubScreen() {
@@ -168,6 +73,8 @@ export default function TodayHubScreen() {
     riskCategory,
     riskLabel,
     trendLabel: riskTrendLabel,
+    missedEngagement,
+    currentPrediction,
   } = useRiskPrediction();
 
   const stabilityResult = useMemo(() => {
@@ -197,17 +104,32 @@ export default function TodayHubScreen() {
     return calculateStability(input, previousScores);
   }, [profile.recoveryProfile, checkIns]);
 
-  const stabilityZoneId = useMemo(
-    () => getStabilityZoneId(stabilityResult.score),
-    [stabilityResult.score],
+  const todayPlanDomain = useMemo(
+    () =>
+      generateTodayPlan({
+        stabilityScore: stabilityResult.score,
+        relapseRisk: riskCategory,
+        recoveryStage: profile.recoveryProfile.recoveryStage,
+        missedEngagementScore: missedEngagement,
+        triggerRiskScore: currentPrediction?.triggerRisk ?? 0,
+      }),
+    [
+      stabilityResult.score,
+      riskCategory,
+      profile.recoveryProfile.recoveryStage,
+      missedEngagement,
+      currentPrediction?.triggerRisk,
+    ],
   );
 
   const todayPlan = useMemo(
-    () => buildTodayPlan(stabilityZoneId),
-    [stabilityZoneId],
+    () => attachIcons(todayPlanDomain),
+    [todayPlanDomain],
   );
 
-  const primaryAction = todayPlan.actions.find(a => a.emphasis === 'primary') ?? todayPlan.actions[0];
+  const primaryAction =
+    todayPlan.priorityActions[0] ??
+    todayPlan.optionalActions[0];
 
   if (isLoading) {
     return <HomeLoadingSkeleton />;
@@ -294,7 +216,30 @@ export default function TodayHubScreen() {
         {/* Today's Plan */}
         <Text style={styles.planTitle}>Today&apos;s Plan</Text>
         <View style={styles.planCard}>
-          {todayPlan.actions.map(action => (
+          {todayPlan.priorityActions.map(action => (
+            <Pressable
+              key={action.id}
+              style={({ pressed }) => [
+                styles.planRow,
+                pressed && styles.pressed,
+              ]}
+              onPress={() => {
+                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                router.push(action.route as any);
+              }}
+              testID={`todayhub-plan-priority-${action.id}`}
+            >
+              <View style={styles.planIconWrap}>
+                <action.icon size={20} color={Colors.primary} />
+              </View>
+              <View style={styles.planTextWrap}>
+                <Text style={styles.planRowTitle}>{action.title}</Text>
+                <Text style={styles.planRowSubtitle}>{action.subtitle}</Text>
+              </View>
+              <ArrowRight size={18} color={Colors.textSecondary} />
+            </Pressable>
+          ))}
+          {todayPlan.optionalActions.map(action => (
             <Pressable
               key={action.id}
               style={({ pressed }) => [
@@ -318,6 +263,17 @@ export default function TodayHubScreen() {
             </Pressable>
           ))}
         </View>
+
+        {!!todayPlan.riskWarnings.length && (
+          <View style={styles.warningCard}>
+            {todayPlan.riskWarnings.map((warning, index) => (
+              <View key={index} style={styles.warningRow}>
+                <AlertTriangle size={16} color={Colors.danger} />
+                <Text style={styles.warningText}>{warning}</Text>
+              </View>
+            ))}
+          </View>
+        )}
       </ScrollView>
     </View>
   );
@@ -402,6 +358,25 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: Colors.border,
     marginBottom: 24,
+  },
+  warningCard: {
+    backgroundColor: Colors.danger + '08',
+    borderRadius: 14,
+    paddingVertical: 10,
+    paddingHorizontal: 12,
+    borderWidth: 1,
+    borderColor: Colors.danger + '35',
+  },
+  warningRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 8,
+    marginBottom: 4,
+  },
+  warningText: {
+    flex: 1,
+    fontSize: 12,
+    color: Colors.textSecondary,
   },
   planRow: {
     flexDirection: 'row',

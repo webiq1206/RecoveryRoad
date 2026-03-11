@@ -117,6 +117,14 @@ export interface EmergencyContact {
   phone: string;
 }
 
+export interface RelapsePlan {
+  warningSigns: string[];
+  triggers: string[];
+  copingStrategies: string[];
+  emergencyContacts: EmergencyContact[];
+  commitments: string;
+}
+
 export interface CommunityUser {
   id: string;
   username: string;

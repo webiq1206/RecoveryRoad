@@ -243,6 +243,31 @@ export default function TodayHubScreen() {
           relapseRiskTrendLabel={riskTrendLabel || 'Stable'}
         />
 
+        {riskCategory === 'high' && (
+          <Pressable
+            style={({ pressed }) => [
+              styles.relapsePlanCard,
+              pressed && styles.pressed,
+            ]}
+            onPress={() => {
+              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
+              router.push('/relapse-plan' as any);
+            }}
+            testID="todayhub-relapse-plan-cta"
+          >
+            <View style={styles.relapsePlanIconWrap}>
+              <AlertTriangle size={20} color={Colors.danger} />
+            </View>
+            <View style={styles.relapsePlanTextWrap}>
+              <Text style={styles.relapsePlanTitle}>Open your Relapse Plan</Text>
+              <Text style={styles.relapsePlanSubtitle}>
+                Review warning signs, triggers, and coping strategies while risk is high.
+              </Text>
+            </View>
+            <ArrowRight size={20} color={Colors.danger} />
+          </Pressable>
+        )}
+
         {/* Immediate next action */}
         <Text style={styles.sectionLabel}>Immediate next action</Text>
         <Pressable
@@ -408,6 +433,39 @@ const styles = StyleSheet.create({
   },
   pressed: {
     opacity: 0.9,
+  },
+  relapsePlanCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: Colors.danger + '10',
+    borderRadius: 16,
+    paddingVertical: 12,
+    paddingHorizontal: 14,
+    borderWidth: 1,
+    borderColor: Colors.danger + '35',
+    marginBottom: 18,
+  },
+  relapsePlanIconWrap: {
+    width: 40,
+    height: 40,
+    borderRadius: 12,
+    backgroundColor: Colors.danger + '18',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 10,
+  },
+  relapsePlanTextWrap: {
+    flex: 1,
+  },
+  relapsePlanTitle: {
+    fontSize: 15,
+    fontWeight: '700',
+    color: Colors.danger,
+  },
+  relapsePlanSubtitle: {
+    fontSize: 13,
+    color: Colors.textSecondary,
+    marginTop: 2,
   },
 });
 

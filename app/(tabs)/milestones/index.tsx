@@ -550,7 +550,7 @@ export default function MilestonesScreen() {
     recentWins,
     weeklyWinCount,
     overallGrowthScore,
-    useStreakProtection,
+    useStreakProtection: triggerStreakProtection,
     updateGrowthDimensions,
   } = useEngagement();
 
@@ -599,7 +599,7 @@ export default function MilestonesScreen() {
         {
           text: 'Use Protection',
           onPress: () => {
-            const success = useStreakProtection();
+            const success = triggerStreakProtection();
             if (success) {
               Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
               Alert.alert('Streak Protected', 'You have a 36-hour grace period. Take care of yourself.');
@@ -610,7 +610,7 @@ export default function MilestonesScreen() {
         },
       ]
     );
-  }, [useStreakProtection]);
+  }, [triggerStreakProtection]);
 
   const growthScoreAnim = useRef(new Animated.Value(0)).current;
 

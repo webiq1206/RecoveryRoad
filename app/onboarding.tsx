@@ -18,13 +18,6 @@ import {
 } from '@/utils/wizardSteps';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
-
-<<<<<<< HEAD
-=======
-// 6 screens: Identity, Addiction, RecoveryPosition, RecoveryAssessment, RiskAndSupport, RebuildGoal
-const TOTAL_STEPS = 6;
-
->>>>>>> 75b52c54d2e5ec0c8d295246829ed77117437b62
 const RECOVERY_STAGES: { value: RecoveryStage; label: string; desc: string; icon: React.ReactNode }[] = [
   {
     value: 'crisis',
@@ -303,11 +296,7 @@ export default function OnboardingScreen() {
       case 'identity':
         return (
           <ScrollView style={styles.stepContent} showsVerticalScrollIndicator={false} contentContainerStyle={styles.optionsListContent}>
-<<<<<<< HEAD
             <Text style={[styles.stepLabel, { marginTop: 24 }]}>{stepLabel}</Text>
-=======
-            <Text style={[styles.stepLabel, { marginTop: 24 }]}>STEP 1 OF {TOTAL_STEPS}</Text>
->>>>>>> 75b52c54d2e5ec0c8d295246829ed77117437b62
             <Text style={styles.stepTitle}>{ONBOARDING_COPY.steps.name.title}</Text>
             <Text style={styles.stepSubtitle}>{ONBOARDING_COPY.steps.name.subtitle}</Text>
 
@@ -408,12 +397,7 @@ export default function OnboardingScreen() {
           </View>
         );
 
-<<<<<<< HEAD
       case 'calibration':
-=======
-      case 3: {
-        // RecoveryAssessmentScreen: time in recovery + relapse frequency + emotional/craving baseline + sleep quality
->>>>>>> 75b52c54d2e5ec0c8d295246829ed77117437b62
         return (
           <ScrollView style={styles.stepContent} showsVerticalScrollIndicator={false} contentContainerStyle={styles.optionsListContent}>
             <Text style={styles.stepLabel}>{stepLabel}</Text>

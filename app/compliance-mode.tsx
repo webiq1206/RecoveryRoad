@@ -158,18 +158,6 @@ export default function ComplianceModeScreen() {
   const [showExcuseModal, setShowExcuseModal] = useState<boolean>(false);
   const [excuseNote, setExcuseNote] = useState<string>('');
   const [excuseReqId, setExcuseReqId] = useState<string>('');
-  const fadeAnim = useRef(new Animated.Value(0)).current;
-
-  useEffect(() => {
-    Animated.timing(fadeAnim, {
-      toValue: 1,
-      duration: 400,
-      useNativeDriver: true,
-    }).start();
-  }, []);
-
-  if (!canAccess) return null;
-
   const handleEnableCompliance = useCallback(() => {
     if (!caseId.trim() || !officerName.trim()) {
       Alert.alert('Required Fields', 'Please provide your case ID and officer name to continue.');
@@ -301,6 +289,18 @@ export default function ComplianceModeScreen() {
     if (!data.endDate) return '';
     return new Date(data.endDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
   }, [data.endDate]);
+
+  const fadeAnim = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    Animated.timing(fadeAnim, {
+      toValue: 1,
+      duration: 400,
+      useNativeDriver: true,
+    }).start();
+  }, []);
+
+  if (!canAccess) return null;
 
   if (!isEnabled) {
     return (

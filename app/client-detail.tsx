@@ -82,26 +82,25 @@ export default function ClientDetailScreen() {
   const canAccess = useRequireProviderMode();
   const { getClientById, getClientReports, generateClientReport, updateClientStatus, revokeClientAccess } = useTherapist();
 
-  const client = getClientById(clientId ?? '');
-  const reports = getClientReports(clientId ?? '');
+  const resolvedClientId = clientId ?? '';
+  const client = useMemo(
+    () => getClientById(resolvedClientId),
+    [getClientById, resolvedClientId],
+  );
+  const reports = useMemo(
+    () => getClientReports(resolvedClientId),
+    [getClientReports, resolvedClientId],
+  );
 
   const [activeTab, setActiveTab] = useState<'overview' | 'trends' | 'reports'>('overview');
-  const fadeAnim = useRef(new Animated.Value(0)).current;
-
-  useEffect(() => {
-    Animated.timing(fadeAnim, { toValue: 1, duration: 400, useNativeDriver: true }).start();
-  }, []);
-
-  if (!canAccess) return null;
-
   const handleGenerateReport = useCallback(() => {
-    if (!clientId) return;
+    if (!resolvedClientId) return;
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-    const report = generateClientReport(clientId);
+    const report = generateClientReport(resolvedClientId);
     if (report) {
       Alert.alert('Report Generated', `A new progress report for ${client?.name ?? 'client'} has been created.`);
     }
-  }, [clientId, client, generateClientReport]);
+  }, [resolvedClientId, client, generateClientReport]);
 
   const handleShareReport = useCallback(async (report: ClientReport) => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
@@ -134,7 +133,7 @@ export default function ClientDetailScreen() {
   }, []);
 
   const handleStatusChange = useCallback((status: 'active' | 'paused' | 'discharged') => {
-    if (!clientId || !client) return;
+    if (!resolvedClientId || !client) return;
     const label = status.charAt(0).toUpperCase() + status.slice(1);
     Alert.alert(
       `${label} Client`,
@@ -145,15 +144,15 @@ export default function ClientDetailScreen() {
           text: label,
           onPress: () => {
             Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-            updateClientStatus(clientId, status);
+            updateClientStatus(resolvedClientId, status);
           },
         },
       ]
     );
-  }, [clientId, client, updateClientStatus]);
+  }, [resolvedClientId, client, updateClientStatus]);
 
   const handleRevokeAccess = useCallback(() => {
-    if (!clientId || !client) return;
+    if (!resolvedClientId || !client) return;
     Alert.alert(
       'Revoke Access',
       `This will stop data sharing with ${client.name}. You will no longer receive updates.`,
@@ -164,13 +163,21 @@ export default function ClientDetailScreen() {
           style: 'destructive',
           onPress: () => {
             Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
-            revokeClientAccess(clientId);
+            revokeClientAccess(resolvedClientId);
             router.back();
           },
         },
       ]
     );
-  }, [clientId, client, revokeClientAccess, router]);
+  }, [resolvedClientId, client, revokeClientAccess, router]);
+
+  const fadeAnim = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    Animated.timing(fadeAnim, { toValue: 1, duration: 400, useNativeDriver: true }).start();
+  }, []);
+
+  if (!canAccess) return null;
 
   if (!client) {
     return (

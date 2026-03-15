@@ -143,7 +143,7 @@ export default function AccountabilityScreen() {
     checkInContract,
     addPartner,
     deletePartner,
-    useStreakProtection,
+    useStreakProtection: triggerStreakProtection,
     checkIns,
     daysSober,
     currentStreak,
@@ -306,11 +306,11 @@ export default function AccountabilityScreen() {
         { text: 'Cancel', style: 'cancel' },
         { text: 'Use Protection', onPress: () => {
           Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-          useStreakProtection();
+          triggerStreakProtection();
         }},
       ]
     );
-  }, [accountabilityData, useStreakProtection]);
+  }, [accountabilityData, triggerStreakProtection]);
 
   const renderStrengthMeter = () => {
     const color = overallStrength > 66 ? Colors.success : overallStrength > 33 ? Colors.accentWarm : Colors.danger;

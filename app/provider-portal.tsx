@@ -128,22 +128,6 @@ export default function ProviderPortalScreen() {
     setShowSetup(!isPortalEnabled);
   }, [isPortalEnabled]);
 
-  const filteredClients = useMemo(() => {
-    let result = clients;
-    if (filterStatus !== 'all') {
-      result = result.filter(c => c.status === filterStatus);
-    }
-    if (searchQuery.trim()) {
-      const q = searchQuery.toLowerCase();
-      result = result.filter(c =>
-        c.name.toLowerCase().includes(q) || c.anonymousAlias.toLowerCase().includes(q)
-      );
-    }
-    return result.sort((a, b) => b.riskLevel - a.riskLevel);
-  }, [clients, filterStatus, searchQuery]);
-
-  if (!canAccess) return null;
-
   const handleSetup = useCallback(() => {
     if (!setupName.trim() || !setupEmail.trim()) {
       Alert.alert('Required Fields', 'Please enter your name and email.');
@@ -295,6 +279,22 @@ export default function ProviderPortalScreen() {
       </Pressable>
     );
   }, [handleClientPress]);
+
+  const filteredClients = useMemo(() => {
+    let result = clients;
+    if (filterStatus !== 'all') {
+      result = result.filter(c => c.status === filterStatus);
+    }
+    if (searchQuery.trim()) {
+      const q = searchQuery.toLowerCase();
+      result = result.filter(c =>
+        c.name.toLowerCase().includes(q) || c.anonymousAlias.toLowerCase().includes(q)
+      );
+    }
+    return result.sort((a, b) => b.riskLevel - a.riskLevel);
+  }, [clients, filterStatus, searchQuery]);
+
+  if (!canAccess) return null;
 
   if (!hasFeature('therapist_export')) {
     return (

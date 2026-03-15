@@ -4,6 +4,8 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { UserProfile, Pledge, JournalEntry, MediaItem, WorkbookAnswer, EmergencyContact, DailyCheckIn, CheckInTimeOfDay, RebuildData, ReplacementHabit, RoutineBlock, PurposeGoal, ConfidenceMilestone, AccountabilityData, CommitmentContract, AccountabilityPartner, DriftAlert, ContractCheckIn, RecoveryProfile, PrivacyControls, IdentityProgramData, IdentityExerciseResponse, IdentityValue, TimelineEvent, RelapsePlan, NearMissEvent } from '@/types';
 import { calculateStability } from '@/utils/stabilityEngine';
+import { useRecoveryProfileStore } from '@/stores/useRecoveryProfileStore';
+import { useCheckInsStore } from '@/stores/useCheckInsStore';
 
 const STORAGE_KEYS = {
   PROFILE: 'recovery_profile',
@@ -148,28 +150,18 @@ async function saveStorageItem<T>(key: string, data: T): Promise<T> {
 
 export const [RecoveryProvider, useRecovery] = createContextHook(() => {
   const queryClient = useQueryClient();
-  const [profile, setProfile] = useState<UserProfile>(DEFAULT_PROFILE);
+  const profileStore = useRecoveryProfileStore();
+  const checkInsStore = useCheckInsStore();
+  const { profile, timelineEvents, relapsePlan, showRelapseModal, daysSober, updateProfile, logRelapse, dismissRelapseModal, saveRelapsePlan } = profileStore;
+  const { checkIns, nearMissEvents, addCheckIn, logNearMiss, todayCheckIns, todayCheckIn, morningCheckIn, currentCheckInPeriod, currentPeriodCheckIn } = checkInsStore;
+
   const [pledges, setPledges] = useState<Pledge[]>([]);
   const [journal, setJournal] = useState<JournalEntry[]>([]);
   const [media, setMedia] = useState<MediaItem[]>([]);
   const [workbookAnswers, setWorkbookAnswers] = useState<WorkbookAnswer[]>([]);
   const [emergencyContacts, setEmergencyContacts] = useState<EmergencyContact[]>([]);
-  const [checkIns, setCheckIns] = useState<DailyCheckIn[]>([]);
-  const [nearMissEvents, setNearMissEvents] = useState<NearMissEvent[]>([]);
   const [rebuildData, setRebuildData] = useState<RebuildData>(DEFAULT_REBUILD);
   const [accountabilityData, setAccountabilityData] = useState<AccountabilityData>(DEFAULT_ACCOUNTABILITY);
-  const [showRelapseModal, setShowRelapseModal] = useState(false);
-  const [timelineEvents, setTimelineEvents] = useState<TimelineEvent[]>([]);
-  const [relapsePlan, setRelapsePlan] = useState<RelapsePlan | null>(null);
-
-  const profileQuery = useQuery({
-    queryKey: ['profile'],
-    queryFn: async () => {
-      const stored = await AsyncStorage.getItem(STORAGE_KEYS.PROFILE);
-      return stored ? migrateProfile(JSON.parse(stored)) : DEFAULT_PROFILE;
-    },
-    staleTime: Infinity,
-  });
 
   const pledgesQuery = useQuery({
     queryKey: ['pledges'],
@@ -201,12 +193,6 @@ export const [RecoveryProvider, useRecovery] = createContextHook(() => {
     staleTime: Infinity,
   });
 
-  const checkInsQuery = useQuery({
-    queryKey: ['checkIns'],
-    queryFn: () => loadStorageItem<DailyCheckIn[]>(STORAGE_KEYS.CHECK_INS, []),
-    staleTime: Infinity,
-  });
-
   const rebuildQuery = useQuery({
     queryKey: ['rebuild'],
     queryFn: () => loadStorageItem<RebuildData>(STORAGE_KEYS.REBUILD, DEFAULT_REBUILD),
@@ -218,22 +204,6 @@ export const [RecoveryProvider, useRecovery] = createContextHook(() => {
     queryFn: () => loadStorageItem<AccountabilityData>(STORAGE_KEYS.ACCOUNTABILITY, DEFAULT_ACCOUNTABILITY),
     staleTime: Infinity,
   });
-
-  const timelineEventsQuery = useQuery({
-    queryKey: ['timelineEvents'],
-    queryFn: () => loadStorageItem<TimelineEvent[]>(STORAGE_KEYS.TIMELINE_EVENTS, []),
-    staleTime: Infinity,
-  });
-
-  const relapsePlanQuery = useQuery({
-    queryKey: ['relapsePlan'],
-    queryFn: () => loadStorageItem<RelapsePlan | null>(STORAGE_KEYS.RELAPSE_PLAN, null),
-    staleTime: Infinity,
-  });
-
-  useEffect(() => {
-    if (profileQuery.data) setProfile(profileQuery.data);
-  }, [profileQuery.data]);
 
   useEffect(() => {
     if (pledgesQuery.data) setPledges(pledgesQuery.data);
@@ -256,44 +226,12 @@ export const [RecoveryProvider, useRecovery] = createContextHook(() => {
   }, [emergencyContactsQuery.data]);
 
   useEffect(() => {
-    if (checkInsQuery.data) setCheckIns(checkInsQuery.data);
-  }, [checkInsQuery.data]);
-
-  const nearMissEventsQuery = useQuery({
-    queryKey: ['nearMissEvents'],
-    queryFn: () => loadStorageItem<NearMissEvent[]>(STORAGE_KEYS.NEAR_MISS_EVENTS, []),
-    staleTime: Infinity,
-  });
-
-  useEffect(() => {
-    if (nearMissEventsQuery.data) setNearMissEvents(nearMissEventsQuery.data);
-  }, [nearMissEventsQuery.data]);
-
-  useEffect(() => {
     if (rebuildQuery.data) setRebuildData(rebuildQuery.data);
   }, [rebuildQuery.data]);
 
   useEffect(() => {
     if (accountabilityQuery.data) setAccountabilityData(accountabilityQuery.data);
   }, [accountabilityQuery.data]);
-
-  useEffect(() => {
-    if (timelineEventsQuery.data) setTimelineEvents(timelineEventsQuery.data);
-  }, [timelineEventsQuery.data]);
-
-  useEffect(() => {
-    if (relapsePlanQuery.data !== undefined) {
-      setRelapsePlan(relapsePlanQuery.data);
-    }
-  }, [relapsePlanQuery.data]);
-
-  const saveProfileMutation = useMutation({
-    mutationFn: (newProfile: UserProfile) => saveStorageItem(STORAGE_KEYS.PROFILE, newProfile),
-    onSuccess: (data) => {
-      setProfile(data);
-      queryClient.setQueryData(['profile'], data);
-    },
-  });
 
   const savePledgesMutation = useMutation({
     mutationFn: (newPledges: Pledge[]) => saveStorageItem(STORAGE_KEYS.PLEDGES, newPledges),
@@ -335,22 +273,6 @@ export const [RecoveryProvider, useRecovery] = createContextHook(() => {
     },
   });
 
-  const saveCheckInsMutation = useMutation({
-    mutationFn: (newCheckIns: DailyCheckIn[]) => saveStorageItem(STORAGE_KEYS.CHECK_INS, newCheckIns),
-    onSuccess: (data) => {
-      setCheckIns(data);
-      queryClient.setQueryData(['checkIns'], data);
-    },
-  });
-
-  const saveNearMissEventsMutation = useMutation({
-    mutationFn: (events: NearMissEvent[]) => saveStorageItem(STORAGE_KEYS.NEAR_MISS_EVENTS, events),
-    onSuccess: (data) => {
-      setNearMissEvents(data);
-      queryClient.setQueryData(['nearMissEvents'], data);
-    },
-  });
-
   const saveRebuildMutation = useMutation({
     mutationFn: (data: RebuildData) => saveStorageItem(STORAGE_KEYS.REBUILD, data),
     onSuccess: (data) => {
@@ -366,28 +288,6 @@ export const [RecoveryProvider, useRecovery] = createContextHook(() => {
       queryClient.setQueryData(['accountability'], data);
     },
   });
-
-  const saveTimelineEventsMutation = useMutation({
-    mutationFn: (events: TimelineEvent[]) => saveStorageItem(STORAGE_KEYS.TIMELINE_EVENTS, events),
-    onSuccess: (data) => {
-      setTimelineEvents(data);
-      queryClient.setQueryData(['timelineEvents'], data);
-    },
-  });
-
-  const saveRelapsePlanMutation = useMutation({
-    mutationFn: (plan: RelapsePlan | null) => saveStorageItem(STORAGE_KEYS.RELAPSE_PLAN, plan),
-    onSuccess: (data) => {
-      setRelapsePlan(data);
-      queryClient.setQueryData(['relapsePlan'], data);
-    },
-  });
-
-  const updateProfile = useCallback((updates: Partial<UserProfile>) => {
-    const updated = { ...profile, ...updates };
-    setProfile(updated);
-    saveProfileMutation.mutate(updated);
-  }, [profile]);
 
   const addPledge = useCallback((pledge: Pledge) => {
     const updated = [pledge, ...pledges];
@@ -468,18 +368,6 @@ export const [RecoveryProvider, useRecovery] = createContextHook(() => {
     setEmergencyContacts(updated);
     saveEmergencyContactsMutation.mutate(updated);
   }, [emergencyContacts]);
-
-  const addCheckIn = useCallback((checkIn: DailyCheckIn) => {
-    const updated = [checkIn, ...checkIns];
-    setCheckIns(updated);
-    saveCheckInsMutation.mutate(updated);
-  }, [checkIns]);
-
-  const logNearMiss = useCallback((event: NearMissEvent) => {
-    const updated = [event, ...nearMissEvents];
-    setNearMissEvents(updated);
-    saveNearMissEventsMutation.mutate(updated);
-  }, [nearMissEvents]);
 
   const addReplacementHabit = useCallback((habit: ReplacementHabit) => {
     const updated = { ...rebuildData, habits: [...rebuildData.habits, habit] };
@@ -715,53 +603,6 @@ export const [RecoveryProvider, useRecovery] = createContextHook(() => {
     return true;
   }, [accountabilityData]);
 
-  const logRelapse = useCallback(() => {
-    const rp = profile.recoveryProfile ?? DEFAULT_RECOVERY_PROFILE;
-    const updatedProfile: UserProfile = {
-      ...profile,
-      recoveryProfile: { ...rp, relapseCount: (rp.relapseCount ?? 0) + 1 },
-    };
-    setProfile(updatedProfile);
-    saveProfileMutation.mutate(updatedProfile);
-    const today = new Date().toISOString().split('T')[0];
-    const event: TimelineEvent = { id: `relapse-${Date.now()}`, type: 'relapse', date: today };
-    const updatedEvents = [event, ...timelineEvents];
-    setTimelineEvents(updatedEvents);
-    saveTimelineEventsMutation.mutate(updatedEvents);
-    setShowRelapseModal(true);
-  }, [profile, timelineEvents]);
-
-  const dismissRelapseModal = useCallback(() => {
-    setShowRelapseModal(false);
-  }, []);
-
-  const todayCheckIns = useMemo(() => {
-    const today = new Date().toISOString().split('T')[0];
-    return checkIns.filter(c => c.date === today);
-  }, [checkIns]);
-
-  const todayCheckIn = useMemo(() => {
-    if (todayCheckIns.length === 0) return null;
-    return todayCheckIns.reduce((latest, c) =>
-      new Date(c.completedAt).getTime() > new Date(latest.completedAt).getTime() ? c : latest
-    , todayCheckIns[0]);
-  }, [todayCheckIns]);
-
-  const morningCheckIn = useMemo(() => {
-    return todayCheckIns.find(c => c.timeOfDay === 'morning') ?? null;
-  }, [todayCheckIns]);
-
-  const currentCheckInPeriod = useMemo((): CheckInTimeOfDay => {
-    const hour = new Date().getHours();
-    if (hour < 12) return 'morning';
-    if (hour < 17) return 'afternoon';
-    return 'evening';
-  }, []);
-
-  const currentPeriodCheckIn = useMemo(() => {
-    return todayCheckIns.find(c => c.timeOfDay === currentCheckInPeriod) ?? null;
-  }, [todayCheckIns, currentCheckInPeriod]);
-
   const stabilityScore = useMemo(() => {
     const sorted = [...checkIns].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
     const recent = sorted.slice(0, 7);
@@ -790,23 +631,19 @@ export const [RecoveryProvider, useRecovery] = createContextHook(() => {
       STORAGE_KEYS.WORKBOOK_ANSWERS,
       STORAGE_KEYS.EMERGENCY_CONTACTS,
       STORAGE_KEYS.CHECK_INS,
+      STORAGE_KEYS.NEAR_MISS_EVENTS,
       STORAGE_KEYS.REBUILD,
       STORAGE_KEYS.ACCOUNTABILITY,
       STORAGE_KEYS.TIMELINE_EVENTS,
       STORAGE_KEYS.RELAPSE_PLAN,
     ]);
-    setProfile(DEFAULT_PROFILE);
     setPledges([]);
     setJournal([]);
     setMedia([]);
     setWorkbookAnswers([]);
     setEmergencyContacts([]);
-    setCheckIns([]);
     setRebuildData(DEFAULT_REBUILD);
     setAccountabilityData(DEFAULT_ACCOUNTABILITY);
-    setTimelineEvents([]);
-    setShowRelapseModal(false);
-    setRelapsePlan(null);
     queryClient.clear();
   }, [queryClient]);
 
@@ -838,18 +675,16 @@ export const [RecoveryProvider, useRecovery] = createContextHook(() => {
     return streak;
   }, [pledges]);
 
-  const daysSober = useMemo(() => {
-    const soberDate = new Date(profile.soberDate);
-    const now = new Date();
-    return Math.max(0, Math.floor((now.getTime() - soberDate.getTime()) / 86400000));
-  }, [profile.soberDate]);
-
-  const isLoading = profileQuery.isLoading || pledgesQuery.isLoading || journalQuery.isLoading || mediaQuery.isLoading || workbookQuery.isLoading || emergencyContactsQuery.isLoading || checkInsQuery.isLoading || rebuildQuery.isLoading || accountabilityQuery.isLoading;
-
-  const saveRelapsePlan = useCallback((plan: RelapsePlan) => {
-    setRelapsePlan(plan);
-    saveRelapsePlanMutation.mutate(plan);
-  }, []);
+  const isLoading =
+    profileStore.isLoading ||
+    checkInsStore.isLoading ||
+    pledgesQuery.isLoading ||
+    journalQuery.isLoading ||
+    mediaQuery.isLoading ||
+    workbookQuery.isLoading ||
+    emergencyContactsQuery.isLoading ||
+    rebuildQuery.isLoading ||
+    accountabilityQuery.isLoading;
 
   return useMemo(() => ({
     profile,

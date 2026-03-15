@@ -1,4 +1,4 @@
-import React, { useState, useRef, useCallback, useMemo, useEffect } from 'react';
+import React, { useRef, useCallback, useMemo, useEffect } from 'react';
 import {
   View,
   Text,
@@ -8,28 +8,44 @@ import {
   PanResponder,
   Dimensions,
   ScrollView,
-  Platform,
   TextInput,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { X, ChevronRight, Check, Activity, Brain, Moon, MapPin, Heart, Zap, Sun, Sunset, Clock, Lock } from 'lucide-react-native';
+import {
+  X,
+  ChevronRight,
+  Check,
+  Activity,
+  Brain,
+  Moon,
+  MapPin,
+  Heart,
+  Zap,
+  Sun,
+  Sunset,
+  Lock,
+} from 'lucide-react-native';
 import * as Haptics from 'expo-haptics';
 import Colors from '@/constants/colors';
-import { useRecovery } from '@/providers/RecoveryProvider';
-import { calculateStability } from '@/utils/stabilityEngine';
-import { useRetention } from '@/providers/RetentionProvider';
-import { DailyCheckIn, CheckInTimeOfDay, EmotionalTag } from '@/types';
-import {
-  getRecoveryStage,
-  getRiskLevel,
-  getEmotionalInsight,
-} from '@/constants/companion';
+import { useDailyCheckInFlow } from '@/features/checkin/hooks/useDailyCheckInFlow';
+import { getScoreColor, getScoreLabel } from '@/lib/services/checkInAnalysis';
+import type { DailyCheckIn } from '@/types';
+import type { CheckInTimeOfDay } from '@/features/checkin/constants/checkinMetrics';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const SLIDER_WIDTH = SCREEN_WIDTH - 80;
 const THUMB_SIZE = 28;
 const SLIDER_DAMPING = 0.4;
+
+const METRIC_ICONS: Record<string, React.ComponentType<{ size?: number; color?: string }>> = {
+  heart: Heart,
+  zap: Zap,
+  activity: Activity,
+  moon: Moon,
+  mapPin: MapPin,
+  brain: Brain,
+};
 
 interface SliderMetric {
   key: string;
@@ -40,114 +56,30 @@ interface SliderMetric {
   highLabel: string;
 }
 
-const METRICS: SliderMetric[] = [
-  { key: 'mood', label: 'Mood', icon: <Heart size={18} color="#FF6B9D" />, color: '#FF6B9D', lowLabel: 'Low', highLabel: 'Great' },
-  { key: 'cravingLevel', label: 'Cravings', icon: <Zap size={18} color="#FF6B35" />, color: '#FF6B35', lowLabel: 'None', highLabel: 'Intense' },
-  { key: 'stress', label: 'Stress', icon: <Activity size={18} color="#FFC107" />, color: '#FFC107', lowLabel: 'Calm', highLabel: 'High' },
-  { key: 'sleepQuality', label: 'Sleep', icon: <Moon size={18} color="#7C8CF8" />, color: '#7C8CF8', lowLabel: 'Poor', highLabel: 'Restful' },
-  { key: 'environment', label: 'Environment', icon: <MapPin size={18} color="#2EC4B6" />, color: '#2EC4B6', lowLabel: 'Risky', highLabel: 'Safe' },
-  { key: 'emotionalState', label: 'Emotions', icon: <Brain size={18} color="#CE93D8" />, color: '#CE93D8', lowLabel: 'Unstable', highLabel: 'Balanced' },
-];
-
-const EMOTIONAL_TAGS: { key: EmotionalTag; label: string; helper: string }[] = [
-  { key: 'anxious', label: 'Anxious', helper: 'on edge, keyed up, worried' },
-  { key: 'lonely', label: 'Lonely', helper: 'disconnected, unseen, isolated' },
-  { key: 'ashamed', label: 'Ashamed', helper: 'guilty, embarrassed, self-blaming' },
-  { key: 'angry', label: 'Angry', helper: 'irritated, resentful, frustrated' },
-  { key: 'hopeful', label: 'Hopeful', helper: 'light, optimistic, possibility' },
-  { key: 'numb', label: 'Numb', helper: 'shut down, flat, checked out' },
-];
-
-const PERIOD_CONFIG: Record<CheckInTimeOfDay, { label: string; icon: React.ReactNode; color: string; greeting: string }> = {
-  morning: { label: 'Morning', icon: <Sun size={18} color="#FFC107" />, color: '#FFC107', greeting: 'Good morning' },
-  afternoon: { label: 'Afternoon', icon: <Sun size={18} color="#FF6B35" />, color: '#FF6B35', greeting: 'Good afternoon' },
-  evening: { label: 'Evening', icon: <Sunset size={18} color="#7C8CF8" />, color: '#7C8CF8', greeting: 'Good evening' },
-};
-
-const REFLECTIONS: Record<string, string[]> = {
-  excellent: [
-    "You're in a strong place today. Keep riding this wave.",
-    "Solid day. Your resilience is showing.",
-    "You're building something powerful. One day at a time.",
-  ],
-  good: [
-    "Steady progress. You're handling things well.",
-    "Good awareness today. That's real strength.",
-    "You're showing up for yourself. That matters.",
-  ],
-  moderate: [
-    "It's okay to have mixed days. You're still here.",
-    "Some tension is normal. You're navigating it.",
-    "Take a breath. You've handled harder days than this.",
-  ],
-  challenging: [
-    "Tough day, but you checked in. That's courage.",
-    "Reach out to someone you trust today.",
-    "This feeling will pass. You're stronger than you think.",
-  ],
-  difficult: [
-    "You're brave for being honest. Consider calling a support contact.",
-    "Right now is hard, but you've survived hard before.",
-    "You don't have to do this alone. Reach out.",
-  ],
-};
-
-function getReflection(score: number): string {
-  let category: string;
-  if (score >= 80) category = 'excellent';
-  else if (score >= 65) category = 'good';
-  else if (score >= 45) category = 'moderate';
-  else if (score >= 25) category = 'challenging';
-  else category = 'difficult';
-
-  const options = REFLECTIONS[category];
-  return options[Math.floor(Math.random() * options.length)];
+function buildMetricsWithIcons(
+  metricsConfig: { key: string; label: string; iconKey: string; color: string; lowLabel: string; highLabel: string }[],
+): SliderMetric[] {
+  return metricsConfig.map((m) => {
+    const IconComp = METRIC_ICONS[m.iconKey] ?? Heart;
+    return {
+      key: m.key,
+      label: m.label,
+      icon: <IconComp size={18} color={m.color} />,
+      color: m.color,
+      lowLabel: m.lowLabel,
+      highLabel: m.highLabel,
+    };
+  });
 }
 
-function getEmotionalReflection(
-  score: number,
-  values: Record<string, number>,
-  checkIns: DailyCheckIn[],
-  daysSober: number,
-): { reflection: string; emotionalNote: string } {
-  const baseReflection = getReflection(score);
-  const stage = getRecoveryStage(daysSober);
-  const risk = getRiskLevel(checkIns, daysSober);
-
-  let emotionalNote = '';
-
-  if (values.cravingLevel > 70 && values.mood < 40) {
-    emotionalNote = "High cravings with low mood is a signal worth paying attention to. Consider reaching out to your support network today.";
-  } else if (values.emotionalState < 30) {
-    emotionalNote = "Your emotions feel unstable right now. That's okay \u2014 awareness is the first step. Try a grounding exercise.";
-  } else if (values.sleepQuality < 25) {
-    emotionalNote = "Poor sleep affects everything. Tonight, try winding down 30 minutes earlier. Your recovery body needs rest.";
-  } else if (values.stress > 75 && values.cravingLevel > 60) {
-    emotionalNote = "Stress and cravings often travel together. Break the cycle with one small healthy action right now.";
-  } else if (score >= 75) {
-    const { insight } = getEmotionalInsight(checkIns, stage, risk);
-    emotionalNote = insight;
-  } else if (values.environment < 35) {
-    emotionalNote = "Your environment feels risky. Can you change your surroundings, even temporarily? A new space can shift your state.";
-  }
-
-  console.log('[CheckIn] Emotional reflection generated:', { score, stage, risk, hasNote: !!emotionalNote });
-  return { reflection: baseReflection, emotionalNote };
-}
-
-function getScoreColor(score: number): string {
-  if (score >= 75) return '#2EC4B6';
-  if (score >= 50) return '#FFC107';
-  if (score >= 30) return '#FF6B35';
-  return '#EF5350';
-}
-
-function getScoreLabel(score: number): string {
-  if (score >= 80) return 'Strong';
-  if (score >= 65) return 'Steady';
-  if (score >= 45) return 'Managing';
-  if (score >= 25) return 'Tough';
-  return 'Struggling';
+function periodWithIcon(
+  config: { label: string; iconKey: string; color: string; greeting: string },
+): { label: string; icon: React.ReactNode; color: string; greeting: string } {
+  const IconComp = config.iconKey === 'sunset' ? Sunset : Sun;
+  return {
+    ...config,
+    icon: <IconComp size={18} color={config.color} />,
+  };
 }
 
 interface CustomSliderProps {
@@ -324,61 +256,60 @@ const sliderStyles = StyleSheet.create({
 export default function DailyCheckInScreen() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
+  const flow = useDailyCheckInFlow();
+
   const {
-    profile,
-    addCheckIn,
-    todayCheckIns,
-    morningCheckIn,
+    METRICS_CONFIG,
+    EMOTIONAL_TAGS,
+    periodConfig,
+    PERIOD_CONFIG,
+    values,
+    selectedTags,
+    phase,
+    submitted,
+    reflection,
+    emotionalNote,
+    calculatedScore,
+    hadNearMiss,
+    nearMissNote,
+    stabilityScore,
+    isMorning,
+    sleepLocked,
+    completedPeriods,
+    allPeriodsComplete,
     currentCheckInPeriod,
     currentPeriodCheckIn,
-    checkIns,
-    daysSober,
-    logNearMiss,
-  } = useRecovery();
-  const { triggerLoop, generateSupportiveNotification } = useRetention();
+    todayCheckIns,
+    resultScoreColor,
+    resultScoreLabel,
+    setHadNearMiss,
+    setNearMissNote,
+    handleValueChange,
+    handleToggleTag,
+    handleSubmit,
+    getCheckInForPeriod,
+  } = flow;
 
-  const triggerReliefLoop = useCallback((checkIn: DailyCheckIn) => {
-    triggerLoop('relief', 'check_in_after_craving');
-    if (checkIn.cravingLevel < 40) {
-      triggerLoop('control', 'trigger_managed');
-    }
-    if (checkIn.mood >= 60) {
-      generateSupportiveNotification('emotional_stability', checkIns);
-    }
-  }, [triggerLoop, generateSupportiveNotification, checkIns]);
-
-  const isMorning = currentCheckInPeriod === 'morning';
-  const sleepLocked = !isMorning && morningCheckIn !== null;
-  const morningSleepValue = morningCheckIn?.sleepQuality ?? 50;
-
-  const [values, setValues] = useState<Record<string, number>>({
-    mood: 50,
-    cravingLevel: 50,
-    stress: 50,
-    sleepQuality: sleepLocked ? morningSleepValue : 50,
-    environment: 50,
-    emotionalState: 50,
-  });
-  const [selectedTags, setSelectedTags] = useState<EmotionalTag[]>([]);
-  const [phase, setPhase] = useState<'metrics' | 'tags'>('metrics');
-  const [submitted, setSubmitted] = useState(false);
-  const [reflection, setReflection] = useState('');
-  const [emotionalNote, setEmotionalNote] = useState('');
-  const [calculatedScore, setCalculatedScore] = useState(0);
-  const [hadNearMiss, setHadNearMiss] = useState<boolean | null>(null);
-  const [nearMissNote, setNearMissNote] = useState('');
-
-  useEffect(() => {
-    if (sleepLocked) {
-      setValues(prev => ({ ...prev, sleepQuality: morningSleepValue }));
-    }
-  }, [sleepLocked, morningSleepValue]);
+  const METRICS = useMemo(() => buildMetricsWithIcons(METRICS_CONFIG), [METRICS_CONFIG]);
+  const periodConfigWithIcon = useMemo(() => periodWithIcon(periodConfig), [periodConfig]);
+  const PERIOD_CONFIG_WITH_ICONS = useMemo(
+    () =>
+      (['morning', 'afternoon', 'evening'] as CheckInTimeOfDay[]).reduce(
+        (acc, p) => {
+          acc[p] = periodWithIcon(PERIOD_CONFIG[p]);
+          return acc;
+        },
+        {} as Record<CheckInTimeOfDay, { label: string; icon: React.ReactNode; color: string; greeting: string }>,
+      ),
+    [PERIOD_CONFIG],
+  );
 
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const slideAnim = useRef(new Animated.Value(30)).current;
   const resultFade = useRef(new Animated.Value(0)).current;
   const resultSlide = useRef(new Animated.Value(40)).current;
   const scoreScale = useRef(new Animated.Value(0)).current;
+  const prevSubmitted = useRef(false);
 
   useEffect(() => {
     Animated.parallel([
@@ -387,117 +318,24 @@ export default function DailyCheckInScreen() {
     ]).start();
   }, []);
 
-  const handleValueChange = useCallback((key: string, val: number) => {
-    if (key === 'sleepQuality' && sleepLocked) return;
-    setValues(prev => ({ ...prev, [key]: val }));
-  }, [sleepLocked]);
-
-  const stabilityScore = useMemo(() => {
-    const rp = profile?.recoveryProfile;
-    const mood = values.mood;
-    const emotional = values.emotionalState;
-    const intensity = Math.min(5, Math.max(1, Math.round(1 + (100 - (mood + emotional) / 2) / 100 * 4)));
-    const sleepNum = values.sleepQuality;
-    const sleepQuality: 'poor' | 'okay' | 'good' = sleepNum <= 33 ? 'poor' : sleepNum <= 66 ? 'okay' : 'good';
-    const input = {
-      intensity,
-      sleepQuality,
-      triggers: rp?.triggers ?? [],
-      supportLevel: rp?.supportAvailability ?? 'limited',
-      dailyActionsCompleted: 1,
-      relapseLogged: false,
-    };
-    return calculateStability(input).score;
-  }, [values, profile?.recoveryProfile]);
-
-  const periodConfig = PERIOD_CONFIG[currentCheckInPeriod];
-
-  const handleToggleTag = useCallback((tag: EmotionalTag) => {
-    setSelectedTags((prev) => {
-      const exists = prev.includes(tag);
-      if (exists) {
-        return prev.filter((t) => t !== tag);
-      }
-      if (prev.length >= 3) {
-        return prev;
-      }
-      return [...prev, tag];
-    });
-  }, []);
-
-  const handleSubmit = useCallback(() => {
-    if (phase === 'metrics') {
-      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-      setPhase('tags');
-      return;
+  useEffect(() => {
+    if (submitted && !prevSubmitted.current) {
+      prevSubmitted.current = true;
+      Animated.parallel([
+        Animated.timing(resultFade, { toValue: 1, duration: 500, useNativeDriver: true }),
+        Animated.timing(resultSlide, { toValue: 0, duration: 500, useNativeDriver: true }),
+        Animated.spring(scoreScale, { toValue: 1, friction: 4, tension: 60, useNativeDriver: true }),
+      ]).start();
     }
-
-    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-
-    const score = stabilityScore;
-    const { reflection: ref, emotionalNote: note } = getEmotionalReflection(score, values, checkIns, daysSober);
-    setCalculatedScore(score);
-    setReflection(ref);
-    setEmotionalNote(note);
-
-    const checkIn: DailyCheckIn = {
-      id: Date.now().toString(),
-      date: new Date().toISOString().split('T')[0],
-      timeOfDay: currentCheckInPeriod,
-      mood: values.mood,
-      cravingLevel: values.cravingLevel,
-      stress: values.stress,
-      sleepQuality: values.sleepQuality,
-      environment: values.environment,
-      emotionalState: values.emotionalState,
-      stabilityScore: score,
-      reflection: ref,
-      completedAt: new Date().toISOString(),
-      emotionalTags: selectedTags.length ? selectedTags : undefined,
-    };
-
-    console.log('[CheckIn] Submitted for period:', currentCheckInPeriod, checkIn);
-    addCheckIn(checkIn);
-    if (hadNearMiss) {
-      const nearMissEvent = {
-        timestamp: new Date().toISOString(),
-        cravingLevel: values.cravingLevel,
-        triggerContext: `${periodConfig.label} check-in; mood ${values.mood}; stress ${values.stress}; environment ${values.environment}`,
-        note: nearMissNote.trim() || undefined,
-      };
-      console.log('[CheckIn] Logging near miss event:', nearMissEvent);
-      logNearMiss(nearMissEvent);
-    }
-    triggerReliefLoop(checkIn);
-    setSubmitted(true);
-
-    Animated.parallel([
-      Animated.timing(resultFade, { toValue: 1, duration: 500, useNativeDriver: true }),
-      Animated.timing(resultSlide, { toValue: 0, duration: 500, useNativeDriver: true }),
-      Animated.spring(scoreScale, { toValue: 1, friction: 4, tension: 60, useNativeDriver: true }),
-    ]).start();
-  }, [phase, stabilityScore, values, checkIns, daysSober, currentCheckInPeriod, selectedTags, addCheckIn, triggerReliefLoop, resultFade, resultSlide, scoreScale, hadNearMiss, nearMissNote, logNearMiss, periodConfig.label]);
+    if (!submitted) prevSubmitted.current = false;
+  }, [submitted]);
 
   const handleClose = useCallback(() => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     router.back();
   }, [router]);
 
-  const completedPeriods = useMemo(() => {
-    const periods: CheckInTimeOfDay[] = ['morning', 'afternoon', 'evening'];
-    return periods.filter(p => todayCheckIns.some(c => c.timeOfDay === p));
-  }, [todayCheckIns]);
-
-  const allPeriodsComplete = completedPeriods.length >= 3;
-
-  const getCheckInForPeriod = useCallback((period: CheckInTimeOfDay) => {
-    return todayCheckIns.find(c => c.timeOfDay === period) ?? null;
-  }, [todayCheckIns]);
-
   if (submitted) {
-    const scoreColor = getScoreColor(calculatedScore);
-    const scoreLabel = getScoreLabel(calculatedScore);
-
     return (
       <View style={[styles.container, { paddingTop: insets.top }]}>
         <Animated.View
@@ -510,9 +348,9 @@ export default function DailyCheckInScreen() {
           ]}
         >
           <View style={styles.periodBadgeResult}>
-            {periodConfig.icon}
-            <Text style={[styles.periodBadgeText, { color: periodConfig.color }]}>
-              {periodConfig.label} Check-In
+            {periodConfigWithIcon.icon}
+            <Text style={[styles.periodBadgeText, { color: periodConfigWithIcon.color }]}>
+              {periodConfigWithIcon.label} Check-In
             </Text>
           </View>
 
@@ -520,13 +358,13 @@ export default function DailyCheckInScreen() {
             style={[
               styles.scoreCircle,
               {
-                borderColor: scoreColor,
+                borderColor: resultScoreColor,
                 transform: [{ scale: scoreScale }],
               },
             ]}
           >
-            <Text style={[styles.scoreNumber, { color: scoreColor }]}>{calculatedScore}</Text>
-            <Text style={[styles.scoreLabel, { color: scoreColor }]}>{scoreLabel}</Text>
+            <Text style={[styles.scoreNumber, { color: resultScoreColor }]}>{calculatedScore}</Text>
+            <Text style={[styles.scoreLabel, { color: resultScoreColor }]}>{resultScoreLabel}</Text>
           </Animated.View>
 
           <Text style={styles.stabilityTitle}>Stability Score</Text>
@@ -546,9 +384,7 @@ export default function DailyCheckInScreen() {
               <View key={m.key} style={styles.metricPill}>
                 {m.icon}
                 <Text style={styles.metricPillLabel}>{m.label}</Text>
-                <Text style={[styles.metricPillValue, { color: m.color }]}>
-                  {values[m.key]}
-                </Text>
+                <Text style={[styles.metricPillValue, { color: m.color }]}>{values[m.key]}</Text>
               </View>
             ))}
           </View>
@@ -568,7 +404,6 @@ export default function DailyCheckInScreen() {
 
   if (currentPeriodCheckIn || allPeriodsComplete) {
     const periods: CheckInTimeOfDay[] = ['morning', 'afternoon', 'evening'];
-    const noOp = () => {};
 
     return (
       <View style={[styles.container, { paddingTop: insets.top }]}>
@@ -589,7 +424,7 @@ export default function DailyCheckInScreen() {
             {periods.map((period) => {
               const completed = completedPeriods.includes(period);
               const isCurrent = period === currentCheckInPeriod;
-              const config = PERIOD_CONFIG[period];
+              const config = PERIOD_CONFIG_WITH_ICONS[period];
               return (
                 <View
                   key={period}
@@ -636,7 +471,7 @@ export default function DailyCheckInScreen() {
           {periods.map((period) => {
             const periodCheckIn = getCheckInForPeriod(period);
             if (!periodCheckIn) return null;
-            const pConfig = PERIOD_CONFIG[period];
+            const pConfig = PERIOD_CONFIG_WITH_ICONS[period];
             const scoreColor = getScoreColor(periodCheckIn.stabilityScore);
             const scoreLabel = getScoreLabel(periodCheckIn.stabilityScore);
 
@@ -677,11 +512,11 @@ export default function DailyCheckInScreen() {
 
   return (
     <View style={[styles.container, { paddingTop: insets.top }]}>
-      <View style={styles.header}>
+        <View style={styles.header}>
         <Pressable onPress={handleClose} style={styles.closeBtn} testID="checkin-close">
           <X size={22} color={Colors.textSecondary} />
         </Pressable>
-        <Text style={styles.headerTitle}>{periodConfig.label} Check-In</Text>
+        <Text style={styles.headerTitle}>{periodConfigWithIcon.label} Check-In</Text>
         <View style={{ width: 36 }} />
       </View>
 
@@ -694,7 +529,7 @@ export default function DailyCheckInScreen() {
           {(['morning', 'afternoon', 'evening'] as CheckInTimeOfDay[]).map((period) => {
             const completed = completedPeriods.includes(period);
             const isCurrent = period === currentCheckInPeriod;
-            const config = PERIOD_CONFIG[period];
+            const config = PERIOD_CONFIG_WITH_ICONS[period];
             return (
               <View
                 key={period}
@@ -725,7 +560,7 @@ export default function DailyCheckInScreen() {
 
         {phase === 'metrics' ? (
           <>
-            <Text style={styles.prompt}>{periodConfig.greeting}. How are you?</Text>
+            <Text style={styles.prompt}>{periodConfigWithIcon.greeting}. How are you?</Text>
             <Text style={styles.promptSub}>
               {isMorning
                 ? 'Slide to adjust each area. Be honest \u2014 this is just for you.'

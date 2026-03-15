@@ -1,147 +1,28 @@
-import React, { useMemo } from 'react';
+import React from 'react';
 import { View, Text, StyleSheet, ScrollView, Pressable } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter, Redirect } from 'expo-router';
-import {
-  ArrowRight,
-  Sun,
-  AlertTriangle,
-  Users,
-  PhoneCall,
-  Heart,
-  Brain,
-  BookOpenCheck,
-} from 'lucide-react-native';
+import { ArrowRight, AlertTriangle } from 'lucide-react-native';
 import * as Haptics from 'expo-haptics';
 import Colors from '@/constants/colors';
-import { useRecovery } from '@/providers/RecoveryProvider';
-import { useRiskPrediction } from '@/providers/RiskPredictionProvider';
-import { useStageDetection } from '@/providers/StageDetectionProvider';
+import { useTodayHub, type UiTodayPlanAction } from '@/features/home/hooks/useTodayHub';
 import { HomeLoadingSkeleton } from '@/components/LoadingSkeleton';
 import { RecoveryStabilityPanel } from '@/components/RecoveryStabilityPanel';
-import { calculateStability } from '@/utils/stabilityEngine';
-import type { StabilityZoneId } from '@/components/RecoveryStabilityPanel';
-import {
-  generateTodayPlan,
-  type TodayPlan,
-  type TodayPlanAction,
-} from '@/utils/todayPlanGenerator';
-
-type IconComponent = React.ComponentType<{ size?: number; color?: string }>;
-
-type UiTodayPlanAction = TodayPlanAction & {
-  icon: IconComponent;
-};
-
-type UiTodayPlan = TodayPlan & {
-  priorityActions: UiTodayPlanAction[];
-  optionalActions: UiTodayPlanAction[];
-};
-
-const ACTION_ICON_MAP: Record<string, IconComponent> = {
-  'daily-checkin': Sun,
-  'grounding-checkin': Sun,
-  'rebuild-step': BookOpenCheck,
-  'connection-touchpoint': Users,
-  'supportive-connection': Users,
-  'trigger-review': AlertTriangle,
-  'trigger-planning': AlertTriangle,
-  'coping-exercise': Brain,
-  'brief-journal': Brain,
-  'crisis-tools': AlertTriangle,
-  'reach-out-support': PhoneCall,
-  'relapse-plan': BookOpenCheck,
-};
-
-function attachIcons(plan: TodayPlan): UiTodayPlan {
-  const mapAction = (action: TodayPlanAction): UiTodayPlanAction => ({
-    ...action,
-    icon: ACTION_ICON_MAP[action.id] ?? Sun,
-  });
-
-  return {
-    ...plan,
-    priorityActions: plan.priorityActions.map(mapAction),
-    optionalActions: plan.optionalActions.map(mapAction),
-  };
-}
 
 export default function TodayHubScreen() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
-  const { profile, isLoading, checkIns } = useRecovery();
-  const { currentStage, currentProgram } = useStageDetection();
-  const {
-    riskCategory,
-    riskLabel,
-    trendLabel: riskTrendLabel,
-    missedEngagement,
-    currentPrediction,
-  } = useRiskPrediction();
+  const vm = useTodayHub();
 
-  const stabilityResult = useMemo(() => {
-    const rp = profile.recoveryProfile;
-    const sorted = [...checkIns].sort(
-      (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime(),
-    );
-    const previousScores = sorted.slice(0, 7).map(c => c.stabilityScore);
-    const today = new Date().toISOString().split('T')[0];
-    const dailyActionsCompleted = checkIns.filter(c => c.date === today).length;
-
-    const input = {
-      intensity: rp.struggleLevel,
-      sleepQuality: (rp.sleepQuality === 'fair'
-        ? 'okay'
-        : rp.sleepQuality === 'excellent'
-          ? 'good'
-          : rp.sleepQuality === 'poor'
-            ? 'poor'
-            : 'good') as 'poor' | 'okay' | 'good',
-      triggers: rp.triggers ?? [],
-      supportLevel: rp.supportAvailability,
-      dailyActionsCompleted,
-      relapseLogged: (rp.relapseCount ?? 0) > 0,
-    };
-
-    return calculateStability(input, previousScores);
-  }, [profile.recoveryProfile, checkIns]);
-
-  const todayPlanDomain = useMemo(
-    () =>
-      generateTodayPlan({
-        stabilityScore: stabilityResult.score,
-        relapseRisk: riskCategory,
-        recoveryStage: currentStage ?? profile.recoveryProfile.recoveryStage,
-        missedEngagementScore: missedEngagement,
-        triggerRiskScore: currentPrediction?.triggerRisk ?? 0,
-        stageProgramDay: currentProgram?.day,
-        stageProgramDuration: currentProgram?.duration,
-      }),
-    [
-      stabilityResult.score,
-      riskCategory,
-      currentStage,
-      missedEngagement,
-      currentPrediction?.triggerRisk,
-    ],
-  );
-
-  const todayPlan = useMemo(
-    () => attachIcons(todayPlanDomain),
-    [todayPlanDomain],
-  );
-
-  const primaryAction =
-    todayPlan.priorityActions[0] ??
-    todayPlan.optionalActions[0];
-
-  if (isLoading) {
+  if (vm.isLoading) {
     return <HomeLoadingSkeleton />;
   }
 
-  if (!profile.hasCompletedOnboarding) {
+  if (vm.shouldRedirectToOnboarding) {
     return <Redirect href={'/onboarding' as any} />;
   }
+
+  const { stability, relapseRisk, todayPlan, primaryAction, showRelapsePlanCta } = vm;
 
   return (
     <View style={[styles.wrapper, { paddingTop: insets.top }]}>
@@ -162,14 +43,14 @@ export default function TodayHubScreen() {
 
         {/* Stability + relapse risk panel */}
         <RecoveryStabilityPanel
-          score={stabilityResult.score}
-          stabilityTrend={stabilityResult.trend}
-          relapseRiskCategory={riskCategory}
-          relapseRiskLabel={riskLabel}
-          relapseRiskTrendLabel={riskTrendLabel || 'Stable'}
+          score={stability.score}
+          stabilityTrend={stability.trend}
+          relapseRiskCategory={relapseRisk.category}
+          relapseRiskLabel={relapseRisk.label}
+          relapseRiskTrendLabel={relapseRisk.trendLabel}
         />
 
-        {riskCategory === 'high' && (
+        {showRelapsePlanCta && (
           <Pressable
             style={({ pressed }) => [
               styles.relapsePlanCard,
@@ -196,31 +77,39 @@ export default function TodayHubScreen() {
 
         {/* Immediate next action */}
         <Text style={styles.sectionLabel}>Immediate next action</Text>
-        <Pressable
-          style={({ pressed }) => [
-            styles.primaryActionCard,
-            pressed && styles.pressed,
-          ]}
-          onPress={() => {
-            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
-            router.push(primaryAction.route as any);
-          }}
-          testID="todayhub-primary-action"
-        >
-          <View style={styles.primaryIconWrap}>
-            <primaryAction.icon size={24} color={Colors.primary} />
+        {primaryAction ? (
+          <Pressable
+            style={({ pressed }) => [
+              styles.primaryActionCard,
+              pressed && styles.pressed,
+            ]}
+            onPress={() => {
+              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
+              router.push(primaryAction.route as any);
+            }}
+            testID="todayhub-primary-action"
+          >
+            <View style={styles.primaryIconWrap}>
+              <primaryAction.icon size={24} color={Colors.primary} />
+            </View>
+            <View style={styles.primaryTextWrap}>
+              <Text style={styles.primaryTitle}>{primaryAction.title}</Text>
+              <Text style={styles.primarySubtitle}>{primaryAction.subtitle}</Text>
+            </View>
+            <ArrowRight size={20} color={Colors.primary} />
+          </Pressable>
+        ) : (
+          <View style={styles.emptyStateCard}>
+            <Text style={styles.emptyStateText}>
+              We&apos;ll suggest your next steps once you&apos;ve completed a few check-ins.
+            </Text>
           </View>
-          <View style={styles.primaryTextWrap}>
-            <Text style={styles.primaryTitle}>{primaryAction.title}</Text>
-            <Text style={styles.primarySubtitle}>{primaryAction.subtitle}</Text>
-          </View>
-          <ArrowRight size={20} color={Colors.primary} />
-        </Pressable>
+        )}
 
         {/* Today's Plan */}
         <Text style={styles.planTitle}>Today&apos;s Plan</Text>
         <View style={styles.planCard}>
-          {todayPlan.priorityActions.map(action => (
+          {todayPlan.priorityActions.map((action: UiTodayPlanAction) => (
             <Pressable
               key={action.id}
               style={({ pressed }) => [
@@ -243,7 +132,7 @@ export default function TodayHubScreen() {
               <ArrowRight size={18} color={Colors.textSecondary} />
             </Pressable>
           ))}
-          {todayPlan.optionalActions.map(action => (
+          {todayPlan.optionalActions.map((action: UiTodayPlanAction) => (
             <Pressable
               key={action.id}
               style={({ pressed }) => [
@@ -315,6 +204,20 @@ const styles = StyleSheet.create({
     letterSpacing: 1,
     marginBottom: 8,
     textTransform: 'uppercase',
+  },
+  emptyStateCard: {
+    backgroundColor: Colors.cardBackground,
+    borderRadius: 18,
+    paddingVertical: 18,
+    paddingHorizontal: 16,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    marginBottom: 18,
+  },
+  emptyStateText: {
+    fontSize: 14,
+    color: Colors.textSecondary,
+    textAlign: 'center',
   },
   primaryActionCard: {
     flexDirection: 'row',

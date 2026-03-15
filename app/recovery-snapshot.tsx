@@ -5,7 +5,7 @@ import { useRouter } from 'expo-router';
 import { AlertTriangle, ArrowRight, Heart } from 'lucide-react-native';
 import * as Haptics from 'expo-haptics';
 import Colors from '@/constants/colors';
-import { useRecovery } from '@/providers/RecoveryProvider';
+import { useRecoveryProfileStore } from '@/stores/useRecoveryProfileStore';
 
 function mapRiskLevelLabel(
   relapseRiskLevel?: 'low' | 'moderate' | 'high' | 'critical',
@@ -42,7 +42,7 @@ function buildFocusRecommendation(
 export default function RecoverySnapshotScreen() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
-  const { profile } = useRecovery();
+  const { profile } = useRecoveryProfileStore();
 
   const rp = profile.recoveryProfile;
 

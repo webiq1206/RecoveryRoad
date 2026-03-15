@@ -1,4 +1,4 @@
-import React, { useState, useRef, useCallback } from 'react';
+import React, { useState, useRef, useCallback, useMemo, useEffect } from 'react';
 import { View, Text, StyleSheet, TextInput, Pressable, ScrollView, Animated, Dimensions, Switch, Image } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
@@ -12,11 +12,12 @@ import { ADDICTION_TYPES } from '@/constants/milestones';
 import { ONBOARDING_COPY, BRAND } from '@/constants/branding';
 import { RecoveryStage, RecoveryProfile, PrivacyControls } from '@/types';
 import type { StruggleLevel, SleepQualityLevel, SupportAvailability } from '@/types';
+import {
+  getRemainingOnboardingSteps,
+  type OnboardingStepId,
+} from '@/utils/wizardSteps';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
-
-// 6 screens: Identity, Addiction, RecoveryPosition, ProtectionCalibration, RiskAndSupport, RebuildGoal
-const TOTAL_STEPS = 6;
 
 const RECOVERY_STAGES: { value: RecoveryStage; label: string; desc: string; icon: React.ReactNode }[] = [
   {
@@ -81,7 +82,7 @@ const GOAL_OPTIONS = [
 export default function OnboardingScreen() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
-  const { updateProfile } = useRecovery();
+  const { profile, emergencyContacts, accountabilityData, updateProfile, isLoading } = useRecovery();
   const fadeAnim = useRef(new Animated.Value(1)).current;
   const progressAnim = useRef(new Animated.Value(0)).current;
 
@@ -103,25 +104,62 @@ export default function OnboardingScreen() {
     allowCommunityMessages: true,
   });
 
-  const animateTransition = useCallback((nextStep: number) => {
-    Animated.sequence([
-      Animated.timing(fadeAnim, { toValue: 0, duration: 120, useNativeDriver: true }),
-      Animated.timing(fadeAnim, { toValue: 1, duration: 200, useNativeDriver: true }),
-    ]).start();
-    Animated.timing(progressAnim, {
-      toValue: nextStep / (TOTAL_STEPS - 1),
-      duration: 300,
-      useNativeDriver: false,
-    }).start();
-    setStep(nextStep);
-  }, [fadeAnim, progressAnim]);
+  const remainingSteps = useMemo(
+    () => getRemainingOnboardingSteps(profile, emergencyContacts, accountabilityData ?? null),
+    [profile, emergencyContacts, accountabilityData]
+  );
+  const currentStepId: OnboardingStepId | null = remainingSteps[step]?.id ?? null;
+  const totalStepsInWizard = remainingSteps.length;
+
+  const hasInitializedFromProfile = useRef(false);
+  useEffect(() => {
+    if (!profile || isLoading || hasInitializedFromProfile.current) return;
+    hasInitializedFromProfile.current = true;
+    if (profile.name) setName(profile.name);
+    if (profile.privacyControls?.isAnonymous != null) setIsAnonymous(profile.privacyControls.isAnonymous);
+    if (Array.isArray(profile.addictions) && profile.addictions.length > 0) setAddictions(profile.addictions);
+    const rp = profile.recoveryProfile;
+    if (rp) {
+      if (rp.recoveryStage) setRecoveryStage(rp.recoveryStage);
+      if (typeof rp.struggleLevel === 'number') setStruggleLevel(rp.struggleLevel);
+      if (rp.sleepQuality) setSleepQuality(rp.sleepQuality);
+      if (rp.supportAvailability) setSupportAvailability(rp.supportAvailability);
+      if (Array.isArray(rp.triggers) && rp.triggers.length > 0) setTriggers(rp.triggers);
+      if (Array.isArray(rp.goals) && rp.goals.length > 0) setGoals(rp.goals);
+    }
+    if (profile.privacyControls) setPrivacyControls(profile.privacyControls);
+  }, [profile, isLoading]);
+
+  useEffect(() => {
+    if (hasStarted && remainingSteps.length === 0) {
+      updateProfile({ hasCompletedOnboarding: true });
+      router.replace('/protection-profile' as any);
+    }
+  }, [hasStarted, remainingSteps.length, updateProfile, router]);
+
+  const animateTransition = useCallback(
+    (nextStep: number) => {
+      const total = Math.max(1, totalStepsInWizard);
+      Animated.sequence([
+        Animated.timing(fadeAnim, { toValue: 0, duration: 120, useNativeDriver: true }),
+        Animated.timing(fadeAnim, { toValue: 1, duration: 200, useNativeDriver: true }),
+      ]).start();
+      Animated.timing(progressAnim, {
+        toValue: total > 1 ? nextStep / (total - 1) : 1,
+        duration: 300,
+        useNativeDriver: false,
+      }).start();
+      setStep(nextStep);
+    },
+    [fadeAnim, progressAnim, totalStepsInWizard]
+  );
 
   const handleNext = useCallback(() => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    if (step < TOTAL_STEPS - 1) {
+    if (step < totalStepsInWizard - 1) {
       animateTransition(step + 1);
     }
-  }, [step, animateTransition]);
+  }, [step, totalStepsInWizard, animateTransition]);
 
   const handleBack = useCallback(() => {
     if (step > 0) {
@@ -175,18 +213,18 @@ export default function OnboardingScreen() {
   }, [name, isAnonymous, addictions, recoveryStage, triggers, goals, struggleLevel, sleepQuality, supportAvailability, privacyControls, updateProfile, router]);
 
   const canProceed = (): boolean => {
-    switch (step) {
-      case 0:
+    if (currentStepId == null) return false;
+    switch (currentStepId) {
+      case 'identity':
         return isAnonymous || name.trim().length > 0;
-      case 1:
+      case 'addiction':
         return addictions.length > 0;
-      case 2:
+      case 'stage':
+      case 'calibration':
         return true;
-      case 3:
-        return true;
-      case 4:
+      case 'triggers':
         return triggers.length > 0;
-      case 5:
+      case 'goals':
         return goals.length > 0;
       default:
         return true;
@@ -199,35 +237,14 @@ export default function OnboardingScreen() {
   });
 
   const renderStep = () => {
-    switch (step) {
-      case 0: {
-        // IdentityScreen: welcome + name + anonymous
+    if (currentStepId == null) return null;
+    const stepNum = step + 1;
+    const stepLabel = `STEP ${stepNum} OF ${totalStepsInWizard}`;
+    switch (currentStepId) {
+      case 'identity':
         return (
           <ScrollView style={styles.stepContent} showsVerticalScrollIndicator={false} contentContainerStyle={styles.optionsListContent}>
-            <View style={styles.heroContainer}>
-              <Image
-                source={require('@/assets/images/app-icon.png')}
-                style={styles.heroAppIcon}
-                resizeMode="contain"
-              />
-            </View>
-            <Text style={styles.heroAppName}>Recovery Companion</Text>
-            <Text style={styles.heroTitle}>{ONBOARDING_COPY.hero.title}</Text>
-            <Text style={styles.heroSubtitle}>
-              {ONBOARDING_COPY.hero.subtitle}
-            </Text>
-            <View style={styles.trustBadges}>
-              <View style={styles.trustItem}>
-                <Lock size={14} color={Colors.primary} />
-                <Text style={styles.trustText}>Private & encrypted</Text>
-              </View>
-              <View style={styles.trustItem}>
-                <EyeOff size={14} color={Colors.primary} />
-                <Text style={styles.trustText}>Anonymous option</Text>
-              </View>
-            </View>
-
-            <Text style={[styles.stepLabel, { marginTop: 24 }]}>STEP 1 OF {TOTAL_STEPS}</Text>
+            <Text style={[styles.stepLabel, { marginTop: 24 }]}>{stepLabel}</Text>
             <Text style={styles.stepTitle}>{ONBOARDING_COPY.steps.name.title}</Text>
             <Text style={styles.stepSubtitle}>{ONBOARDING_COPY.steps.name.subtitle}</Text>
 
@@ -266,12 +283,11 @@ export default function OnboardingScreen() {
             )}
           </ScrollView>
         );
-      }
 
-      case 1:
+      case 'addiction':
         return (
           <View style={styles.stepContent}>
-            <Text style={styles.stepLabel}>STEP 2 OF {TOTAL_STEPS}</Text>
+            <Text style={styles.stepLabel}>{stepLabel}</Text>
             <Text style={styles.stepTitle}>{ONBOARDING_COPY.steps.addiction.title}</Text>
             <Text style={styles.stepSubtitle}>{ONBOARDING_COPY.steps.addiction.subtitle}</Text>
             {addictions.length > 0 && (
@@ -296,10 +312,10 @@ export default function OnboardingScreen() {
           </View>
         );
 
-      case 2:
+      case 'stage':
         return (
           <View style={styles.stepContent}>
-            <Text style={styles.stepLabel}>STEP 3 OF {TOTAL_STEPS}</Text>
+            <Text style={styles.stepLabel}>{stepLabel}</Text>
             <Text style={styles.stepTitle}>{ONBOARDING_COPY.steps.stage.title}</Text>
             <Text style={styles.stepSubtitle}>{ONBOARDING_COPY.steps.stage.subtitle}</Text>
             <View style={styles.stageList}>
@@ -329,11 +345,10 @@ export default function OnboardingScreen() {
           </View>
         );
 
-      case 3: {
-        // ProtectionCalibrationScreen: intensity (1-5) + sleep quality
+      case 'calibration':
         return (
           <ScrollView style={styles.stepContent} showsVerticalScrollIndicator={false} contentContainerStyle={styles.optionsListContent}>
-            <Text style={styles.stepLabel}>STEP 4 OF {TOTAL_STEPS}</Text>
+            <Text style={styles.stepLabel}>{stepLabel}</Text>
             <Text style={styles.stepTitle}>{ONBOARDING_COPY.steps.struggle.title}</Text>
             <Text style={styles.stepSubtitle}>{ONBOARDING_COPY.steps.struggle.subtitle}</Text>
             <View style={styles.struggleContainer}>
@@ -391,13 +406,11 @@ export default function OnboardingScreen() {
             </View>
           </ScrollView>
         );
-      }
 
-      case 4: {
-        // RiskAndSupportScreen: triggers + support level
+      case 'triggers':
         return (
           <ScrollView style={styles.stepContent} showsVerticalScrollIndicator={false} contentContainerStyle={styles.optionsListContent}>
-            <Text style={styles.stepLabel}>STEP 5 OF {TOTAL_STEPS}</Text>
+            <Text style={styles.stepLabel}>{stepLabel}</Text>
             <Text style={styles.stepTitle}>{ONBOARDING_COPY.steps.triggers.title}</Text>
             <Text style={styles.stepSubtitle}>{ONBOARDING_COPY.steps.triggers.subtitle}</Text>
             {triggers.length > 0 && (
@@ -447,15 +460,14 @@ export default function OnboardingScreen() {
             </View>
           </ScrollView>
         );
-      }
 
-      case 5:
+      case 'goals':
         return (
           <View style={styles.stepContent}>
             <View style={styles.stepIconWrap}>
               <Target size={28} color={Colors.primary} />
             </View>
-            <Text style={styles.stepLabel}>STEP {TOTAL_STEPS} OF {TOTAL_STEPS}</Text>
+            <Text style={styles.stepLabel}>{stepLabel}</Text>
             <Text style={styles.stepTitle}>{ONBOARDING_COPY.steps.goals.title}</Text>
             <Text style={styles.stepSubtitle}>{ONBOARDING_COPY.steps.goals.subtitle}</Text>
             {goals.length > 0 && (
@@ -581,9 +593,9 @@ export default function OnboardingScreen() {
         <View style={styles.progressBarBg}>
           <Animated.View style={[styles.progressBarFill, { width: progressWidth }]} />
         </View>
-        {step >= 0 && (
+        {step >= 0 && totalStepsInWizard > 0 && (
           <Text style={styles.progressText}>
-            {step + 1}/{TOTAL_STEPS}
+            {step + 1}/{totalStepsInWizard}
           </Text>
         )}
       </View>
@@ -602,7 +614,7 @@ export default function OnboardingScreen() {
           <View />
         )}
 
-        {step < TOTAL_STEPS - 1 ? (
+        {step < totalStepsInWizard - 1 ? (
           <Pressable
             style={[styles.nextBtn, !canProceed() && styles.nextBtnDisabled]}
             onPress={handleNext}

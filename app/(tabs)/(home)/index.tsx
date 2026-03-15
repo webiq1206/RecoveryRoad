@@ -4,7 +4,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter, Redirect } from 'expo-router';
 import {
   ArrowRight, BookOpen, Sun, AlertTriangle, TrendingUp, Users,
-  TrendingDown, Minus, Heart, AlertCircle,
+  TrendingDown, Minus, Heart, AlertCircle, ListChecks,
 } from 'lucide-react-native';
 import * as Haptics from 'expo-haptics';
 import Colors from '@/constants/colors';
@@ -134,6 +134,24 @@ export default function HomeScreen() {
         </View>
 
         {/* 3. Stability Builder — Visually dominant required actions */}
+        <Pressable
+          style={({ pressed }) => [styles.dailyGuidanceCard, pressed && styles.dailyGuidanceCardPressed]}
+          onPress={() => {
+            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+            router.push('/daily-guidance' as any);
+          }}
+          testID="daily-guidance-cta"
+        >
+          <ListChecks size={24} color={Colors.primary} />
+          <View style={styles.dailyGuidanceTextWrap}>
+            <Text style={styles.dailyGuidanceTitle}>What to do today</Text>
+            <Text style={styles.dailyGuidanceSubtitle}>
+              Get a prioritized list of actions based on your progress and state.
+            </Text>
+          </View>
+          <ArrowRight size={20} color={Colors.primary} />
+        </Pressable>
+
         <Text style={styles.builderTitle}>Build Stability Today</Text>
         <View style={styles.builderCard}>
           <Pressable
@@ -366,6 +384,33 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: Colors.textSecondary,
     fontStyle: 'italic',
+  },
+  dailyGuidanceCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 14,
+    backgroundColor: Colors.primary + '14',
+    borderRadius: 18,
+    padding: 18,
+    marginBottom: 20,
+    borderWidth: 2,
+    borderColor: Colors.primary + '40',
+  },
+  dailyGuidanceCardPressed: {
+    opacity: 0.95,
+  },
+  dailyGuidanceTextWrap: {
+    flex: 1,
+  },
+  dailyGuidanceTitle: {
+    fontSize: 17,
+    fontWeight: '700',
+    color: Colors.text,
+  },
+  dailyGuidanceSubtitle: {
+    fontSize: 13,
+    color: Colors.textSecondary,
+    marginTop: 4,
   },
   builderTitle: {
     fontSize: 18,

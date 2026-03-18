@@ -34,6 +34,7 @@ import * as Haptics from 'expo-haptics';
 import Colors from '@/constants/colors';
 import { useUser } from '@/core/domains/useUser';
 import { useCheckin } from '@/core/domains/useCheckin';
+import { useAppStore } from '@/stores/useAppStore';
 import { useRelapse } from '@/core/domains/useRelapse';
 import { usePledges } from '@/core/domains/usePledges';
 import { useRebuild } from '@/core/domains/useRebuild';
@@ -142,6 +143,9 @@ function StabilityTimelineScreen() {
   const { rebuildData } = useRebuild();
   const { profile } = useUser();
   const { checkIns } = useCheckin();
+  const centralProfile = useAppStore((s) => s.userProfile);
+  const centralDailyCheckIns = useAppStore((s) => s.dailyCheckIns);
+  const centralProgress = useAppStore((s) => s.progress);
   const { timelineEvents } = useRelapse();
   const { trendLabel: riskTrendLabel, timeOfDayRisk } = useRiskPrediction();
 
@@ -155,13 +159,14 @@ function StabilityTimelineScreen() {
       dayKeys.push(d.toISOString().split('T')[0]);
     }
     const byDate = new Map<string, number>();
-    const sorted = [...checkIns].sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+    const sourceCheckIns = centralDailyCheckIns.length > 0 ? centralDailyCheckIns : checkIns;
+    const sorted = [...sourceCheckIns].sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
     sorted.forEach(c => {
       const day = c.date;
       if (dayKeys.includes(day)) byDate.set(day, c.stabilityScore);
     });
     return dayKeys.map(d => byDate.get(d) ?? null);
-  }, [checkIns]);
+  }, [centralDailyCheckIns, checkIns]);
 
   const stabilityScoresForChart = useMemo(() => thirtyDayData.map(v => v ?? 50), [thirtyDayData]);
 
@@ -172,27 +177,29 @@ function StabilityTimelineScreen() {
       const d = new Date(today);
       d.setDate(d.getDate() - (29 - i));
       const dateStr = d.toISOString().split('T')[0];
-      const hasCheckIn = checkIns.some(c => c.date === dateStr);
+      const sourceCheckIns = centralDailyCheckIns.length > 0 ? centralDailyCheckIns : checkIns;
+      const hasCheckIn = sourceCheckIns.some(c => c.date === dateStr);
       const hasPledge = pledges.some(p => p.date === dateStr);
       if (hasCheckIn || hasPledge) count++;
     }
     return count;
-  }, [checkIns, pledges]);
+  }, [centralDailyCheckIns, checkIns, pledges]);
 
-  const relapseCount = profile.recoveryProfile?.relapseCount ?? 0;
+  const relapseCount = centralProgress.relapseCount ?? (profile.recoveryProfile?.relapseCount ?? 0);
   const crisisActivationsCount = useMemo(() => {
     return timelineEvents.filter((e) => e.type === 'crisis_activation').length;
   }, [timelineEvents]);
 
   const sevenDayChange = useMemo(() => {
-    const scores = [...checkIns].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()).slice(0, 7).map(c => c.stabilityScore);
+    const sourceCheckIns = centralDailyCheckIns.length > 0 ? centralDailyCheckIns : checkIns;
+    const scores = [...sourceCheckIns].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()).slice(0, 7).map(c => c.stabilityScore);
     if (scores.length < 2) return 0;
     const recent = scores.slice(0, 3).reduce((a, b) => a + b, 0) / Math.min(3, scores.length);
     const older = scores.slice(3, 7);
     if (older.length === 0) return 0;
     const olderAvg = older.reduce((a, b) => a + b, 0) / older.length;
     return Math.round(recent - olderAvg);
-  }, [checkIns]);
+  }, [centralDailyCheckIns, checkIns]);
 
   const weeklyPlansCompleted = useMemo(() => {
     const today = new Date();
@@ -201,10 +208,11 @@ function StabilityTimelineScreen() {
       const d = new Date(today);
       d.setDate(d.getDate() - (6 - i));
       const dateStr = d.toISOString().split('T')[0];
-      if (checkIns.some(c => c.date === dateStr) || pledges.some(p => p.date === dateStr)) count++;
+      const sourceCheckIns = centralDailyCheckIns.length > 0 ? centralDailyCheckIns : checkIns;
+      if (sourceCheckIns.some(c => c.date === dateStr) || pledges.some(p => p.date === dateStr)) count++;
     }
     return count;
-  }, [checkIns, pledges]);
+  }, [centralDailyCheckIns, checkIns, pledges]);
 
   const rebuildActionsCount = useMemo(() => rebuildData.habits.reduce((s, h) => s + (h.streak || 0), 0), [rebuildData.habits]);
 
@@ -215,12 +223,13 @@ function StabilityTimelineScreen() {
       const d = new Date(today);
       d.setDate(d.getDate() - i);
       const dateStr = d.toISOString().split('T')[0];
-      const has = checkIns.some(c => c.date === dateStr) || pledges.some(p => p.date === dateStr);
+      const sourceCheckIns = centralDailyCheckIns.length > 0 ? centralDailyCheckIns : checkIns;
+      const has = sourceCheckIns.some(c => c.date === dateStr) || pledges.some(p => p.date === dateStr);
       if (has) streak++;
       else break;
     }
     return streak;
-  }, [checkIns, pledges]);
+  }, [centralDailyCheckIns, checkIns, pledges]);
 
   const badge7CheckIns = consistentCheckInDays >= 7;
   const badge14NoCrisis = consistentCheckInDays >= 14 || crisisActivationsCount === 0;
@@ -328,10 +337,11 @@ function StabilityTimelineScreen() {
 
   const planCompletedSet = useMemo(() => {
     const set = new Set<string>();
-    checkIns.forEach(c => set.add(c.date));
+    const sourceCheckIns = centralDailyCheckIns.length > 0 ? centralDailyCheckIns : checkIns;
+    sourceCheckIns.forEach(c => set.add(c.date));
     pledges.forEach(p => set.add(p.date));
     return set;
-  }, [checkIns, pledges]);
+  }, [centralDailyCheckIns, checkIns, pledges]);
 
   return (
     <ScrollView

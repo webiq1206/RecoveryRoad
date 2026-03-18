@@ -9,6 +9,7 @@ import { useRiskPrediction } from '@/providers/RiskPredictionProvider';
 import { useStageDetection } from '@/providers/StageDetectionProvider';
 import { useUser } from '@/core/domains/useUser';
 import { useCheckin } from '@/core/domains/useCheckin';
+import { useAppStore } from '@/stores/useAppStore';
 import { calculateStability } from '@/utils/stabilityEngine';
 import {
   generateTodayPlan,
@@ -94,6 +95,9 @@ function getStabilityZoneId(score: number): StabilityZoneId {
 export function useTodayHub(): TodayHubViewModel {
   const { profile, isLoading } = useUser();
   const { checkIns } = useCheckin();
+  const centralProfile = useAppStore((s) => s.userProfile);
+  const centralDailyCheckIns = useAppStore((s) => s.dailyCheckIns);
+  const centralProgress = useAppStore((s) => s.progress);
   const { currentStage, currentProgram } = useStageDetection();
   const {
     riskCategory,
@@ -104,13 +108,14 @@ export function useTodayHub(): TodayHubViewModel {
   } = useRiskPrediction();
 
   const stabilityResult = useMemo(() => {
-    const rp = profile.recoveryProfile;
-    const sorted = [...checkIns].sort(
+    const rp = (centralProfile ?? profile).recoveryProfile;
+    const sourceCheckIns = centralDailyCheckIns.length > 0 ? centralDailyCheckIns : checkIns;
+    const sorted = [...sourceCheckIns].sort(
       (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()
     );
     const previousScores = sorted.slice(0, 7).map((c) => c.stabilityScore);
     const today = new Date().toISOString().split('T')[0];
-    const dailyActionsCompleted = checkIns.filter((c) => c.date === today).length;
+    const dailyActionsCompleted = sourceCheckIns.filter((c) => c.date === today).length;
 
     const sleepQuality: 'poor' | 'okay' | 'good' =
       rp.sleepQuality === 'fair'
@@ -131,7 +136,7 @@ export function useTodayHub(): TodayHubViewModel {
     };
 
     return calculateStability(input, previousScores);
-  }, [profile.recoveryProfile, checkIns]);
+  }, [centralProfile, centralDailyCheckIns, profile.recoveryProfile, checkIns]);
 
   const todayPlanDomain = useMemo(
     () =>

@@ -21,6 +21,7 @@ import {
   type CheckInTimeOfDay,
 } from '@/features/checkin/constants/checkinMetrics';
 import type { DailyCheckIn, EmotionalTag } from '@/types';
+import { useAppStore } from '@/stores/useAppStore';
 
 export interface PeriodConfig {
   label: string;
@@ -49,6 +50,7 @@ export function useDailyCheckInFlow() {
     checkIns,
     logNearMiss,
   } = useCheckin();
+  const addCheckInToCentralStore = useAppStore.use.addCheckIn();
   const { triggerLoop, generateSupportiveNotification } = useRetention();
 
   const isMorning = currentCheckInPeriod === 'morning';
@@ -184,6 +186,19 @@ export function useDailyCheckInFlow() {
     };
 
     addCheckIn(checkIn);
+    addCheckInToCentralStore({
+      date: checkIn.date,
+      timeOfDay: checkIn.timeOfDay,
+      mood: checkIn.mood,
+      cravingLevel: checkIn.cravingLevel,
+      stress: checkIn.stress,
+      sleepQuality: checkIn.sleepQuality,
+      environment: checkIn.environment,
+      emotionalState: checkIn.emotionalState,
+      stabilityScore: checkIn.stabilityScore,
+      reflection: checkIn.reflection,
+      emotionalTags: checkIn.emotionalTags,
+    });
     if (hadNearMiss) {
       logNearMiss({
         timestamp: new Date().toISOString(),

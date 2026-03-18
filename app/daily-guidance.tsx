@@ -14,6 +14,7 @@ import { useAppMeta } from '@/core/domains/useAppMeta';
 import { useJournal } from '@/core/domains/useJournal';
 import { useRebuild } from '@/core/domains/useRebuild';
 import { getDailyGuidanceActions } from '@/utils/wizardSteps';
+import { useAppStore } from '@/stores/useAppStore';
 
 const ACTION_ICONS: Record<string, React.ReactNode> = {
   checkin_morning: <Sun size={22} color={Colors.primary} />,
@@ -43,6 +44,7 @@ export default function DailyGuidanceScreen() {
   const { stabilityScore } = useAppMeta();
   const { journal } = useJournal();
   const { rebuildData } = useRebuild();
+  const centralProfile = useAppStore((s) => s.userProfile);
 
   const hasJournalEntryToday = useMemo(() => {
     const today = new Date().toISOString().split('T')[0];
@@ -84,7 +86,7 @@ export default function DailyGuidanceScreen() {
 
   const incompleteCount = actions.filter((a) => !a.completed).length;
 
-  if (!profile.hasCompletedOnboarding) {
+  if (!(centralProfile?.hasCompletedOnboarding ?? profile.hasCompletedOnboarding)) {
     return <Redirect href="/onboarding" />;
   }
 

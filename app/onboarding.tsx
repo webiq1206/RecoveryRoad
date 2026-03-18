@@ -18,6 +18,7 @@ import {
   getRemainingOnboardingSteps,
   type OnboardingStepId,
 } from '@/utils/wizardSteps';
+import { useAppStore } from '@/stores/useAppStore';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const RECOVERY_STAGES: { value: RecoveryStage; label: string; desc: string; icon: React.ReactNode }[] = [
@@ -127,6 +128,8 @@ export default function OnboardingScreen() {
     allowCommunityMessages: true,
   });
 
+  const updateUserState = useAppStore.use.updateUserState();
+
   const remainingSteps = useMemo(
     () => getRemainingOnboardingSteps(profile, emergencyContacts, accountabilityData ?? null),
     [profile, emergencyContacts, accountabilityData]
@@ -156,6 +159,7 @@ export default function OnboardingScreen() {
   useEffect(() => {
     if (hasStarted && remainingSteps.length === 0) {
       updateProfile({ hasCompletedOnboarding: true });
+      updateUserState({ hasCompletedOnboarding: true });
       router.replace('/protection-profile' as any);
     }
   }, [hasStarted, remainingSteps.length, updateProfile, router]);
@@ -239,7 +243,7 @@ export default function OnboardingScreen() {
       isAnonymous,
     };
 
-    updateProfile({
+    const completedProfile = {
       name: isAnonymous ? 'Anonymous' : (name.trim() || 'Friend'),
       addictions: addictions.length > 0 ? addictions : ['Addiction'],
       soberDate: new Date().toISOString(),
@@ -248,7 +252,10 @@ export default function OnboardingScreen() {
       hasCompletedOnboarding: true,
       privacyControls: finalPrivacy,
       recoveryProfile: rp,
-    });
+    };
+
+    updateProfile(completedProfile);
+    updateUserState(completedProfile);
 
     router.replace('/recovery-snapshot' as any);
   }, [

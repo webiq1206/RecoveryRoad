@@ -1,16 +1,18 @@
 import React from 'react';
 import { Redirect } from 'expo-router';
 import { useUser } from '@/core/domains/useUser';
+import { useAppStore } from '@/stores/useAppStore';
 import { HomeLoadingSkeleton } from '@/components/LoadingSkeleton';
 
 export default function HomeScreenRedirect() {
   const { profile, isLoading } = useUser();
+  const centralProfile = useAppStore((s) => s.userProfile);
 
   if (isLoading) {
     return <HomeLoadingSkeleton />;
   }
 
-  if (!profile.hasCompletedOnboarding) {
+  if (!(centralProfile?.hasCompletedOnboarding ?? profile.hasCompletedOnboarding)) {
     return <Redirect href={'/onboarding' as any} />;
   }
 

@@ -22,6 +22,7 @@ import { useRebuild } from '@/core/domains/useRebuild';
 import { useAccountability } from '@/core/domains/useAccountability';
 import { useCheckin } from '@/core/domains/useCheckin';
 import { useAppMeta } from '@/core/domains/useAppMeta';
+import { useAppStore } from '@/stores/useAppStore';
 import type { CheckInTimeOfDay } from '@/types';
 
 type WizardTaskKind = 'onboarding' | 'daily';
@@ -55,6 +56,7 @@ export default function IntelligentWizardScreen() {
   const { accountabilityData } = useAccountability();
   const { todayCheckIns, currentCheckInPeriod } = useCheckin();
   const { stabilityScore } = useAppMeta();
+  const centralProfile = useAppStore((s) => s.userProfile);
 
   const effectivePeriod = currentCheckInPeriod ?? getCurrentPeriod();
 
@@ -79,10 +81,10 @@ export default function IntelligentWizardScreen() {
         kind: 'onboarding',
         title: 'Set up your core profile',
         description: 'Share your name, addiction focus, triggers, and goals so your plan can adapt around you.',
-        ctaLabel: profile.hasCompletedOnboarding ? 'Review setup' : 'Begin setup',
+        ctaLabel: (centralProfile?.hasCompletedOnboarding ?? profile.hasCompletedOnboarding) ? 'Review setup' : 'Begin setup',
         route: '/onboarding',
         priority: 100,
-        isCompleted: profile.hasCompletedOnboarding,
+        isCompleted: centralProfile?.hasCompletedOnboarding ?? profile.hasCompletedOnboarding,
         icon: <Shield size={20} color={Colors.primary} />,
         pill: profile.hasCompletedOnboarding ? 'Done' : 'Required',
       },
@@ -94,7 +96,9 @@ export default function IntelligentWizardScreen() {
         ctaLabel: 'Open protection profile',
         route: '/protection-profile',
         priority: 80,
-        isCompleted: profile.hasCompletedOnboarding && profile.recoveryProfile.triggers.length > 0,
+        isCompleted:
+          (centralProfile?.hasCompletedOnboarding ?? profile.hasCompletedOnboarding) &&
+          (centralProfile?.recoveryProfile.triggers.length ?? profile.recoveryProfile.triggers.length) > 0,
         icon: <ShieldAlert size={20} color={Colors.primary} />,
       },
       {

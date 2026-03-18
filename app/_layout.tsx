@@ -14,6 +14,7 @@ import { TherapistProvider } from "@/providers/TherapistProvider";
 import { ComplianceProvider } from "@/providers/ComplianceProvider";
 import { SecurityProvider, useSecurity } from "@/providers/SecurityProvider";
 import { StageDetectionProvider } from "@/providers/StageDetectionProvider";
+import { ProviderModeProvider } from "@/providers/ProviderModeProvider";
 import { RetentionProvider } from "@/providers/RetentionProvider";
 import { NotificationProvider } from "@/providers/NotificationProvider";
 import ErrorBoundary from "@/components/ErrorBoundary";
@@ -109,27 +110,29 @@ function SecuredApp() {
 
   return (
     <SubscriptionProvider>
-      <StageDetectionProvider>
-        <EngagementProvider>
-          <RiskPredictionProvider>
-            <ConnectionProvider>
-              <RecoveryRoomsProvider>
-                <CommunityProvider>
-                  <TherapistProvider>
-                    <ComplianceProvider>
-                      <RetentionProvider>
-                        <NotificationProvider>
-                          <RootLayoutNav />
-                        </NotificationProvider>
-                      </RetentionProvider>
-                    </ComplianceProvider>
-                  </TherapistProvider>
-                </CommunityProvider>
-              </RecoveryRoomsProvider>
-            </ConnectionProvider>
-          </RiskPredictionProvider>
-        </EngagementProvider>
-      </StageDetectionProvider>
+      <ProviderModeProvider>
+        <StageDetectionProvider>
+          <EngagementProvider>
+            <RiskPredictionProvider>
+              <ConnectionProvider>
+                <RecoveryRoomsProvider>
+                  <CommunityProvider>
+                    <TherapistProvider>
+                      <ComplianceProvider>
+                        <RetentionProvider>
+                          <NotificationProvider>
+                            <RootLayoutNav />
+                          </NotificationProvider>
+                        </RetentionProvider>
+                      </ComplianceProvider>
+                    </TherapistProvider>
+                  </CommunityProvider>
+                </RecoveryRoomsProvider>
+              </ConnectionProvider>
+            </RiskPredictionProvider>
+          </EngagementProvider>
+        </StageDetectionProvider>
+      </ProviderModeProvider>
     </SubscriptionProvider>
   );
 }

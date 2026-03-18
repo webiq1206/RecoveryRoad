@@ -10,7 +10,7 @@ import {
   STORAGE_KEYS,
   loadStorageItem,
   saveStorageItem,
-} from '@/lib/recoveryDefaults';
+} from '@/core/persistence';
 
 export function useCheckInsStore() {
   const queryClient = useQueryClient();

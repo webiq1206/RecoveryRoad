@@ -12,7 +12,7 @@ import {
   migrateProfile,
   loadStorageItem,
   saveStorageItem,
-} from '@/lib/recoveryDefaults';
+} from '@/core/persistence';
 
 export function useRecoveryProfileStore() {
   const queryClient = useQueryClient();

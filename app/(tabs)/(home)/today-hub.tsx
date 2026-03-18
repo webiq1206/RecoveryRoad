@@ -2,9 +2,13 @@ import React from 'react';
 import { View, Text, StyleSheet, ScrollView, Pressable } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter, Redirect } from 'expo-router';
-import { ArrowRight, AlertTriangle } from 'lucide-react-native';
+import { ArrowRight, AlertTriangle, Activity, Sparkles, BarChart3 } from 'lucide-react-native';
 import * as Haptics from 'expo-haptics';
 import Colors from '@/constants/colors';
+import { MOOD_EMOJIS, MOOD_LABELS } from '@/constants/milestones';
+import { useUser } from '@/core/domains/useUser';
+import { useCheckin } from '@/core/domains/useCheckin';
+import { useAppStore } from '@/stores/useAppStore';
 import { useTodayHub, type UiTodayPlanAction } from '@/features/home/hooks/useTodayHub';
 import { HomeLoadingSkeleton } from '@/components/LoadingSkeleton';
 import { RecoveryStabilityPanel } from '@/components/RecoveryStabilityPanel';
@@ -13,6 +17,39 @@ export default function TodayHubScreen() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const vm = useTodayHub();
+  const { profile } = useUser();
+  const centralProfile = useAppStore((s) => s.userProfile);
+  const { todayCheckIn } = useCheckin();
+
+  const displayProfile = centralProfile ?? profile;
+
+  const greetingLabel = (() => {
+    const hour = new Date().getHours();
+    const base =
+      hour < 12 ? 'Good morning' : hour < 18 ? 'Good afternoon' : 'Good evening';
+    const firstName =
+      displayProfile?.name?.split?.(' ')?.[0] || 'there';
+    return `${base}, ${firstName}`;
+  })();
+
+  const moodEmoji =
+    typeof todayCheckIn?.mood === 'number'
+      ? MOOD_EMOJIS[Math.min(4, Math.max(0, Math.round((todayCheckIn.mood / 100) * 4)))]
+      : '–';
+
+  const moodLabel =
+    typeof todayCheckIn?.mood === 'number'
+      ? MOOD_LABELS[Math.min(4, Math.max(0, Math.round((todayCheckIn.mood / 100) * 4)))]
+      : 'No check-in yet';
+
+  const urgeLabel =
+    typeof todayCheckIn?.cravingLevel === 'number'
+      ? todayCheckIn.cravingLevel >= 70
+        ? 'High urge'
+        : todayCheckIn.cravingLevel >= 40
+          ? 'Moderate urge'
+          : 'Low urge'
+      : 'Unknown';
 
   if (vm.isLoading) {
     return <HomeLoadingSkeleton />;
@@ -35,10 +72,101 @@ export default function TodayHubScreen() {
         showsVerticalScrollIndicator={false}
       >
         <View style={styles.header}>
-          <Text style={styles.greetingLabel}>TodayHub</Text>
+          <Text style={styles.greetingLabel}>{greetingLabel}</Text>
           <Text style={styles.greetingSubtitle}>
-            Your stability, risk, and next best step — all in one place.
+            A quick snapshot of how you&apos;re doing and what to do next.
           </Text>
+        </View>
+
+        {/* Current state: mood + urge */}
+        <View style={styles.stateCard}>
+          <View style={styles.stateRow}>
+            <View style={styles.stateMood}>
+              <Text style={styles.stateMoodEmoji}>{moodEmoji}</Text>
+              <View>
+                <Text style={styles.stateLabel}>Mood</Text>
+                <Text style={styles.stateValue}>{moodLabel}</Text>
+              </View>
+            </View>
+            <View style={styles.stateDivider} />
+            <View style={styles.stateUrge}>
+              <Text style={styles.stateLabel}>Urge level</Text>
+              <Text style={styles.stateValue}>{urgeLabel}</Text>
+            </View>
+          </View>
+        </View>
+
+        {/* Primary crisis entry */}
+        <Pressable
+          style={({ pressed }) => [
+            styles.struggleButton,
+            pressed && styles.pressed,
+          ]}
+          onPress={() => {
+            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
+            router.push('/crisis-mode' as any);
+          }}
+          testID="todayhub-struggle-button"
+        >
+          <View style={styles.struggleIconWrap}>
+            <AlertTriangle size={20} color={Colors.white} />
+          </View>
+          <Text style={styles.struggleText}>I&apos;m struggling right now</Text>
+          <ArrowRight size={18} color={Colors.white} />
+        </Pressable>
+
+        {/* Quick actions */}
+        <View style={styles.quickRow}>
+          <Pressable
+            style={({ pressed }) => [
+              styles.quickCard,
+              pressed && styles.pressed,
+            ]}
+            onPress={() => {
+              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+              router.push('/daily-checkin' as any);
+            }}
+            testID="todayhub-quick-checkin"
+          >
+            <View style={styles.quickIconWrap}>
+              <Activity size={18} color={Colors.primary} />
+            </View>
+            <Text style={styles.quickLabel}>Check-in</Text>
+          </Pressable>
+
+          <Pressable
+            style={({ pressed }) => [
+              styles.quickCard,
+              pressed && styles.pressed,
+            ]}
+            onPress={() => {
+              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+              router.push('/daily-guidance' as any);
+            }}
+            testID="todayhub-quick-tools"
+          >
+            <View style={styles.quickIconWrap}>
+              <Sparkles size={18} color={Colors.primary} />
+            </View>
+            <Text style={styles.quickLabel}>Tools</Text>
+          </Pressable>
+
+          <Pressable
+            style={({ pressed }) => [
+              styles.quickCard,
+              pressed && styles.pressed,
+            ]}
+            onPress={() => {
+              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+              router.push('/(tabs)/progress' as any);
+            }}
+            testID="todayhub-quick-progress"
+          >
+            <View style={styles.quickIconWrap}>
+              <BarChart3 size={18} color={Colors.primary} />
+            </View>
+            <Text style={styles.quickLabel}>Progress</Text>
+          </Pressable>
         </View>
 
         {/* Stability + relapse risk panel */}
@@ -106,8 +234,8 @@ export default function TodayHubScreen() {
           </View>
         )}
 
-        {/* Today's Plan */}
-        <Text style={styles.planTitle}>Today&apos;s Plan</Text>
+        {/* Daily plan */}
+        <Text style={styles.planTitle}>Daily plan</Text>
         <View style={styles.planCard}>
           {todayPlan.priorityActions.map((action: UiTodayPlanAction) => (
             <Pressable
@@ -185,10 +313,10 @@ const styles = StyleSheet.create({
     paddingTop: 16,
   },
   header: {
-    marginBottom: 16,
+    marginBottom: 18,
   },
   greetingLabel: {
-    fontSize: 22,
+    fontSize: 24,
     fontWeight: '800',
     color: Colors.text,
   },
@@ -204,6 +332,107 @@ const styles = StyleSheet.create({
     letterSpacing: 1,
     marginBottom: 8,
     textTransform: 'uppercase',
+  },
+  stateCard: {
+    backgroundColor: Colors.cardBackground,
+    borderRadius: 18,
+    paddingVertical: 12,
+    paddingHorizontal: 14,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    marginBottom: 16,
+  },
+  stateRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  stateMood: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    flex: 1,
+  },
+  stateMoodEmoji: {
+    fontSize: 22,
+  },
+  stateUrge: {
+    flex: 1,
+    alignItems: 'flex-start',
+  },
+  stateLabel: {
+    fontSize: 11,
+    fontWeight: '600',
+    color: Colors.textMuted,
+    textTransform: 'uppercase',
+    letterSpacing: 0.8,
+  },
+  stateValue: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: Colors.text,
+    marginTop: 2,
+  },
+  stateDivider: {
+    width: 1,
+    height: 32,
+    backgroundColor: Colors.border,
+    marginHorizontal: 8,
+  },
+  struggleButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: Colors.danger,
+    borderRadius: 18,
+    paddingVertical: 14,
+    paddingHorizontal: 16,
+    marginBottom: 14,
+  },
+  struggleIconWrap: {
+    width: 32,
+    height: 32,
+    borderRadius: 12,
+    backgroundColor: Colors.danger + '40',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 10,
+  },
+  struggleText: {
+    flex: 1,
+    fontSize: 15,
+    fontWeight: '700',
+    color: Colors.white,
+  },
+  quickRow: {
+    flexDirection: 'row',
+    gap: 10,
+    marginBottom: 18,
+  },
+  quickCard: {
+    flex: 1,
+    backgroundColor: Colors.cardBackground,
+    borderRadius: 14,
+    paddingVertical: 10,
+    paddingHorizontal: 10,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    alignItems: 'flex-start',
+    justifyContent: 'center',
+    gap: 6,
+  },
+  quickIconWrap: {
+    width: 26,
+    height: 26,
+    borderRadius: 9,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: Colors.surface,
+  },
+  quickLabel: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: Colors.text,
   },
   emptyStateCard: {
     backgroundColor: Colors.cardBackground,

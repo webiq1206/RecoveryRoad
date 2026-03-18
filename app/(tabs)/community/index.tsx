@@ -444,7 +444,7 @@ export default function ConnectionScreen() {
         style={({ pressed }) => [styles.recoveryRoomsBanner, pressed && { opacity: 0.9 }]}
         onPress={() => {
           Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-          router.push('/recovery-rooms' as any);
+          router.push('/(tabs)/connection/recovery-rooms' as any);
         }}
         testID="recovery-rooms-btn"
       >

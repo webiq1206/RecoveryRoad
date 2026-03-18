@@ -116,7 +116,7 @@ function applyStageProgramActions(
       id: 'maintain-program-connection',
       title: 'Protective connection moment',
       subtitle: 'Invest a few minutes in a relationship that protects your recovery.',
-      route: '/(tabs)/community',
+      route: '/(tabs)/connection',
       kind: 'connection',
     });
 
@@ -183,7 +183,7 @@ export function generateTodayPlan(input: TodayPlanInput): TodayPlan {
         id: 'connection-touchpoint',
         title: 'Connection touchpoint',
         subtitle: 'Reach out to one safe person or community space.',
-        route: '/(tabs)/community',
+        route: '/(tabs)/connection',
         kind: 'connection',
       },
       {
@@ -225,7 +225,7 @@ export function generateTodayPlan(input: TodayPlanInput): TodayPlan {
         id: 'supportive-connection',
         title: 'Supportive connection',
         subtitle: 'Send a short message to someone who gets it.',
-        route: '/(tabs)/community',
+        route: '/(tabs)/connection',
         kind: 'connection',
       },
     );

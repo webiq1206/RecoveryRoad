@@ -133,7 +133,7 @@ export default function TabLayout() {
           }}
         />
         <Tabs.Screen
-          name="community"
+          name="connection"
           options={{
             title: "Connection",
             tabBarIcon: renderConnectionIcon,

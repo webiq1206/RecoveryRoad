@@ -1,5 +1,5 @@
-import { Stack } from "expo-router";
 import Colors from "@/constants/colors";
+import { Stack } from "expo-router";
 
 export default function CommunityLayout() {
   return (
@@ -7,10 +7,10 @@ export default function CommunityLayout() {
       screenOptions={{
         headerStyle: { backgroundColor: Colors.background },
         headerTintColor: Colors.text,
-        headerTitleStyle: { fontWeight: '600' },
+        headerTitleStyle: { fontWeight: "600" },
       }}
     >
-      <Stack.Screen name="index" options={{ title: 'Connection' }} />
+      <Stack.Screen name="index" options={{ title: "Connection" }} />
     </Stack>
   );
 }

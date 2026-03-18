@@ -216,7 +216,7 @@ export default function IntelligentWizardScreen() {
         kind: 'daily',
         title: 'Send one connection touchpoint',
         description: 'Send a quick message or check in with someone in your support circle.',
-        ctaLabel: 'Go to Community & Support',
+        ctaLabel: 'Go to Connection',
         route: '/(tabs)/connection',
         priority: 55,
         isCompleted: false,

@@ -276,6 +276,19 @@ export default function ConnectionScreen() {
             <Text style={styles.sectionTitle}>Your Trusted Circle</Text>
             <Text style={styles.sectionCount}>{trustedContacts.length}</Text>
           </View>
+          <Pressable
+            style={({ pressed }) => [
+              styles.supportResourcesBtn,
+              pressed && { opacity: 0.9 },
+            ]}
+            onPress={() => router.push('/(tabs)/support' as any)}
+            testID="support-resources-btn"
+          >
+            <MessageCircle size={16} color={Colors.primary} />
+            <Text style={styles.supportResourcesBtnText}>
+              Support & Resources
+            </Text>
+          </Pressable>
         </View>
       }
       ListEmptyComponent={
@@ -1136,6 +1149,25 @@ const styles = StyleSheet.create({
     paddingVertical: 3,
     borderRadius: 10,
     overflow: 'hidden',
+  },
+  supportResourcesBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    borderRadius: 12,
+    backgroundColor: Colors.surface,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    marginTop: 12,
+    marginBottom: 6,
+  },
+  supportResourcesBtnText: {
+    fontSize: 13,
+    fontWeight: '700' as const,
+    color: Colors.text,
   },
   contactCard: {
     flexDirection: 'row',

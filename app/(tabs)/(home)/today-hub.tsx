@@ -12,6 +12,7 @@ import { useAppStore } from '@/stores/useAppStore';
 import { useTodayHub, type UiTodayPlanAction } from '@/features/home/hooks/useTodayHub';
 import { HomeLoadingSkeleton } from '@/components/LoadingSkeleton';
 import { RecoveryStabilityPanel } from '@/components/RecoveryStabilityPanel';
+import { usePersonalization } from '@/features/home/hooks/usePersonalization';
 
 export default function TodayHubScreen() {
   const insets = useSafeAreaInsets();
@@ -20,6 +21,7 @@ export default function TodayHubScreen() {
   const { profile } = useUser();
   const centralProfile = useAppStore((s) => s.userProfile);
   const { todayCheckIn } = useCheckin();
+  const personalization = usePersonalization();
 
   const displayProfile = centralProfile ?? profile;
 
@@ -77,6 +79,50 @@ export default function TodayHubScreen() {
             A quick snapshot of how you&apos;re doing and what to do next.
           </Text>
         </View>
+
+        {(personalization.highUrgeCrisisHint.shouldHighlightCrisisTools ||
+          personalization.nightRiskWarning.shouldWarn ||
+          personalization.lowMoodSuggestions.shouldSuggest) && (
+          <View style={styles.personalizationCard}>
+            {personalization.highUrgeCrisisHint.shouldHighlightCrisisTools &&
+              personalization.highUrgeCrisisHint.message && (
+                <View style={styles.personalizationRow}>
+                  <View style={styles.personalizationIconWrap}>
+                    <AlertTriangle size={16} color={Colors.danger} />
+                  </View>
+                  <Text style={styles.personalizationText}>
+                    {personalization.highUrgeCrisisHint.message}
+                  </Text>
+                </View>
+              )}
+
+            {personalization.nightRiskWarning.shouldWarn &&
+              personalization.nightRiskWarning.message && (
+                <View style={styles.personalizationRow}>
+                  <View style={styles.personalizationIconWrap}>
+                    <Activity size={16} color={Colors.accent} />
+                  </View>
+                  <Text style={styles.personalizationText}>
+                    {personalization.nightRiskWarning.message}
+                  </Text>
+                </View>
+              )}
+
+            {personalization.lowMoodSuggestions.shouldSuggest &&
+              personalization.lowMoodSuggestions.suggestions.length > 0 && (
+                <View style={styles.personalizationLowMood}>
+                  <Text style={styles.personalizationLowMoodTitle}>
+                    Try one small thing:
+                  </Text>
+                  {personalization.lowMoodSuggestions.suggestions.map((suggestion) => (
+                    <Text key={suggestion} style={styles.personalizationLowMoodItem}>
+                      • {suggestion}
+                    </Text>
+                  ))}
+                </View>
+              )}
+          </View>
+        )}
 
         {/* Current state: mood + urge */}
         <View style={styles.stateCard}>
@@ -577,6 +623,49 @@ const styles = StyleSheet.create({
     fontSize: 13,
     color: Colors.textSecondary,
     marginTop: 2,
+  },
+  personalizationCard: {
+    backgroundColor: Colors.cardBackground,
+    borderRadius: 16,
+    paddingVertical: 10,
+    paddingHorizontal: 12,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    marginBottom: 14,
+    gap: 8,
+  },
+  personalizationRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 8,
+  },
+  personalizationIconWrap: {
+    width: 24,
+    height: 24,
+    borderRadius: 8,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: Colors.surface,
+  },
+  personalizationText: {
+    flex: 1,
+    fontSize: 13,
+    color: Colors.textSecondary,
+    lineHeight: 20,
+  },
+  personalizationLowMood: {
+    marginTop: 4,
+  },
+  personalizationLowMoodTitle: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: Colors.text,
+    marginBottom: 2,
+  },
+  personalizationLowMoodItem: {
+    fontSize: 13,
+    color: Colors.textSecondary,
+    lineHeight: 19,
   },
 });
 

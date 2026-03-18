@@ -29,6 +29,10 @@ export type TodayPlanInput = {
   triggerRiskScore: number; // 0–100, higher = more trigger exposure
   stageProgramDay?: number; // 1-based day in current stage program
   stageProgramDuration?: number; // total days in current stage program
+  // Simple rule-based personalization flags
+  highUrge?: boolean;
+  nightRisk?: boolean;
+  lowMood?: boolean;
 };
 
 function addActionIfMissing(
@@ -139,6 +143,9 @@ export function generateTodayPlan(input: TodayPlanInput): TodayPlan {
     recoveryStage,
     missedEngagementScore,
     triggerRiskScore,
+    highUrge = false,
+    nightRisk = false,
+    lowMood = false,
   } = input;
 
   const stabilityBand = getStabilityBand(stabilityScore);
@@ -310,6 +317,61 @@ export function generateTodayPlan(input: TodayPlanInput): TodayPlan {
     riskWarnings.push(
       'Your relapse risk is running hot. Today is a good day to lean on support and crisis tools sooner rather than later.',
     );
+  }
+
+  // Personalization-driven adjustments
+  if (highUrge) {
+    const existingIndex = priorityActions.findIndex((a) => a.id === 'crisis-tools');
+    let crisisAction: TodayPlanAction;
+    if (existingIndex >= 0) {
+      crisisAction = priorityActions.splice(existingIndex, 1)[0];
+    } else {
+      crisisAction = {
+        id: 'crisis-tools',
+        title: 'Use crisis tools now',
+        subtitle: 'Your urges are high — jump straight into grounding and safety tools.',
+        route: '/crisis-mode',
+        kind: 'crisis',
+      };
+    }
+    priorityActions.unshift(crisisAction);
+
+    riskWarnings.push(
+      'Your urge level looks elevated. Using crisis tools and reaching out sooner can prevent escalation.',
+    );
+  }
+
+  if (nightRisk) {
+    const hasRelapsePlanAction =
+      priorityActions.find((a) => a.id === 'relapse-plan') ||
+      optionalActions.find((a) => a.id === 'relapse-plan');
+    if (!hasRelapsePlanAction) {
+      optionalActions.unshift({
+        id: 'relapse-plan',
+        title: 'Review your Relapse Plan',
+        subtitle: 'Evenings have been higher-risk. Refresh your warning signs and safety steps.',
+        route: '/relapse-plan',
+        kind: 'crisis',
+      });
+    }
+    riskWarnings.push(
+      'Evenings have been a higher-risk window recently. Reviewing your relapse plan before you get tired can lower that risk.',
+    );
+  }
+
+  if (lowMood) {
+    const hasCoping =
+      priorityActions.find((a) => a.id === 'coping-exercise') ||
+      optionalActions.find((a) => a.id === 'coping-exercise');
+    if (!hasCoping) {
+      optionalActions.unshift({
+        id: 'coping-exercise',
+        title: 'One small grounding step',
+        subtitle: 'Low mood calls for tiny, kind actions — start with one quick exercise.',
+        route: '/crisis-mode',
+        kind: 'coping',
+      });
+    }
   }
 
   // Fallback to always have at least one priority action

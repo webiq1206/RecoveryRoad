@@ -16,6 +16,7 @@ import {
   type TodayPlan,
   type TodayPlanAction,
 } from '@/utils/todayPlanGenerator';
+import { usePersonalization } from '@/features/home/hooks/usePersonalization';
 import type { StabilityZoneId } from '@/components/RecoveryStabilityPanel';
 import type { StabilityTrend } from '@/utils/stabilityEngine';
 import {
@@ -106,6 +107,7 @@ export function useTodayHub(): TodayHubViewModel {
     missedEngagement,
     currentPrediction,
   } = useRiskPrediction();
+  const personalization = usePersonalization();
 
   const stabilityResult = useMemo(() => {
     const rp = (centralProfile ?? profile).recoveryProfile;
@@ -148,6 +150,9 @@ export function useTodayHub(): TodayHubViewModel {
         triggerRiskScore: currentPrediction?.triggerRisk ?? 0,
         stageProgramDay: currentProgram?.day,
         stageProgramDuration: currentProgram?.duration,
+        highUrge: personalization.highUrgeCrisisHint.shouldHighlightCrisisTools,
+        nightRisk: personalization.nightRiskWarning.shouldWarn,
+        lowMood: personalization.lowMoodSuggestions.shouldSuggest,
       }),
     [
       stabilityResult.score,
@@ -158,6 +163,9 @@ export function useTodayHub(): TodayHubViewModel {
       currentPrediction?.triggerRisk,
       currentProgram?.day,
       currentProgram?.duration,
+      personalization.highUrgeCrisisHint.shouldHighlightCrisisTools,
+      personalization.nightRiskWarning.shouldWarn,
+      personalization.lowMoodSuggestions.shouldSuggest,
     ]
   );
 

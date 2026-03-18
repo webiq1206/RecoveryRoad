@@ -259,7 +259,7 @@ export default function SupportScreen() {
 
   return (
     <View style={styles.container}>
-      <Stack.Screen options={{ title: 'Resources' }} />
+      <Stack.Screen options={{ title: 'Support & Resources' }} />
       <ScrollView
         style={styles.scrollView}
         contentContainerStyle={styles.scrollContent}

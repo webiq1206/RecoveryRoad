@@ -212,7 +212,7 @@ export default function CrisisModeScreen() {
     Linking.openURL(`sms:${cleaned}${separator}body=${message}`).catch(() => {
       Alert.alert('Unable to Text', `Please text ${phone} manually.`);
     });
-  }, [logToolUsage, profile.name]);
+  }, [logToolUsage, profile?.name]);
 
   const groundingIndexRef = useRef(groundingIndex);
   useEffect(() => {
@@ -274,6 +274,7 @@ export default function CrisisModeScreen() {
               onTimer={() => goToStep('urge-timer')}
               onBreathing={() => goToStep('breathing')}
               onContactSupport={() => goToStep('connect')}
+              onOpenSupportResources={() => router.push('/(tabs)/support' as any)}
               onLeaveEnvironment={() => goToStep('grounding')}
             />
           </>

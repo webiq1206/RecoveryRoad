@@ -3,11 +3,8 @@ import { View } from "react-native";
 import {
   Home,
   Activity,
-  ShieldAlert,
   Hammer,
   Users,
-  BookOpen,
-  Compass,
   User,
 } from "lucide-react-native";
 import React, { useCallback } from "react";
@@ -43,13 +40,6 @@ export default function TabLayout() {
     [],
   );
 
-  const renderRelapseIcon = useCallback(
-    ({ color, size }: { color: string; size: number }) => (
-      <TabIcon IconComponent={ShieldAlert} color={color} size={size} />
-    ),
-    [],
-  );
-
   const renderRebuildIcon = useCallback(
     ({ color, size }: { color: string; size: number }) => (
       <TabIcon IconComponent={Hammer} color={color} size={size} />
@@ -60,20 +50,6 @@ export default function TabLayout() {
   const renderConnectionIcon = useCallback(
     ({ color, size }: { color: string; size: number }) => (
       <TabIcon IconComponent={Users} color={color} size={size} />
-    ),
-    [],
-  );
-
-  const renderJournalIcon = useCallback(
-    ({ color, size }: { color: string; size: number }) => (
-      <TabIcon IconComponent={BookOpen} color={color} size={size} />
-    ),
-    [],
-  );
-
-  const renderProgressIcon = useCallback(
-    ({ color, size }: { color: string; size: number }) => (
-      <TabIcon IconComponent={Compass} color={color} size={size} />
     ),
     [],
   );
@@ -119,13 +95,6 @@ export default function TabLayout() {
           }}
         />
         <Tabs.Screen
-          name="relapse-prevention"
-          options={{
-            title: "Relapse Prevention",
-            tabBarIcon: renderRelapseIcon,
-          }}
-        />
-        <Tabs.Screen
           name="rebuild"
           options={{
             title: "Rebuild",
@@ -137,20 +106,6 @@ export default function TabLayout() {
           options={{
             title: "Connection",
             tabBarIcon: renderConnectionIcon,
-          }}
-        />
-        <Tabs.Screen
-          name="journal"
-          options={{
-            title: "Journal",
-            tabBarIcon: renderJournalIcon,
-          }}
-        />
-        <Tabs.Screen
-          name="progress"
-          options={{
-            title: "Progress",
-            tabBarIcon: renderProgressIcon,
           }}
         />
         <Tabs.Screen

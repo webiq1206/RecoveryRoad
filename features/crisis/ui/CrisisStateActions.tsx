@@ -1,6 +1,6 @@
 import React from 'react';
 import { Pressable, Text, View } from 'react-native';
-import { Activity, HeartPulse, Phone, Walk } from 'lucide-react-native';
+import { Activity, BookOpen, HeartPulse, Phone, Walk } from 'lucide-react-native';
 
 import { crisisStyles, CRISIS_COLORS } from './styles';
 
@@ -12,6 +12,7 @@ interface Props {
   onBreathing: () => void;
   onTimer: () => void;
   onContactSupport: () => void;
+  onOpenSupportResources: () => void;
   onLeaveEnvironment: () => void;
 }
 
@@ -21,6 +22,7 @@ export function CrisisStateActions({
   onBreathing,
   onTimer,
   onContactSupport,
+  onOpenSupportResources,
   onLeaveEnvironment,
 }: Props) {
   return (
@@ -117,6 +119,25 @@ export function CrisisStateActions({
             <Text style={crisisStyles.stateActionTitle}>Contact support</Text>
             <Text style={crisisStyles.stateActionSubtitle}>
               Reach out to someone who can help you ride this out.
+            </Text>
+          </View>
+        </Pressable>
+
+        <Pressable
+          style={({ pressed }) => [
+            crisisStyles.stateActionCard,
+            pressed && { opacity: 0.9 },
+          ]}
+          onPress={onOpenSupportResources}
+          testID="crisis-action-support-resources"
+        >
+          <View style={crisisStyles.stateActionIcon}>
+            <BookOpen size={18} color={CRISIS_COLORS.ACCENT} />
+          </View>
+          <View style={crisisStyles.stateActionTextWrap}>
+            <Text style={crisisStyles.stateActionTitle}>Support & Resources</Text>
+            <Text style={crisisStyles.stateActionSubtitle}>
+              Get crisis lines and professional support options.
             </Text>
           </View>
         </Pressable>

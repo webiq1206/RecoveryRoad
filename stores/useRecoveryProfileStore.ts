@@ -49,13 +49,15 @@ const baseUseRecoveryProfileStore = create<RecoveryProfileState>()(
     hydrate: async () => {
       if (get().hasHydrated) return;
       set({ isLoading: true });
-      const [profileRaw, timelineEvents, relapsePlan] = await Promise.all([
-        loadStorageItem<string | null>(STORAGE_KEYS.PROFILE, null),
+
+      const [storedProfile, timelineEvents, relapsePlan] = await Promise.all([
+        loadStorageItem<UserProfile | null>(STORAGE_KEYS.PROFILE, null),
         loadStorageItem<TimelineEvent[]>(STORAGE_KEYS.TIMELINE_EVENTS, []),
         loadStorageItem<RelapsePlan | null>(STORAGE_KEYS.RELAPSE_PLAN, null),
       ]);
 
-      const profile = profileRaw ? migrateProfile(JSON.parse(profileRaw)) : DEFAULT_PROFILE;
+      const profile = storedProfile ? migrateProfile(storedProfile as Record<string, unknown>) : DEFAULT_PROFILE;
+
       set({ profile, timelineEvents, relapsePlan, isLoading: false, hasHydrated: true });
     },
 

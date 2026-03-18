@@ -1,4 +1,5 @@
 import * as z from "zod";
+import { TRPCError } from "@trpc/server";
 import { createTRPCRouter, publicProcedure, authenticatedProcedure } from "../create-context";
 import { db } from "../../db/client";
 
@@ -7,20 +8,31 @@ export const journalsRouter = createTRPCRouter({
     .input(z.object({
       id: z.string(),
       userId: z.string(),
-      date: z.string(),
+      date: z.string().min(1, "date is required"),
       title: z.string(),
       content: z.string(),
       mood: z.number().min(1).max(5),
       tags: z.array(z.string()).optional(),
       isEncrypted: z.boolean().default(false),
     }))
-    .mutation(async ({ input }) => {
+    .mutation(async ({ input, ctx }) => {
+      if (input.userId !== ctx.auth.userId) {
+        throw new TRPCError({ code: "FORBIDDEN", message: "Cannot create journal for another user" });
+      }
+
       const now = new Date().toISOString();
-      return db.create("journal_entries", {
-        ...input,
-        createdAt: now,
-        updatedAt: now,
-      });
+      try {
+        return await db.create("journal_entries", {
+          ...input,
+          createdAt: now,
+          updatedAt: now,
+        });
+      } catch {
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "Unable to save journal entry right now. Please try again.",
+        });
+      }
     }),
 
   getByUserId: publicProcedure

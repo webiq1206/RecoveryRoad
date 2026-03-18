@@ -1,4 +1,5 @@
 import * as z from "zod";
+import { TRPCError } from "@trpc/server";
 import { createTRPCRouter, publicProcedure, authenticatedProcedure } from "../create-context";
 import { db } from "../../db/client";
 
@@ -17,11 +18,22 @@ export const relapseRiskRouter = createTRPCRouter({
       predictiveFactors: z.string(),
       interventionSuggested: z.string().optional(),
     }))
-    .mutation(async ({ input }) => {
-      return db.create("relapse_risk_history", {
-        ...input,
-        generatedAt: new Date().toISOString(),
-      });
+    .mutation(async ({ input, ctx }) => {
+      if (input.userId !== ctx.auth.userId) {
+        throw new TRPCError({ code: "FORBIDDEN", message: "Cannot record relapse risk for another user" });
+      }
+
+      try {
+        return await db.create("relapse_risk_history", {
+          ...input,
+          generatedAt: new Date().toISOString(),
+        });
+      } catch {
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "Unable to record relapse risk right now. Please try again.",
+        });
+      }
     }),
 
   getHistory: publicProcedure

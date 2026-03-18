@@ -1,28 +1,51 @@
 import * as z from "zod";
-import { createTRPCRouter, publicProcedure, authenticatedProcedure } from "../create-context";
+import { TRPCError } from "@trpc/server";
+import {
+  createTRPCRouter,
+  publicProcedure,
+  authenticatedProcedure,
+} from "../create-context";
 import { db } from "../../db/client";
 
 export const checkInsRouter = createTRPCRouter({
   create: authenticatedProcedure
-    .input(z.object({
-      id: z.string(),
-      userId: z.string(),
-      date: z.string(),
-      mood: z.number().min(1).max(10),
-      cravingLevel: z.number().min(1).max(10),
-      stress: z.number().min(1).max(10),
-      sleepQuality: z.number().min(1).max(10),
-      environment: z.number().min(1).max(10),
-      emotionalState: z.number().min(1).max(10),
-      stabilityScore: z.number(),
-      reflection: z.string().optional(),
-      emotionalTags: z.array(z.string()).max(3).optional(),
-      isEncrypted: z.boolean().default(false),
-    }))
-    .mutation(async ({ input }) => {
+    .input(
+      z.object({
+        id: z.string(),
+        userId: z.string(),
+        date: z.string().min(1, "date is required"),
+        mood: z.number().min(1).max(10),
+        cravingLevel: z.number().min(1).max(10),
+        stress: z.number().min(1).max(10),
+        sleepQuality: z.number().min(1).max(10),
+        environment: z.number().min(1).max(10),
+        emotionalState: z.number().min(1).max(10),
+        stabilityScore: z.number(),
+        reflection: z.string().optional(),
+        emotionalTags: z.array(z.string()).max(3).optional(),
+        isEncrypted: z.boolean().default(false),
+      }),
+    )
+    .mutation(async ({ input, ctx }) => {
+      if (input.userId !== ctx.auth.userId) {
+        throw new TRPCError({ code: "FORBIDDEN", message: "Cannot create check-in for another user" });
+      }
+
       const checkIn = { ...input, completedAt: new Date().toISOString() };
-      console.log("[CheckIns] Creating check-in:", checkIn.id);
-      return db.create("check_ins", checkIn);
+
+      try {
+        return await db.create("check_ins", checkIn);
+      } catch (error) {
+        console.error("[CheckIns] Failed to create check-in:", {
+          id: checkIn.id,
+          userId: checkIn.userId,
+          error,
+        });
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "Unable to save check-in right now. Please try again.",
+        });
+      }
     }),
 
   getByUserId: publicProcedure

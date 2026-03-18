@@ -19,13 +19,13 @@ export default function RelapsePlanScreen() {
   const [currentStep, setCurrentStep] = useState<WizardStep>(1);
 
   const [warningSignsText, setWarningSignsText] = useState(
-    relapsePlan?.warningSigns.join('\n') ?? '',
+    relapsePlan?.warningSigns?.join('\n') ?? '',
   );
   const [triggersText, setTriggersText] = useState(
-    relapsePlan?.triggers.join('\n') ?? '',
+    relapsePlan?.triggers?.join('\n') ?? '',
   );
   const [copingStrategiesText, setCopingStrategiesText] = useState(
-    relapsePlan?.copingStrategies.join('\n') ?? '',
+    relapsePlan?.copingStrategies?.join('\n') ?? '',
   );
   const [commitmentsText, setCommitmentsText] = useState(
     relapsePlan?.commitments ?? '',

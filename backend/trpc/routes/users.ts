@@ -1,4 +1,5 @@
 import * as z from "zod";
+import { TRPCError } from "@trpc/server";
 import { createTRPCRouter, publicProcedure, authenticatedProcedure } from "../create-context";
 import { db } from "../../db/client";
 import { UserSchema } from "../../db/schema";
@@ -30,8 +31,15 @@ export const usersRouter = createTRPCRouter({
         updatedAt: now,
         lastActiveAt: now,
       };
-      console.log("[Users] Creating user:", user.id);
-      return db.create("users", user);
+
+      try {
+        return await db.create("users", user);
+      } catch (error) {
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "Unable to create user right now. Please try again.",
+        });
+      }
     }),
 
   getById: publicProcedure

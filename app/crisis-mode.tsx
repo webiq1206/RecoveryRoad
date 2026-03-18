@@ -206,7 +206,8 @@ export default function CrisisModeScreen() {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     logToolUsage({ toolId: 'connect', context: 'crisis', action: 'completed', meta: { method: 'text', phone } });
     const cleaned = phone.replace(/[^0-9+]/g, '');
-    const message = encodeURIComponent(`I'm having a tough moment and could use some support. - ${profile.name || 'Me'}`);
+    const displayName = profile?.name || 'Me';
+    const message = encodeURIComponent(`I'm having a tough moment and could use some support. - ${displayName}`);
     const separator = Platform.OS === 'ios' ? '&' : '?';
     Linking.openURL(`sms:${cleaned}${separator}body=${message}`).catch(() => {
       Alert.alert('Unable to Text', `Please text ${phone} manually.`);

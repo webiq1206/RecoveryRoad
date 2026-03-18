@@ -5,6 +5,7 @@ import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useUser } from '@/core/domains/useUser';
 import { useCheckin } from '@/core/domains/useCheckin';
 import { useAppMeta } from '@/core/domains/useAppMeta';
+import { logger } from '@/utils/logger';
 import {
   RecoveryStage,
   StageTransition,
@@ -267,13 +268,19 @@ function evaluateStageSignals(
     suggestedStage = STAGE_ORDER[currentIdx + 1];
   }
 
-  const confidence = Math.min(100, Math.max(20, Math.round(
-    (recent7.length / 7) * 40 +
-    (recent14.length / 14) * 30 +
-    (daysSober >= 3 ? 30 : daysSober * 10)
-  )));
+  const confidence = Math.min(
+    100,
+    Math.max(
+      20,
+      Math.round(
+        (recent7.length / 7) * 40 +
+          (recent14.length / 14) * 30 +
+          (daysSober >= 3 ? 30 : daysSober * 10),
+      ),
+    ),
+  );
 
-  console.log('[StageDetection] Evaluation:', {
+  logger.info('[StageDetection] Evaluation', {
     compositeScore: Math.round(compositeScore),
     suggestedStage,
     currentStage,
@@ -330,7 +337,7 @@ export const [StageDetectionProvider, useStageDetection] = createContextHook(() 
           return parsed;
         }
       } catch (e) {
-        console.log('[StageDetection] Error loading data:', e);
+        logger.error('[StageDetection] Error loading data', { error: e });
       }
       return {
         ...DEFAULT_DATA,
@@ -360,14 +367,18 @@ export const [StageDetectionProvider, useStageDetection] = createContextHook(() 
 
   const evaluateStage = useCallback(() => {
     if (checkIns.length < 2) {
-      console.log('[StageDetection] Not enough check-ins to evaluate, need at least 2');
+      logger.info('[StageDetection] Not enough check-ins to evaluate', {
+        checkInCount: checkIns.length,
+      });
       return;
     }
 
     const now = new Date();
     const lastEval = data.lastEvaluatedAt ? new Date(data.lastEvaluatedAt) : null;
-    if (lastEval && (now.getTime() - lastEval.getTime()) < 1000 * 60 * 60 * 6) {
-      console.log('[StageDetection] Skipping evaluation, last eval was less than 6 hours ago');
+    if (lastEval && now.getTime() - lastEval.getTime() < 1000 * 60 * 60 * 6) {
+      logger.debug('[StageDetection] Skipping evaluation; last eval < 6h ago', {
+        lastEvaluatedAt: data.lastEvaluatedAt,
+      });
       return;
     }
 
@@ -389,7 +400,7 @@ export const [StageDetectionProvider, useStageDetection] = createContextHook(() 
         acknowledged: false,
       };
 
-      console.log('[StageDetection] Stage transition detected:', {
+      logger.info('[StageDetection] Stage transition detected', {
         from: data.currentStage,
         to: suggestedStage,
         confidence,
@@ -444,7 +455,10 @@ export const [StageDetectionProvider, useStageDetection] = createContextHook(() 
       },
     });
 
-    console.log('[StageDetection] Transition acknowledged:', transition.fromStage, '->', transition.toStage);
+    logger.info('[StageDetection] Transition acknowledged', {
+      from: transition.fromStage,
+      to: transition.toStage,
+    });
   }, [data, profile, updateProfile]);
 
   const dismissTransition = useCallback(() => {
@@ -455,7 +469,9 @@ export const [StageDetectionProvider, useStageDetection] = createContextHook(() 
       pendingTransition: null,
     };
     saveMutation.mutate(updated);
-    console.log('[StageDetection] Transition dismissed');
+    logger.info('[StageDetection] Transition dismissed', {
+      currentStage: data.currentStage,
+    });
   }, [data]);
 
   const forceEvaluate = useCallback(() => {

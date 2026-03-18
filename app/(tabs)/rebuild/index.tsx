@@ -7,7 +7,6 @@ import {
   TouchableOpacity,
   TextInput,
   Animated,
-  Modal,
   Platform,
   Dimensions,
 } from 'react-native';
@@ -73,6 +72,20 @@ import {
 } from '@/types';
 import { IDENTITY_MODULES, CATEGORY_INFO } from '@/constants/identityModules';
 import * as Haptics from 'expo-haptics';
+import { RebuildExerciseModal } from '@/features/rebuild/ui/RebuildExerciseModal';
+import { RebuildValueModal } from '@/features/rebuild/ui/RebuildValueModal';
+import { RebuildAddHabitModal } from '@/features/rebuild/ui/RebuildAddHabitModal';
+import { RebuildAddRoutineModal } from '@/features/rebuild/ui/RebuildAddRoutineModal';
+import { RebuildAddGoalModal } from '@/features/rebuild/ui/RebuildAddGoalModal';
+import { RebuildAddMilestoneModal } from '@/features/rebuild/ui/RebuildAddMilestoneModal';
+import { RebuildHeroCard } from '@/features/rebuild/ui/RebuildHeroCard';
+import { RebuildSectionTabs } from '@/features/rebuild/ui/RebuildSectionTabs';
+import { RebuildEncouragementToast } from '@/features/rebuild/ui/RebuildEncouragementToast';
+import { RebuildHabitsSection } from '@/features/rebuild/ui/sections/RebuildHabitsSection';
+import { RebuildRoutineSection } from '@/features/rebuild/ui/sections/RebuildRoutineSection';
+import { RebuildGoalsSection } from '@/features/rebuild/ui/sections/RebuildGoalsSection';
+import { RebuildConfidenceSection } from '@/features/rebuild/ui/sections/RebuildConfidenceSection';
+import { RebuildProgramWelcome } from '@/features/rebuild/ui/sections/RebuildProgramWelcome';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
@@ -493,20 +506,6 @@ export default function RebuildScreen() {
     return grouped;
   }, [rebuildData.routines]);
 
-  const renderSectionTab = (key: ActiveSection, label: string, icon: React.ReactNode) => (
-    <TouchableOpacity
-      key={key}
-      style={[styles.sectionTab, activeSection === key && styles.sectionTabActive]}
-      onPress={() => setActiveSection(key)}
-      activeOpacity={0.7}
-    >
-      {icon}
-      <Text style={[styles.sectionTabText, activeSection === key && styles.sectionTabTextActive]}>
-        {label}
-      </Text>
-    </TouchableOpacity>
-  );
-
   const renderGrowthIndicator = () => {
     const categories = [
       { key: 'self_worth', label: 'Self-Worth', color: '#FF8A80' },
@@ -562,40 +561,7 @@ export default function RebuildScreen() {
 
   const renderProgramSection = () => {
     if (!programStarted) {
-      return (
-        <View style={styles.sectionContent}>
-          <View style={styles.welcomeCard}>
-            <View style={styles.welcomeIconWrap}>
-              <Compass size={28} color="#B9F6CA" />
-            </View>
-            <Text style={styles.welcomeTitle}>Identity Rebuild Program</Text>
-            <Text style={styles.welcomeDesc}>
-              An 8-week guided journey to rediscover your worth, clarify your values, find purpose, and set meaningful life goals.
-            </Text>
-            <View style={styles.welcomeFeatures}>
-              {[
-                { icon: <Heart size={14} color="#FF8A80" />, text: 'Self-worth restoration' },
-                { icon: <Shield size={14} color="#82B1FF" />, text: 'Values clarification' },
-                { icon: <Compass size={14} color="#B9F6CA" />, text: 'Purpose mapping' },
-                { icon: <Target size={14} color="#FFD180" />, text: 'Long-term life goals' },
-              ].map((f, i) => (
-                <View key={i} style={styles.welcomeFeatureRow}>
-                  {f.icon}
-                  <Text style={styles.welcomeFeatureText}>{f.text}</Text>
-                </View>
-              ))}
-            </View>
-            <TouchableOpacity
-              style={styles.startProgramBtn}
-              onPress={handleStartProgram}
-              activeOpacity={0.7}
-            >
-              <Text style={styles.startProgramBtnText}>Begin Your Journey</Text>
-              <ArrowRight size={16} color={Colors.background} />
-            </TouchableOpacity>
-          </View>
-        </View>
-      );
+      return <RebuildProgramWelcome onStartProgram={handleStartProgram} Colors={Colors} styles={styles} />;
     }
 
     const currentWeek = identityProgram.currentWeek;
@@ -755,666 +721,9 @@ export default function RebuildScreen() {
     );
   };
 
-  const renderHabitsSection = () => (
-    <View style={styles.sectionContent}>
-      <View style={styles.sectionHeader}>
-        <View>
-          <Text style={styles.sectionTitle}>Habit Replacements</Text>
-          <Text style={styles.sectionSubtitle}>Replace old triggers with new patterns</Text>
-        </View>
-        <TouchableOpacity
-          style={styles.addButton}
-          onPress={() => setShowAddHabit(true)}
-          activeOpacity={0.7}
-        >
-          <Plus size={18} color={Colors.text} />
-        </TouchableOpacity>
-      </View>
-
-      {rebuildData.habits.length === 0 ? (
-        <View style={styles.emptyState}>
-          <RefreshCw size={32} color={Colors.textMuted} />
-          <Text style={styles.emptyText}>No habit replacements yet</Text>
-          <Text style={styles.emptySubtext}>
-            When a craving hits, what will you do instead?
-          </Text>
-        </View>
-      ) : (
-        rebuildData.habits.map(habit => {
-          const done = isHabitDoneToday(habit);
-          const catInfo = HABIT_CATEGORIES.find(c => c.key === habit.category);
-          return (
-            <View key={habit.id} style={[styles.habitCard, done && styles.habitCardDone]}>
-              <View style={styles.habitTop}>
-                <View style={styles.habitCategoryBadge}>
-                  {catInfo?.icon}
-                  <Text style={styles.habitCategoryText}>{catInfo?.label}</Text>
-                </View>
-                {habit.streak > 0 && (
-                  <View style={styles.streakBadge}>
-                    <Flame size={12} color="#FF6B35" />
-                    <Text style={styles.streakText}>{habit.streak}d</Text>
-                  </View>
-                )}
-              </View>
-              <View style={styles.habitFlow}>
-                <View style={styles.habitTriggerBox}>
-                  <Text style={styles.habitTriggerLabel}>When I feel</Text>
-                  <Text style={styles.habitTriggerText}>{habit.oldTrigger}</Text>
-                </View>
-                <ArrowRight size={16} color={Colors.primary} style={{ marginHorizontal: 8 }} />
-                <View style={styles.habitReplacementBox}>
-                  <Text style={styles.habitReplacementLabel}>I will</Text>
-                  <Text style={styles.habitReplacementText}>{habit.newHabit}</Text>
-                </View>
-              </View>
-              <View style={styles.habitActions}>
-                <TouchableOpacity
-                  style={[styles.completeBtn, done && styles.completeBtnDone]}
-                  onPress={() => handleCompleteHabit(habit)}
-                  disabled={done}
-                  activeOpacity={0.7}
-                >
-                  <Check size={14} color={done ? Colors.textMuted : Colors.text} />
-                  <Text style={[styles.completeBtnText, done && styles.completeBtnTextDone]}>
-                    {done ? 'Done today' : 'Mark done'}
-                  </Text>
-                </TouchableOpacity>
-                <TouchableOpacity
-                  onPress={() => deleteReplacementHabit(habit.id)}
-                  style={styles.deleteBtn}
-                  activeOpacity={0.7}
-                >
-                  <Trash2 size={14} color={Colors.textMuted} />
-                </TouchableOpacity>
-              </View>
-            </View>
-          );
-        })
-      )}
-    </View>
-  );
-
-  const renderRoutineSection = () => (
-    <View style={styles.sectionContent}>
-      <View style={styles.sectionHeader}>
-        <View>
-          <Text style={styles.sectionTitle}>Daily Routine</Text>
-          <Text style={styles.sectionSubtitle}>Structure builds stability</Text>
-        </View>
-        <TouchableOpacity
-          style={styles.addButton}
-          onPress={() => setShowAddRoutine(true)}
-          activeOpacity={0.7}
-        >
-          <Plus size={18} color={Colors.text} />
-        </TouchableOpacity>
-      </View>
-
-      {rebuildData.routines.length === 0 ? (
-        <View style={styles.emptyState}>
-          <Sunrise size={32} color={Colors.textMuted} />
-          <Text style={styles.emptyText}>No routines set</Text>
-          <Text style={styles.emptySubtext}>
-            Build a daily rhythm that keeps you grounded
-          </Text>
-        </View>
-      ) : (
-        TIME_OPTIONS.map(timeOpt => {
-          const blocks = routinesByTime[timeOpt.key];
-          if (blocks.length === 0) return null;
-          return (
-            <View key={timeOpt.key} style={styles.timeGroup}>
-              <View style={styles.timeHeader}>
-                {timeOpt.icon}
-                <Text style={styles.timeLabel}>{timeOpt.label}</Text>
-              </View>
-              {blocks.map(block => (
-                <TouchableOpacity
-                  key={block.id}
-                  style={[styles.routineItem, block.isCompleted && styles.routineItemDone]}
-                  onPress={() => handleToggleRoutine(block)}
-                  activeOpacity={0.7}
-                >
-                  <View style={[styles.routineCheck, block.isCompleted && styles.routineCheckDone]}>
-                    {block.isCompleted && <Check size={12} color={Colors.background} />}
-                  </View>
-                  <View style={styles.routineInfo}>
-                    <Text style={[styles.routineTitle, block.isCompleted && styles.routineTitleDone]}>
-                      {block.title}
-                    </Text>
-                    {block.description ? (
-                      <Text style={styles.routineDesc}>{block.description}</Text>
-                    ) : null}
-                  </View>
-                  <TouchableOpacity
-                    onPress={() => deleteRoutineBlock(block.id)}
-                    style={styles.deleteBtn}
-                    activeOpacity={0.7}
-                  >
-                    <Trash2 size={14} color={Colors.textMuted} />
-                  </TouchableOpacity>
-                </TouchableOpacity>
-              ))}
-            </View>
-          );
-        })
-      )}
-    </View>
-  );
-
-  const renderGoalsSection = () => (
-    <View style={styles.sectionContent}>
-      <View style={styles.sectionHeader}>
-        <View>
-          <Text style={styles.sectionTitle}>Purpose Goals</Text>
-          <Text style={styles.sectionSubtitle}>What are you building toward?</Text>
-        </View>
-        <TouchableOpacity
-          style={styles.addButton}
-          onPress={() => setShowAddGoal(true)}
-          activeOpacity={0.7}
-        >
-          <Plus size={18} color={Colors.text} />
-        </TouchableOpacity>
-      </View>
-
-      {rebuildData.goals.length === 0 ? (
-        <View style={styles.emptyState}>
-          <Target size={32} color={Colors.textMuted} />
-          <Text style={styles.emptyText}>No goals yet</Text>
-          <Text style={styles.emptySubtext}>
-            Give your recovery a destination
-          </Text>
-        </View>
-      ) : (
-        rebuildData.goals.map(goal => {
-          const isExpanded = expandedGoal === goal.id;
-          const catInfo = GOAL_CATEGORIES.find(c => c.key === goal.category);
-          return (
-            <View key={goal.id} style={[styles.goalCard, goal.isCompleted && styles.goalCardDone]}>
-              <TouchableOpacity
-                style={styles.goalHeader}
-                onPress={() => setExpandedGoal(isExpanded ? null : goal.id)}
-                activeOpacity={0.7}
-              >
-                <View style={styles.goalTitleRow}>
-                  <View style={styles.goalCategoryBadge}>
-                    {catInfo?.icon}
-                  </View>
-                  <View style={{ flex: 1 }}>
-                    <Text style={[styles.goalTitle, goal.isCompleted && styles.goalTitleDone]}>
-                      {goal.title}
-                    </Text>
-                    {goal.description ? (
-                      <Text style={styles.goalDesc} numberOfLines={isExpanded ? undefined : 1}>
-                        {goal.description}
-                      </Text>
-                    ) : null}
-                  </View>
-                  {isExpanded ? (
-                    <ChevronUp size={18} color={Colors.textMuted} />
-                  ) : (
-                    <ChevronDown size={18} color={Colors.textMuted} />
-                  )}
-                </View>
-                <View style={styles.progressBarContainer}>
-                  <View style={styles.progressBarBg}>
-                    <View
-                      style={[
-                        styles.progressBarFill,
-                        { width: `${goal.progress}%` },
-                        goal.isCompleted && styles.progressBarFillDone,
-                      ]}
-                    />
-                  </View>
-                  <Text style={styles.progressText}>{goal.progress}%</Text>
-                </View>
-              </TouchableOpacity>
-
-              {isExpanded && (
-                <View style={styles.goalSteps}>
-                  {goal.milestoneSteps.map(step => (
-                    <TouchableOpacity
-                      key={step.id}
-                      style={styles.stepItem}
-                      onPress={() => handleToggleGoalStep(goal, step.id)}
-                      activeOpacity={0.7}
-                    >
-                      <View style={[styles.stepCheck, step.isCompleted && styles.stepCheckDone]}>
-                        {step.isCompleted && <Check size={10} color={Colors.background} />}
-                      </View>
-                      <Text style={[styles.stepText, step.isCompleted && styles.stepTextDone]}>
-                        {step.title}
-                      </Text>
-                    </TouchableOpacity>
-                  ))}
-                  <TouchableOpacity
-                    onPress={() => deletePurposeGoal(goal.id)}
-                    style={styles.deleteGoalBtn}
-                    activeOpacity={0.7}
-                  >
-                    <Trash2 size={14} color={Colors.danger} />
-                    <Text style={styles.deleteGoalText}>Remove goal</Text>
-                  </TouchableOpacity>
-                </View>
-              )}
-            </View>
-          );
-        })
-      )}
-    </View>
-  );
-
-  const renderConfidenceSection = () => (
-    <View style={styles.sectionContent}>
-      <View style={styles.sectionHeader}>
-        <View>
-          <Text style={styles.sectionTitle}>Confidence Wins</Text>
-          <Text style={styles.sectionSubtitle}>Celebrate how far you've come</Text>
-        </View>
-        <TouchableOpacity
-          style={styles.addButton}
-          onPress={() => setShowAddMilestone(true)}
-          activeOpacity={0.7}
-        >
-          <Plus size={18} color={Colors.text} />
-        </TouchableOpacity>
-      </View>
-
-      {rebuildData.confidenceMilestones.length === 0 ? (
-        <View style={styles.emptyState}>
-          <Award size={32} color={Colors.textMuted} />
-          <Text style={styles.emptyText}>No wins recorded yet</Text>
-          <Text style={styles.emptySubtext}>
-            Log moments that made you feel proud or strong
-          </Text>
-        </View>
-      ) : (
-        rebuildData.confidenceMilestones.map((m, i) => (
-          <View key={m.id} style={styles.milestoneCard}>
-            <View style={styles.milestoneIcon}>
-              <Star size={18} color={Colors.accentWarm} />
-            </View>
-            <View style={styles.milestoneContent}>
-              <Text style={styles.milestoneTitle}>{m.title}</Text>
-              {m.description ? (
-                <Text style={styles.milestoneDesc}>{m.description}</Text>
-              ) : null}
-              <Text style={styles.milestoneDate}>
-                {new Date(m.achievedAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
-              </Text>
-            </View>
-            {i === 0 && (
-              <View style={styles.latestBadge}>
-                <Sparkles size={10} color={Colors.primary} />
-                <Text style={styles.latestBadgeText}>Latest</Text>
-              </View>
-            )}
-          </View>
-        ))
-      )}
-    </View>
-  );
-
-  const renderExerciseModal = () => (
-    <Modal visible={!!activeExercise} transparent animationType="slide">
-      <View style={styles.modalOverlay}>
-        <ScrollView style={styles.modalScroll} contentContainerStyle={styles.modalScrollContent} keyboardShouldPersistTaps="handled">
-          <View style={styles.modalContent}>
-            {activeExercise && (
-              <>
-                <View style={styles.modalHeader}>
-                  <View style={{ flex: 1 }}>
-                    <Text style={styles.exerciseModalCat}>
-                      {CATEGORY_INFO[activeExercise.module.category]?.label} · Week {activeExercise.module.week}
-                    </Text>
-                    <Text style={styles.modalTitle}>{activeExercise.exercise.title}</Text>
-                  </View>
-                  <TouchableOpacity onPress={() => { setActiveExercise(null); setExerciseInput(''); }} activeOpacity={0.7}>
-                    <X size={22} color={Colors.textSecondary} />
-                  </TouchableOpacity>
-                </View>
-
-                <View style={styles.exercisePromptCard}>
-                  <Text style={styles.exercisePromptText}>{activeExercise.exercise.prompt}</Text>
-                  {activeExercise.exercise.hint && (
-                    <Text style={styles.exerciseHintText}>{activeExercise.exercise.hint}</Text>
-                  )}
-                </View>
-
-                <Text style={styles.inputLabel}>Your Response</Text>
-                <TextInput
-                  style={[styles.textInput, styles.textInputMulti, { minHeight: 120 }]}
-                  placeholder="Take your time. Write honestly..."
-                  placeholderTextColor={Colors.textMuted}
-                  value={exerciseInput}
-                  onChangeText={setExerciseInput}
-                  multiline
-                  textAlignVertical="top"
-                />
-
-                <TouchableOpacity
-                  style={[styles.saveButton, !exerciseInput.trim() && styles.saveButtonDisabled]}
-                  onPress={handleSaveExercise}
-                  disabled={!exerciseInput.trim()}
-                  activeOpacity={0.7}
-                >
-                  <Text style={styles.saveButtonText}>
-                    {isExerciseCompleted(activeExercise.module.id, activeExercise.exercise.id) ? 'Update Response' : 'Save Response'}
-                  </Text>
-                </TouchableOpacity>
-              </>
-            )}
-          </View>
-        </ScrollView>
-      </View>
-    </Modal>
-  );
-
-  const renderValueModal = () => (
-    <Modal visible={showValueModal} transparent animationType="slide">
-      <View style={styles.modalOverlay}>
-        <View style={styles.modalContent}>
-          <View style={styles.modalHeader}>
-            <Text style={styles.modalTitle}>Add a Core Value</Text>
-            <TouchableOpacity onPress={() => setShowValueModal(false)} activeOpacity={0.7}>
-              <X size={22} color={Colors.textSecondary} />
-            </TouchableOpacity>
-          </View>
-
-          <Text style={styles.inputLabel}>Value</Text>
-          <TextInput
-            style={styles.textInput}
-            placeholder="e.g. Honesty, Family, Courage..."
-            placeholderTextColor={Colors.textMuted}
-            value={newValueLabel}
-            onChangeText={setNewValueLabel}
-          />
-
-          <Text style={styles.inputLabel}>How important is this to you?</Text>
-          <View style={styles.importanceRow}>
-            {[1, 2, 3, 4, 5].map(n => (
-              <TouchableOpacity
-                key={n}
-                style={[styles.importanceDot, newValueImportance >= n && styles.importanceDotActive]}
-                onPress={() => setNewValueImportance(n)}
-                activeOpacity={0.7}
-              >
-                <Star size={16} color={newValueImportance >= n ? Colors.accentWarm : Colors.textMuted} />
-              </TouchableOpacity>
-            ))}
-          </View>
-
-          <TouchableOpacity
-            style={[styles.saveButton, !newValueLabel.trim() && styles.saveButtonDisabled]}
-            onPress={handleAddValue}
-            disabled={!newValueLabel.trim()}
-            activeOpacity={0.7}
-          >
-            <Text style={styles.saveButtonText}>Add Value</Text>
-          </TouchableOpacity>
-        </View>
-      </View>
-    </Modal>
-  );
-
-  const renderAddHabitModal = () => (
-    <Modal visible={showAddHabit} transparent animationType="slide">
-      <View style={styles.modalOverlay}>
-        <View style={styles.modalContent}>
-          <View style={styles.modalHeader}>
-            <Text style={styles.modalTitle}>New Habit Replacement</Text>
-            <TouchableOpacity onPress={() => setShowAddHabit(false)} activeOpacity={0.7}>
-              <X size={22} color={Colors.textSecondary} />
-            </TouchableOpacity>
-          </View>
-
-          <Text style={styles.inputLabel}>When I feel the urge to...</Text>
-          <TextInput
-            style={styles.textInput}
-            placeholder="e.g. drink, scroll, isolate..."
-            placeholderTextColor={Colors.textMuted}
-            value={newHabitTrigger}
-            onChangeText={setNewHabitTrigger}
-          />
-
-          <Text style={styles.inputLabel}>Instead, I will...</Text>
-          <TextInput
-            style={styles.textInput}
-            placeholder="e.g. go for a walk, call a friend..."
-            placeholderTextColor={Colors.textMuted}
-            value={newHabitReplacement}
-            onChangeText={setNewHabitReplacement}
-          />
-
-          <Text style={styles.inputLabel}>Category</Text>
-          <View style={styles.categoryPicker}>
-            {HABIT_CATEGORIES.map(cat => (
-              <TouchableOpacity
-                key={cat.key}
-                style={[styles.categoryChip, newHabitCategory === cat.key && styles.categoryChipActive]}
-                onPress={() => setNewHabitCategory(cat.key)}
-                activeOpacity={0.7}
-              >
-                {cat.icon}
-                <Text style={[styles.categoryChipText, newHabitCategory === cat.key && styles.categoryChipTextActive]}>
-                  {cat.label}
-                </Text>
-              </TouchableOpacity>
-            ))}
-          </View>
-
-          <TouchableOpacity
-            style={[styles.saveButton, (!newHabitTrigger.trim() || !newHabitReplacement.trim()) && styles.saveButtonDisabled]}
-            onPress={handleAddHabit}
-            disabled={!newHabitTrigger.trim() || !newHabitReplacement.trim()}
-            activeOpacity={0.7}
-          >
-            <Text style={styles.saveButtonText}>Add Replacement</Text>
-          </TouchableOpacity>
-        </View>
-      </View>
-    </Modal>
-  );
-
-  const renderAddRoutineModal = () => (
-    <Modal visible={showAddRoutine} transparent animationType="slide">
-      <View style={styles.modalOverlay}>
-        <View style={styles.modalContent}>
-          <View style={styles.modalHeader}>
-            <Text style={styles.modalTitle}>New Routine Block</Text>
-            <TouchableOpacity onPress={() => setShowAddRoutine(false)} activeOpacity={0.7}>
-              <X size={22} color={Colors.textSecondary} />
-            </TouchableOpacity>
-          </View>
-
-          <Text style={styles.inputLabel}>Activity</Text>
-          <TextInput
-            style={styles.textInput}
-            placeholder="e.g. Meditation, Exercise, Read..."
-            placeholderTextColor={Colors.textMuted}
-            value={newRoutineTitle}
-            onChangeText={setNewRoutineTitle}
-          />
-
-          <Text style={styles.inputLabel}>Details (optional)</Text>
-          <TextInput
-            style={styles.textInput}
-            placeholder="e.g. 10 minutes of breathing"
-            placeholderTextColor={Colors.textMuted}
-            value={newRoutineDesc}
-            onChangeText={setNewRoutineDesc}
-          />
-
-          <Text style={styles.inputLabel}>Time of Day</Text>
-          <View style={styles.categoryPicker}>
-            {TIME_OPTIONS.map(t => (
-              <TouchableOpacity
-                key={t.key}
-                style={[styles.categoryChip, newRoutineTime === t.key && styles.categoryChipActive]}
-                onPress={() => setNewRoutineTime(t.key)}
-                activeOpacity={0.7}
-              >
-                {t.icon}
-                <Text style={[styles.categoryChipText, newRoutineTime === t.key && styles.categoryChipTextActive]}>
-                  {t.label}
-                </Text>
-              </TouchableOpacity>
-            ))}
-          </View>
-
-          <TouchableOpacity
-            style={[styles.saveButton, !newRoutineTitle.trim() && styles.saveButtonDisabled]}
-            onPress={handleAddRoutine}
-            disabled={!newRoutineTitle.trim()}
-            activeOpacity={0.7}
-          >
-            <Text style={styles.saveButtonText}>Add to Routine</Text>
-          </TouchableOpacity>
-        </View>
-      </View>
-    </Modal>
-  );
-
-  const renderAddGoalModal = () => (
-    <Modal visible={showAddGoal} transparent animationType="slide">
-      <View style={styles.modalOverlay}>
-        <ScrollView style={styles.modalScroll} contentContainerStyle={styles.modalScrollContent}>
-          <View style={styles.modalContent}>
-            <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>New Purpose Goal</Text>
-              <TouchableOpacity onPress={() => setShowAddGoal(false)} activeOpacity={0.7}>
-                <X size={22} color={Colors.textSecondary} />
-              </TouchableOpacity>
-            </View>
-
-            <Text style={styles.inputLabel}>Goal</Text>
-            <TextInput
-              style={styles.textInput}
-              placeholder="e.g. Get physically fit, Start a new hobby..."
-              placeholderTextColor={Colors.textMuted}
-              value={newGoalTitle}
-              onChangeText={setNewGoalTitle}
-            />
-
-            <Text style={styles.inputLabel}>Why this matters (optional)</Text>
-            <TextInput
-              style={[styles.textInput, styles.textInputMulti]}
-              placeholder="What will this give you?"
-              placeholderTextColor={Colors.textMuted}
-              value={newGoalDesc}
-              onChangeText={setNewGoalDesc}
-              multiline
-            />
-
-            <Text style={styles.inputLabel}>Category</Text>
-            <View style={styles.categoryPicker}>
-              {GOAL_CATEGORIES.map(cat => (
-                <TouchableOpacity
-                  key={cat.key}
-                  style={[styles.categoryChip, newGoalCategory === cat.key && styles.categoryChipActive]}
-                  onPress={() => setNewGoalCategory(cat.key)}
-                  activeOpacity={0.7}
-                >
-                  {cat.icon}
-                  <Text style={[styles.categoryChipText, newGoalCategory === cat.key && styles.categoryChipTextActive]}>
-                    {cat.label}
-                  </Text>
-                </TouchableOpacity>
-              ))}
-            </View>
-
-            <Text style={styles.inputLabel}>Steps to get there</Text>
-            {newGoalSteps.map((step, i) => (
-              <View key={i} style={styles.stepInputRow}>
-                <TextInput
-                  style={[styles.textInput, { flex: 1 }]}
-                  placeholder={`Step ${i + 1}`}
-                  placeholderTextColor={Colors.textMuted}
-                  value={step}
-                  onChangeText={text => {
-                    const updated = [...newGoalSteps];
-                    updated[i] = text;
-                    setNewGoalSteps(updated);
-                  }}
-                />
-                {newGoalSteps.length > 1 && (
-                  <TouchableOpacity
-                    style={styles.removeStepBtn}
-                    onPress={() => setNewGoalSteps(newGoalSteps.filter((_, j) => j !== i))}
-                    activeOpacity={0.7}
-                  >
-                    <X size={16} color={Colors.textMuted} />
-                  </TouchableOpacity>
-                )}
-              </View>
-            ))}
-            <TouchableOpacity
-              style={styles.addStepBtn}
-              onPress={() => setNewGoalSteps([...newGoalSteps, ''])}
-              activeOpacity={0.7}
-            >
-              <Plus size={14} color={Colors.primary} />
-              <Text style={styles.addStepText}>Add step</Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              style={[styles.saveButton, !newGoalTitle.trim() && styles.saveButtonDisabled]}
-              onPress={handleAddGoal}
-              disabled={!newGoalTitle.trim()}
-              activeOpacity={0.7}
-            >
-              <Text style={styles.saveButtonText}>Create Goal</Text>
-            </TouchableOpacity>
-          </View>
-        </ScrollView>
-      </View>
-    </Modal>
-  );
-
-  const renderAddMilestoneModal = () => (
-    <Modal visible={showAddMilestone} transparent animationType="slide">
-      <View style={styles.modalOverlay}>
-        <View style={styles.modalContent}>
-          <View style={styles.modalHeader}>
-            <Text style={styles.modalTitle}>Log a Win</Text>
-            <TouchableOpacity onPress={() => setShowAddMilestone(false)} activeOpacity={0.7}>
-              <X size={22} color={Colors.textSecondary} />
-            </TouchableOpacity>
-          </View>
-
-          <Text style={styles.inputLabel}>What did you accomplish?</Text>
-          <TextInput
-            style={styles.textInput}
-            placeholder="e.g. Said no to a craving, Finished a workout..."
-            placeholderTextColor={Colors.textMuted}
-            value={newMilestoneTitle}
-            onChangeText={setNewMilestoneTitle}
-          />
-
-          <Text style={styles.inputLabel}>How did it make you feel? (optional)</Text>
-          <TextInput
-            style={[styles.textInput, styles.textInputMulti]}
-            placeholder="Describe the moment..."
-            placeholderTextColor={Colors.textMuted}
-            value={newMilestoneDesc}
-            onChangeText={setNewMilestoneDesc}
-            multiline
-          />
-
-          <TouchableOpacity
-            style={[styles.saveButton, !newMilestoneTitle.trim() && styles.saveButtonDisabled]}
-            onPress={handleAddMilestone}
-            disabled={!newMilestoneTitle.trim()}
-            activeOpacity={0.7}
-          >
-            <Text style={styles.saveButtonText}>Log Win</Text>
-          </TouchableOpacity>
-        </View>
-      </View>
-    </Modal>
-  );
+  const categoryLabel = activeExercise
+    ? `${CATEGORY_INFO[activeExercise.module.category]?.label} · Week ${activeExercise.module.week}`
+    : undefined;
 
   const { hasFeature } = useSubscription();
   const rebuildRouter = useRebuildRouter();
@@ -1454,83 +763,170 @@ export default function RebuildScreen() {
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
       >
-        <Animated.View
-          style={[
-            styles.heroCard,
-            {
-              opacity: headerAnim,
-              transform: [{ translateY: headerAnim.interpolate({ inputRange: [0, 1], outputRange: [20, 0] }) }],
-            },
-          ]}
-        >
-          <View style={styles.heroTop}>
-            <View style={styles.heroIconWrap}>
-              <Hammer size={22} color={Colors.background} />
-            </View>
-            <View style={styles.identityScoreWrap}>
-              <Text style={styles.identityScoreLabel}>Identity Score</Text>
-              <Text style={styles.identityScoreValue}>{combinedScore}</Text>
-            </View>
-          </View>
-          <Text style={styles.heroAffirmation}>{getAffirmation(affirmationIndex)}</Text>
-          <View style={styles.heroStats}>
-            <View style={styles.heroStat}>
-              <Text style={styles.heroStatValue}>{programProgress.modulesCompleted}/{programProgress.totalModules}</Text>
-              <Text style={styles.heroStatLabel}>Modules</Text>
-            </View>
-            <View style={styles.heroStatDivider} />
-            <View style={styles.heroStat}>
-              <Text style={styles.heroStatValue}>{stats.activeHabits}</Text>
-              <Text style={styles.heroStatLabel}>Habits</Text>
-            </View>
-            <View style={styles.heroStatDivider} />
-            <View style={styles.heroStat}>
-              <Text style={styles.heroStatValue}>{stats.goalsCompleted}/{stats.totalGoals}</Text>
-              <Text style={styles.heroStatLabel}>Goals</Text>
-            </View>
-            <View style={styles.heroStatDivider} />
-            <View style={styles.heroStat}>
-              <Text style={styles.heroStatValue}>{stats.milestoneCount}</Text>
-              <Text style={styles.heroStatLabel}>Wins</Text>
-            </View>
-          </View>
-        </Animated.View>
+        <RebuildHeroCard
+          headerAnim={headerAnim}
+          affirmation={getAffirmation(affirmationIndex)}
+          combinedScore={combinedScore}
+          stats={stats}
+          programProgress={programProgress}
+          Colors={Colors}
+          styles={styles}
+        />
 
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          contentContainerStyle={styles.tabsContainer}
-          style={styles.tabsScroll}
-        >
-          {renderSectionTab('program', 'Program', <Compass size={14} color={activeSection === 'program' ? Colors.text : Colors.textMuted} />)}
-          {renderSectionTab('habits', 'Habits', <RefreshCw size={14} color={activeSection === 'habits' ? Colors.text : Colors.textMuted} />)}
-          {renderSectionTab('routine', 'Routine', <Sunrise size={14} color={activeSection === 'routine' ? Colors.text : Colors.textMuted} />)}
-          {renderSectionTab('goals', 'Goals', <Target size={14} color={activeSection === 'goals' ? Colors.text : Colors.textMuted} />)}
-          {renderSectionTab('confidence', 'Wins', <Award size={14} color={activeSection === 'confidence' ? Colors.text : Colors.textMuted} />)}
-        </ScrollView>
+        <RebuildSectionTabs
+          activeSection={activeSection}
+          onChange={setActiveSection}
+          styles={styles}
+          tabs={[
+            { key: 'program', label: 'Program', icon: <Compass size={14} color={activeSection === 'program' ? Colors.text : Colors.textMuted} /> },
+            { key: 'habits', label: 'Habits', icon: <RefreshCw size={14} color={activeSection === 'habits' ? Colors.text : Colors.textMuted} /> },
+            { key: 'routine', label: 'Routine', icon: <Sunrise size={14} color={activeSection === 'routine' ? Colors.text : Colors.textMuted} /> },
+            { key: 'goals', label: 'Goals', icon: <Target size={14} color={activeSection === 'goals' ? Colors.text : Colors.textMuted} /> },
+            { key: 'confidence', label: 'Wins', icon: <Award size={14} color={activeSection === 'confidence' ? Colors.text : Colors.textMuted} /> },
+          ]}
+        />
 
         {activeSection === 'program' && renderProgramSection()}
-        {activeSection === 'habits' && renderHabitsSection()}
-        {activeSection === 'routine' && renderRoutineSection()}
-        {activeSection === 'goals' && renderGoalsSection()}
-        {activeSection === 'confidence' && renderConfidenceSection()}
+        {activeSection === 'habits' && (
+          <RebuildHabitsSection
+            rebuildHabits={rebuildData.habits}
+            habitCategories={HABIT_CATEGORIES}
+            isHabitDoneToday={isHabitDoneToday}
+            onOpenAddHabit={() => setShowAddHabit(true)}
+            onCompleteHabit={handleCompleteHabit}
+            onDeleteHabit={deleteReplacementHabit}
+            Colors={Colors}
+            styles={styles}
+          />
+        )}
+        {activeSection === 'routine' && (
+          <RebuildRoutineSection
+            routines={rebuildData.routines}
+            routinesByTime={routinesByTime}
+            timeOptions={TIME_OPTIONS}
+            onOpenAddRoutine={() => setShowAddRoutine(true)}
+            onToggleRoutine={handleToggleRoutine}
+            onDeleteRoutine={deleteRoutineBlock}
+            Colors={Colors}
+            styles={styles}
+          />
+        )}
+        {activeSection === 'goals' && (
+          <RebuildGoalsSection
+            goals={rebuildData.goals}
+            goalCategories={GOAL_CATEGORIES}
+            expandedGoalId={expandedGoal}
+            onToggleExpanded={setExpandedGoal}
+            onOpenAddGoal={() => setShowAddGoal(true)}
+            onToggleGoalStep={handleToggleGoalStep}
+            onDeleteGoal={deletePurposeGoal}
+            Colors={Colors}
+            styles={styles}
+          />
+        )}
+        {activeSection === 'confidence' && (
+          <RebuildConfidenceSection
+            milestones={rebuildData.confidenceMilestones}
+            onOpenAddMilestone={() => setShowAddMilestone(true)}
+            Colors={Colors}
+            styles={styles}
+          />
+        )}
 
         <View style={{ height: 40 }} />
       </ScrollView>
 
-      {encouragementMessage !== '' && (
-        <Animated.View style={[styles.encouragementToast, { opacity: encouragementFade }]}>
-          <Sparkles size={14} color={Colors.primary} />
-          <Text style={styles.encouragementText}>{encouragementMessage}</Text>
-        </Animated.View>
-      )}
+      <RebuildEncouragementToast message={encouragementMessage} fade={encouragementFade} Colors={Colors} styles={styles} />
 
-      {renderExerciseModal()}
-      {renderValueModal()}
-      {renderAddHabitModal()}
-      {renderAddRoutineModal()}
-      {renderAddGoalModal()}
-      {renderAddMilestoneModal()}
+      <RebuildExerciseModal
+        visible={!!activeExercise}
+        activeExercise={activeExercise}
+        exerciseInput={exerciseInput}
+        setExerciseInput={setExerciseInput}
+        onClose={() => {
+          setActiveExercise(null);
+          setExerciseInput('');
+        }}
+        onSave={handleSaveExercise}
+        canSave={exerciseInput.trim().length > 0}
+        saveLabel={
+          activeExercise && isExerciseCompleted(activeExercise.module.id, activeExercise.exercise.id) ? 'Update Response' : 'Save Response'
+        }
+        categoryLabel={categoryLabel}
+        Colors={Colors}
+        styles={styles}
+      />
+
+      <RebuildValueModal
+        visible={showValueModal}
+        newValueLabel={newValueLabel}
+        setNewValueLabel={setNewValueLabel}
+        newValueImportance={newValueImportance}
+        setNewValueImportance={setNewValueImportance}
+        onClose={() => setShowValueModal(false)}
+        onAddValue={handleAddValue}
+        Colors={Colors}
+        styles={styles}
+      />
+
+      <RebuildAddHabitModal
+        visible={showAddHabit}
+        newHabitTrigger={newHabitTrigger}
+        setNewHabitTrigger={setNewHabitTrigger}
+        newHabitReplacement={newHabitReplacement}
+        setNewHabitReplacement={setNewHabitReplacement}
+        newHabitCategory={newHabitCategory}
+        setNewHabitCategory={setNewHabitCategory}
+        habitCategories={HABIT_CATEGORIES}
+        onClose={() => setShowAddHabit(false)}
+        onAdd={handleAddHabit}
+        Colors={Colors}
+        styles={styles}
+      />
+
+      <RebuildAddRoutineModal
+        visible={showAddRoutine}
+        newRoutineTitle={newRoutineTitle}
+        setNewRoutineTitle={setNewRoutineTitle}
+        newRoutineDesc={newRoutineDesc}
+        setNewRoutineDesc={setNewRoutineDesc}
+        newRoutineTime={newRoutineTime}
+        setNewRoutineTime={setNewRoutineTime}
+        timeOptions={TIME_OPTIONS}
+        onClose={() => setShowAddRoutine(false)}
+        onAdd={handleAddRoutine}
+        Colors={Colors}
+        styles={styles}
+      />
+
+      <RebuildAddGoalModal
+        visible={showAddGoal}
+        newGoalTitle={newGoalTitle}
+        setNewGoalTitle={setNewGoalTitle}
+        newGoalDesc={newGoalDesc}
+        setNewGoalDesc={setNewGoalDesc}
+        newGoalCategory={newGoalCategory}
+        setNewGoalCategory={setNewGoalCategory}
+        goalCategories={GOAL_CATEGORIES}
+        newGoalSteps={newGoalSteps}
+        setNewGoalSteps={setNewGoalSteps}
+        onClose={() => setShowAddGoal(false)}
+        onAdd={handleAddGoal}
+        Colors={Colors}
+        styles={styles}
+      />
+
+      <RebuildAddMilestoneModal
+        visible={showAddMilestone}
+        newMilestoneTitle={newMilestoneTitle}
+        setNewMilestoneTitle={setNewMilestoneTitle}
+        newMilestoneDesc={newMilestoneDesc}
+        setNewMilestoneDesc={setNewMilestoneDesc}
+        onClose={() => setShowAddMilestone(false)}
+        onAdd={handleAddMilestone}
+        Colors={Colors}
+        styles={styles}
+      />
     </View>
   );
 }

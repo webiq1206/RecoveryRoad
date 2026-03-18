@@ -1,8 +1,8 @@
 import createContextHook from '@nkzw/create-context-hook';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { useState, useEffect, useCallback, useMemo } from 'react';
-import { UserProfile, Pledge, JournalEntry, MediaItem, WorkbookAnswer, EmergencyContact, DailyCheckIn, CheckInTimeOfDay, RebuildData, ReplacementHabit, RoutineBlock, PurposeGoal, ConfidenceMilestone, AccountabilityData, CommitmentContract, AccountabilityPartner, DriftAlert, ContractCheckIn, RecoveryProfile, PrivacyControls, IdentityProgramData, IdentityExerciseResponse, IdentityValue, TimelineEvent, RelapsePlan, NearMissEvent } from '@/types';
+import { useQueryClient } from '@tanstack/react-query';
+import { useCallback, useMemo } from 'react';
+import { Pledge, JournalEntry, MediaItem, WorkbookAnswer, EmergencyContact, DailyCheckIn, CheckInTimeOfDay, RebuildData, ReplacementHabit, RoutineBlock, PurposeGoal, ConfidenceMilestone, AccountabilityData, CommitmentContract, AccountabilityPartner, DriftAlert, ContractCheckIn, RecoveryProfile, PrivacyControls, IdentityProgramData, IdentityExerciseResponse, IdentityValue, TimelineEvent, RelapsePlan, NearMissEvent } from '@/types';
 import { calculateStability } from '@/utils/stabilityEngine';
 import { useRecoveryProfileStore } from '@/stores/useRecoveryProfileStore';
 import {
@@ -15,15 +15,14 @@ import {
   useHydrateCheckInsStore,
 } from '@/stores/useCheckInsStore';
 import { useHydrateRecoveryProfileStore, useDaysSober } from '@/stores/useRecoveryProfileStore';
-import {
-  STORAGE_KEYS,
-  RECOVERY_KEYS_TO_CLEAR,
-  DEFAULT_IDENTITY_PROGRAM,
-  DEFAULT_REBUILD,
-  DEFAULT_ACCOUNTABILITY,
-  loadStorageItem,
-  saveStorageItem,
-} from '@/core/persistence';
+import { usePledgesStore, useHydratePledgesStore, usePledgeStreak, useTodayPledge } from '@/features/pledges/state/usePledgesStore';
+import { useJournalStore, useHydrateJournalStore } from '@/features/journal/state/useJournalStore';
+import { useMediaStore, useHydrateMediaStore } from '@/features/media/state/useMediaStore';
+import { useWorkbookStore, useHydrateWorkbookStore } from '@/features/workbook/state/useWorkbookStore';
+import { useSupportContactsStore, useHydrateSupportContactsStore } from '@/features/supportContacts/state/useSupportContactsStore';
+import { useRebuildStore, useHydrateRebuildStore } from '@/features/rebuild/state/useRebuildStore';
+import { useAccountabilityStore, useHydrateAccountabilityStore } from '@/features/accountability/state/useAccountabilityStore';
+import { useAppMetaStore, useStabilityScore } from '@/features/appMeta/state/useAppMetaStore';
 
 export function calculateRiskScore(rp: RecoveryProfile): number {
   let risk = 0;
@@ -72,523 +71,93 @@ export const [RecoveryProvider, useRecovery] = createContextHook(() => {
   const currentCheckInPeriod = useCurrentCheckInPeriod();
   const currentPeriodCheckIn = useCurrentPeriodCheckIn();
 
-  const [pledges, setPledges] = useState<Pledge[]>([]);
-  const [journal, setJournal] = useState<JournalEntry[]>([]);
-  const [media, setMedia] = useState<MediaItem[]>([]);
-  const [workbookAnswers, setWorkbookAnswers] = useState<WorkbookAnswer[]>([]);
-  const [emergencyContacts, setEmergencyContacts] = useState<EmergencyContact[]>([]);
-  const [rebuildData, setRebuildData] = useState<RebuildData>(DEFAULT_REBUILD);
-  const [accountabilityData, setAccountabilityData] = useState<AccountabilityData>(DEFAULT_ACCOUNTABILITY);
+  // Client-persisted slices now live in zustand feature stores.
+  useHydratePledgesStore();
+  useHydrateJournalStore();
+  useHydrateMediaStore();
+  useHydrateWorkbookStore();
+  useHydrateSupportContactsStore();
+  useHydrateRebuildStore();
+  useHydrateAccountabilityStore();
 
-  const pledgesQuery = useQuery({
-    queryKey: ['pledges'],
-    queryFn: () => loadStorageItem<Pledge[]>(STORAGE_KEYS.PLEDGES, []),
-    staleTime: Infinity,
-  });
+  const pledges = usePledgesStore.use.pledges();
+  const addPledge = usePledgesStore.use.addPledge();
+  const todayPledge = useTodayPledge();
+  const currentStreak = usePledgeStreak();
 
-  const journalQuery = useQuery({
-    queryKey: ['journal'],
-    queryFn: () => loadStorageItem<JournalEntry[]>(STORAGE_KEYS.JOURNAL, []),
-    staleTime: Infinity,
-  });
+  const journal = useJournalStore.use.journal();
+  const addJournalEntry = useJournalStore.use.addJournalEntry();
+  const deleteJournalEntry = useJournalStore.use.deleteJournalEntry();
 
-  const mediaQuery = useQuery({
-    queryKey: ['media'],
-    queryFn: () => loadStorageItem<MediaItem[]>(STORAGE_KEYS.MEDIA, []),
-    staleTime: Infinity,
-  });
+  const media = useMediaStore.use.media();
+  const addMedia = useMediaStore.use.addMedia();
+  const addMultipleMedia = useMediaStore.use.addMultipleMedia();
+  const deleteMedia = useMediaStore.use.deleteMedia();
 
-  const workbookQuery = useQuery({
-    queryKey: ['workbookAnswers'],
-    queryFn: () => loadStorageItem<WorkbookAnswer[]>(STORAGE_KEYS.WORKBOOK_ANSWERS, []),
-    staleTime: Infinity,
-  });
+  const workbookAnswers = useWorkbookStore.use.workbookAnswers();
+  const saveWorkbookAnswer = useWorkbookStore.use.saveWorkbookAnswer();
+  const getWorkbookAnswer = useWorkbookStore.use.getWorkbookAnswer();
+  const getSectionProgress = useWorkbookStore.use.getSectionProgress();
 
-  const emergencyContactsQuery = useQuery({
-    queryKey: ['emergencyContacts'],
-    queryFn: () => loadStorageItem<EmergencyContact[]>(STORAGE_KEYS.EMERGENCY_CONTACTS, []),
-    staleTime: Infinity,
-  });
+  const emergencyContacts = useSupportContactsStore.use.emergencyContacts();
+  const saveEmergencyContact = useSupportContactsStore.use.saveEmergencyContact();
+  const deleteEmergencyContact = useSupportContactsStore.use.deleteEmergencyContact();
 
-  const rebuildQuery = useQuery({
-    queryKey: ['rebuild'],
-    queryFn: () => loadStorageItem<RebuildData>(STORAGE_KEYS.REBUILD, DEFAULT_REBUILD),
-    staleTime: Infinity,
-  });
+  const rebuildData = useRebuildStore.use.rebuildData();
+  const addReplacementHabit = useRebuildStore.use.addReplacementHabit();
+  const updateReplacementHabit = useRebuildStore.use.updateReplacementHabit();
+  const deleteReplacementHabit = useRebuildStore.use.deleteReplacementHabit();
+  const addRoutineBlock = useRebuildStore.use.addRoutineBlock();
+  const updateRoutineBlock = useRebuildStore.use.updateRoutineBlock();
+  const deleteRoutineBlock = useRebuildStore.use.deleteRoutineBlock();
+  const addPurposeGoal = useRebuildStore.use.addPurposeGoal();
+  const updatePurposeGoal = useRebuildStore.use.updatePurposeGoal();
+  const deletePurposeGoal = useRebuildStore.use.deletePurposeGoal();
+  const addConfidenceMilestone = useRebuildStore.use.addConfidenceMilestone();
+  const resetRoutineCompletion = useRebuildStore.use.resetRoutineCompletion();
+  const startIdentityProgram = useRebuildStore.use.startIdentityProgram();
+  const saveExerciseResponse = useRebuildStore.use.saveExerciseResponse();
+  const completeModule = useRebuildStore.use.completeModule();
+  const advanceIdentityWeek = useRebuildStore.use.advanceIdentityWeek();
+  const addIdentityValue = useRebuildStore.use.addIdentityValue();
+  const removeIdentityValue = useRebuildStore.use.removeIdentityValue();
 
-  const accountabilityQuery = useQuery({
-    queryKey: ['accountability'],
-    queryFn: () => loadStorageItem<AccountabilityData>(STORAGE_KEYS.ACCOUNTABILITY, DEFAULT_ACCOUNTABILITY),
-    staleTime: Infinity,
-  });
+  const accountabilityData = useAccountabilityStore.use.accountabilityData();
+  const addContract = useAccountabilityStore.use.addContract();
+  const updateContract = useAccountabilityStore.use.updateContract();
+  const deleteContract = useAccountabilityStore.use.deleteContract();
+  const checkInContract = useAccountabilityStore.use.checkInContract();
+  const addPartner = useAccountabilityStore.use.addPartner();
+  const deletePartner = useAccountabilityStore.use.deletePartner();
+  const dismissAlert = useAccountabilityStore.use.dismissAlert();
+  const useStreakProtection = useAccountabilityStore.use.useStreakProtection();
 
-  useEffect(() => {
-    if (pledgesQuery.data) setPledges(pledgesQuery.data);
-  }, [pledgesQuery.data]);
-
-  useEffect(() => {
-    if (journalQuery.data) setJournal(journalQuery.data);
-  }, [journalQuery.data]);
-
-  useEffect(() => {
-    if (mediaQuery.data) setMedia(mediaQuery.data);
-  }, [mediaQuery.data]);
-
-  useEffect(() => {
-    if (workbookQuery.data) setWorkbookAnswers(workbookQuery.data);
-  }, [workbookQuery.data]);
-
-  useEffect(() => {
-    if (emergencyContactsQuery.data) setEmergencyContacts(emergencyContactsQuery.data);
-  }, [emergencyContactsQuery.data]);
-
-  useEffect(() => {
-    if (rebuildQuery.data) setRebuildData(rebuildQuery.data);
-  }, [rebuildQuery.data]);
-
-  useEffect(() => {
-    if (accountabilityQuery.data) setAccountabilityData(accountabilityQuery.data);
-  }, [accountabilityQuery.data]);
-
-  const savePledgesMutation = useMutation({
-    mutationFn: (newPledges: Pledge[]) => saveStorageItem(STORAGE_KEYS.PLEDGES, newPledges),
-    onSuccess: (data) => {
-      setPledges(data);
-      queryClient.setQueryData(['pledges'], data);
-    },
-  });
-
-  const saveJournalMutation = useMutation({
-    mutationFn: (newJournal: JournalEntry[]) => saveStorageItem(STORAGE_KEYS.JOURNAL, newJournal),
-    onSuccess: (data) => {
-      setJournal(data);
-      queryClient.setQueryData(['journal'], data);
-    },
-  });
-
-  const saveMediaMutation = useMutation({
-    mutationFn: (newMedia: MediaItem[]) => saveStorageItem(STORAGE_KEYS.MEDIA, newMedia),
-    onSuccess: (data) => {
-      setMedia(data);
-      queryClient.setQueryData(['media'], data);
-    },
-  });
-
-  const saveWorkbookMutation = useMutation({
-    mutationFn: (newAnswers: WorkbookAnswer[]) => saveStorageItem(STORAGE_KEYS.WORKBOOK_ANSWERS, newAnswers),
-    onSuccess: (data) => {
-      setWorkbookAnswers(data);
-      queryClient.setQueryData(['workbookAnswers'], data);
-    },
-  });
-
-  const saveEmergencyContactsMutation = useMutation({
-    mutationFn: (contacts: EmergencyContact[]) => saveStorageItem(STORAGE_KEYS.EMERGENCY_CONTACTS, contacts),
-    onSuccess: (data) => {
-      setEmergencyContacts(data);
-      queryClient.setQueryData(['emergencyContacts'], data);
-    },
-  });
-
-  const saveRebuildMutation = useMutation({
-    mutationFn: (data: RebuildData) => saveStorageItem(STORAGE_KEYS.REBUILD, data),
-    onSuccess: (data) => {
-      setRebuildData(data);
-      queryClient.setQueryData(['rebuild'], data);
-    },
-  });
-
-  const saveAccountabilityMutation = useMutation({
-    mutationFn: (data: AccountabilityData) => saveStorageItem(STORAGE_KEYS.ACCOUNTABILITY, data),
-    onSuccess: (data) => {
-      setAccountabilityData(data);
-      queryClient.setQueryData(['accountability'], data);
-    },
-  });
-
-  const addPledge = useCallback((pledge: Pledge) => {
-    const updated = [pledge, ...pledges];
-    setPledges(updated);
-    savePledgesMutation.mutate(updated);
-  }, [pledges]);
-
-  const addJournalEntry = useCallback((entry: JournalEntry) => {
-    const updated = [entry, ...journal];
-    setJournal(updated);
-    saveJournalMutation.mutate(updated);
-  }, [journal]);
-
-  const deleteJournalEntry = useCallback((id: string) => {
-    const updated = journal.filter(e => e.id !== id);
-    setJournal(updated);
-    saveJournalMutation.mutate(updated);
-  }, [journal]);
-
-  const addMedia = useCallback((item: MediaItem) => {
-    const updated = [item, ...media];
-    setMedia(updated);
-    saveMediaMutation.mutate(updated);
-  }, [media]);
-
-  const addMultipleMedia = useCallback((items: MediaItem[]) => {
-    const updated = [...items, ...media];
-    setMedia(updated);
-    saveMediaMutation.mutate(updated);
-  }, [media]);
-
-  const deleteMedia = useCallback((id: string) => {
-    const updated = media.filter(m => m.id !== id);
-    setMedia(updated);
-    saveMediaMutation.mutate(updated);
-  }, [media]);
-
-  const saveWorkbookAnswer = useCallback((answer: WorkbookAnswer) => {
-    const existing = workbookAnswers.findIndex(
-      a => a.questionId === answer.questionId && a.sectionId === answer.sectionId
-    );
-    let updated: WorkbookAnswer[];
-    if (existing >= 0) {
-      updated = [...workbookAnswers];
-      updated[existing] = answer;
-    } else {
-      updated = [...workbookAnswers, answer];
-    }
-    setWorkbookAnswers(updated);
-    saveWorkbookMutation.mutate(updated);
-  }, [workbookAnswers]);
-
-  const getWorkbookAnswer = useCallback((sectionId: string, questionId: string): WorkbookAnswer | undefined => {
-    return workbookAnswers.find(a => a.sectionId === sectionId && a.questionId === questionId);
-  }, [workbookAnswers]);
-
-  const getSectionProgress = useCallback((sectionId: string, totalQuestions: number): number => {
-    const answered = workbookAnswers.filter(a => a.sectionId === sectionId).length;
-    return totalQuestions > 0 ? answered / totalQuestions : 0;
-  }, [workbookAnswers]);
-
-  const saveEmergencyContact = useCallback((contact: EmergencyContact) => {
-    const existing = emergencyContacts.findIndex(c => c.id === contact.id);
-    let updated: EmergencyContact[];
-    if (existing >= 0) {
-      updated = [...emergencyContacts];
-      updated[existing] = contact;
-    } else {
-      if (emergencyContacts.length >= 3) return;
-      updated = [...emergencyContacts, contact];
-    }
-    setEmergencyContacts(updated);
-    saveEmergencyContactsMutation.mutate(updated);
-  }, [emergencyContacts]);
-
-  const deleteEmergencyContact = useCallback((id: string) => {
-    const updated = emergencyContacts.filter(c => c.id !== id);
-    setEmergencyContacts(updated);
-    saveEmergencyContactsMutation.mutate(updated);
-  }, [emergencyContacts]);
-
-  const addReplacementHabit = useCallback((habit: ReplacementHabit) => {
-    const updated = { ...rebuildData, habits: [...rebuildData.habits, habit] };
-    setRebuildData(updated);
-    saveRebuildMutation.mutate(updated);
-  }, [rebuildData]);
-
-  const updateReplacementHabit = useCallback((id: string, updates: Partial<ReplacementHabit>) => {
-    const updated = {
-      ...rebuildData,
-      habits: rebuildData.habits.map(h => h.id === id ? { ...h, ...updates } : h),
-    };
-    setRebuildData(updated);
-    saveRebuildMutation.mutate(updated);
-  }, [rebuildData]);
-
-  const deleteReplacementHabit = useCallback((id: string) => {
-    const updated = { ...rebuildData, habits: rebuildData.habits.filter(h => h.id !== id) };
-    setRebuildData(updated);
-    saveRebuildMutation.mutate(updated);
-  }, [rebuildData]);
-
-  const addRoutineBlock = useCallback((block: RoutineBlock) => {
-    const updated = { ...rebuildData, routines: [...rebuildData.routines, block] };
-    setRebuildData(updated);
-    saveRebuildMutation.mutate(updated);
-  }, [rebuildData]);
-
-  const updateRoutineBlock = useCallback((id: string, updates: Partial<RoutineBlock>) => {
-    const updated = {
-      ...rebuildData,
-      routines: rebuildData.routines.map(r => r.id === id ? { ...r, ...updates } : r),
-    };
-    setRebuildData(updated);
-    saveRebuildMutation.mutate(updated);
-  }, [rebuildData]);
-
-  const deleteRoutineBlock = useCallback((id: string) => {
-    const updated = { ...rebuildData, routines: rebuildData.routines.filter(r => r.id !== id) };
-    setRebuildData(updated);
-    saveRebuildMutation.mutate(updated);
-  }, [rebuildData]);
-
-  const addPurposeGoal = useCallback((goal: PurposeGoal) => {
-    const updated = { ...rebuildData, goals: [...rebuildData.goals, goal] };
-    setRebuildData(updated);
-    saveRebuildMutation.mutate(updated);
-  }, [rebuildData]);
-
-  const updatePurposeGoal = useCallback((id: string, updates: Partial<PurposeGoal>) => {
-    const updated = {
-      ...rebuildData,
-      goals: rebuildData.goals.map(g => g.id === id ? { ...g, ...updates } : g),
-    };
-    setRebuildData(updated);
-    saveRebuildMutation.mutate(updated);
-  }, [rebuildData]);
-
-  const deletePurposeGoal = useCallback((id: string) => {
-    const updated = { ...rebuildData, goals: rebuildData.goals.filter(g => g.id !== id) };
-    setRebuildData(updated);
-    saveRebuildMutation.mutate(updated);
-  }, [rebuildData]);
-
-  const addConfidenceMilestone = useCallback((milestone: ConfidenceMilestone) => {
-    const updated = { ...rebuildData, confidenceMilestones: [...rebuildData.confidenceMilestones, milestone] };
-    setRebuildData(updated);
-    saveRebuildMutation.mutate(updated);
-  }, [rebuildData]);
-
-  const startIdentityProgram = useCallback(() => {
-    const program: IdentityProgramData = {
-      ...DEFAULT_IDENTITY_PROGRAM,
-      startedAt: new Date().toISOString(),
-      currentWeek: 1,
-    };
-    const updated = { ...rebuildData, identityProgram: program };
-    setRebuildData(updated);
-    saveRebuildMutation.mutate(updated);
-  }, [rebuildData]);
-
-  const saveExerciseResponse = useCallback((response: IdentityExerciseResponse) => {
-    const program = rebuildData.identityProgram ?? DEFAULT_IDENTITY_PROGRAM;
-    const existing = program.exerciseResponses.findIndex(
-      r => r.moduleId === response.moduleId && r.exerciseId === response.exerciseId
-    );
-    let newResponses: IdentityExerciseResponse[];
-    if (existing >= 0) {
-      newResponses = [...program.exerciseResponses];
-      newResponses[existing] = response;
-    } else {
-      newResponses = [...program.exerciseResponses, response];
-    }
-    const updated = {
-      ...rebuildData,
-      identityProgram: { ...program, exerciseResponses: newResponses },
-    };
-    setRebuildData(updated);
-    saveRebuildMutation.mutate(updated);
-  }, [rebuildData]);
-
-  const completeModule = useCallback((moduleId: string) => {
-    const program = rebuildData.identityProgram ?? DEFAULT_IDENTITY_PROGRAM;
-    if (program.completedModuleIds.includes(moduleId)) return;
-    const updated = {
-      ...rebuildData,
-      identityProgram: {
-        ...program,
-        completedModuleIds: [...program.completedModuleIds, moduleId],
-      },
-    };
-    setRebuildData(updated);
-    saveRebuildMutation.mutate(updated);
-  }, [rebuildData]);
-
-  const advanceIdentityWeek = useCallback(() => {
-    const program = rebuildData.identityProgram ?? DEFAULT_IDENTITY_PROGRAM;
-    const updated = {
-      ...rebuildData,
-      identityProgram: { ...program, currentWeek: program.currentWeek + 1 },
-    };
-    setRebuildData(updated);
-    saveRebuildMutation.mutate(updated);
-  }, [rebuildData]);
-
-  const addIdentityValue = useCallback((value: IdentityValue) => {
-    const program = rebuildData.identityProgram ?? DEFAULT_IDENTITY_PROGRAM;
-    const updated = {
-      ...rebuildData,
-      identityProgram: { ...program, values: [...program.values, value] },
-    };
-    setRebuildData(updated);
-    saveRebuildMutation.mutate(updated);
-  }, [rebuildData]);
-
-  const removeIdentityValue = useCallback((id: string) => {
-    const program = rebuildData.identityProgram ?? DEFAULT_IDENTITY_PROGRAM;
-    const updated = {
-      ...rebuildData,
-      identityProgram: { ...program, values: program.values.filter(v => v.id !== id) },
-    };
-    setRebuildData(updated);
-    saveRebuildMutation.mutate(updated);
-  }, [rebuildData]);
-
-  const resetRoutineCompletion = useCallback(() => {
-    const updated = {
-      ...rebuildData,
-      routines: rebuildData.routines.map(r => ({ ...r, isCompleted: false, completedAt: '' })),
-    };
-    setRebuildData(updated);
-    saveRebuildMutation.mutate(updated);
-  }, [rebuildData]);
-
-  const addContract = useCallback((contract: CommitmentContract) => {
-    const updated = { ...accountabilityData, contracts: [...accountabilityData.contracts, contract] };
-    setAccountabilityData(updated);
-    saveAccountabilityMutation.mutate(updated);
-  }, [accountabilityData]);
-
-  const updateContract = useCallback((id: string, updates: Partial<CommitmentContract>) => {
-    const updated = {
-      ...accountabilityData,
-      contracts: accountabilityData.contracts.map(c => c.id === id ? { ...c, ...updates } : c),
-    };
-    setAccountabilityData(updated);
-    saveAccountabilityMutation.mutate(updated);
-  }, [accountabilityData]);
-
-  const deleteContract = useCallback((id: string) => {
-    const updated = { ...accountabilityData, contracts: accountabilityData.contracts.filter(c => c.id !== id) };
-    setAccountabilityData(updated);
-    saveAccountabilityMutation.mutate(updated);
-  }, [accountabilityData]);
-
-  const checkInContract = useCallback((contractId: string, honored: boolean, note: string) => {
-    const today = new Date().toISOString().split('T')[0];
-    const checkIn: ContractCheckIn = {
-      id: Date.now().toString(),
-      contractId,
-      date: today,
-      honored,
-      note,
-    };
-    const updated = {
-      ...accountabilityData,
-      contracts: accountabilityData.contracts.map(c => {
-        if (c.id !== contractId) return c;
-        const newCheckIns = [checkIn, ...c.checkIns];
-        const newStreak = honored ? c.streakDays + 1 : 0;
-        return { ...c, checkIns: newCheckIns, streakDays: newStreak, lastCheckedIn: today };
-      }),
-    };
-    setAccountabilityData(updated);
-    saveAccountabilityMutation.mutate(updated);
-  }, [accountabilityData]);
-
-  const addPartner = useCallback((partner: AccountabilityPartner) => {
-    const updated = { ...accountabilityData, partners: [...accountabilityData.partners, partner] };
-    setAccountabilityData(updated);
-    saveAccountabilityMutation.mutate(updated);
-  }, [accountabilityData]);
-
-  const updatePartner = useCallback((id: string, updates: Partial<AccountabilityPartner>) => {
-    const updated = {
-      ...accountabilityData,
-      partners: accountabilityData.partners.map(p => p.id === id ? { ...p, ...updates } : p),
-    };
-    setAccountabilityData(updated);
-    saveAccountabilityMutation.mutate(updated);
-  }, [accountabilityData]);
-
-  const deletePartner = useCallback((id: string) => {
-    const updated = { ...accountabilityData, partners: accountabilityData.partners.filter(p => p.id !== id) };
-    setAccountabilityData(updated);
-    saveAccountabilityMutation.mutate(updated);
-  }, [accountabilityData]);
-
-  const dismissAlert = useCallback((id: string) => {
-    const updated = {
-      ...accountabilityData,
-      alerts: accountabilityData.alerts.map(a => a.id === id ? { ...a, isDismissed: true } : a),
-    };
-    setAccountabilityData(updated);
-    saveAccountabilityMutation.mutate(updated);
-  }, [accountabilityData]);
-
-  const useStreakProtection = useCallback(() => {
-    if (accountabilityData.streakProtectionUsed >= accountabilityData.streakProtectionMax) return false;
-    const updated = { ...accountabilityData, streakProtectionUsed: accountabilityData.streakProtectionUsed + 1 };
-    setAccountabilityData(updated);
-    saveAccountabilityMutation.mutate(updated);
-    return true;
-  }, [accountabilityData]);
-
-  const stabilityScore = useMemo(() => {
-    const sorted = [...checkIns].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
-    const recent = sorted.slice(0, 7);
-    if (recent.length === 0) {
-      const rp = profile.recoveryProfile;
-      const input = {
-        intensity: rp.struggleLevel,
-        sleepQuality: (rp.sleepQuality === 'fair' ? 'okay' : rp.sleepQuality === 'excellent' ? 'good' : rp.sleepQuality === 'poor' ? 'poor' : 'good') as 'poor' | 'okay' | 'good',
-        triggers: rp.triggers ?? [],
-        supportLevel: rp.supportAvailability,
-        dailyActionsCompleted: 0,
-        relapseLogged: (rp.relapseCount ?? 0) > 0,
-      };
-      return calculateStability(input).score;
-    }
-    const avg = recent.reduce((sum, c) => sum + c.stabilityScore, 0) / recent.length;
-    return Math.round(avg);
-  }, [checkIns, profile.recoveryProfile]);
+  const stabilityScore = useStabilityScore();
+  const resetAllDataStore = useAppMetaStore.use.resetAllData();
 
   const resetAllData = useCallback(async () => {
-    await AsyncStorage.multiRemove(RECOVERY_KEYS_TO_CLEAR);
-    setPledges([]);
-    setJournal([]);
-    setMedia([]);
-    setWorkbookAnswers([]);
-    setEmergencyContacts([]);
-    setRebuildData(DEFAULT_REBUILD);
-    setAccountabilityData(DEFAULT_ACCOUNTABILITY);
+    await resetAllDataStore();
     queryClient.clear();
-  }, [queryClient]);
+  }, [resetAllDataStore, queryClient]);
 
-  const todayPledge = useMemo(() => {
-    const today = new Date().toISOString().split('T')[0];
-    return pledges.find(p => p.date === today) ?? null;
-  }, [pledges]);
-
-  const currentStreak = useMemo(() => {
-    if (pledges.length === 0) return 0;
-    let streak = 0;
-    const sorted = [...pledges].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-
-    for (let i = 0; i < sorted.length; i++) {
-      const pledgeDate = new Date(sorted[i].date);
-      pledgeDate.setHours(0, 0, 0, 0);
-      const expectedDate = new Date(today);
-      expectedDate.setDate(expectedDate.getDate() - i);
-      expectedDate.setHours(0, 0, 0, 0);
-
-      if (pledgeDate.getTime() === expectedDate.getTime() && sorted[i].completed) {
-        streak++;
-      } else {
-        break;
-      }
-    }
-    return streak;
-  }, [pledges]);
+  const pledgesIsLoading = usePledgesStore.use.isLoading();
+  const journalIsLoading = useJournalStore.use.isLoading();
+  const mediaIsLoading = useMediaStore.use.isLoading();
+  const workbookIsLoading = useWorkbookStore.use.isLoading();
+  const supportContactsIsLoading = useSupportContactsStore.use.isLoading();
+  const rebuildIsLoading = useRebuildStore.use.isLoading();
+  const accountabilityIsLoading = useAccountabilityStore.use.isLoading();
 
   const isLoading =
     profileIsLoading ||
     checkInsIsLoading ||
-    pledgesQuery.isLoading ||
-    journalQuery.isLoading ||
-    mediaQuery.isLoading ||
-    workbookQuery.isLoading ||
-    emergencyContactsQuery.isLoading ||
-    rebuildQuery.isLoading ||
-    accountabilityQuery.isLoading;
+    pledgesIsLoading ||
+    journalIsLoading ||
+    mediaIsLoading ||
+    workbookIsLoading ||
+    supportContactsIsLoading ||
+    rebuildIsLoading ||
+    accountabilityIsLoading;
 
   return useMemo(() => ({
     profile,

@@ -10,7 +10,6 @@ import { useCheckin } from '@/core/domains/useCheckin';
 import { usePledges } from '@/core/domains/usePledges';
 import { useJournal } from '@/core/domains/useJournal';
 import { useAppMeta } from '@/core/domains/useAppMeta';
-import { useAppStore } from '@/stores/useAppStore';
 import { useEngagement } from '@/providers/EngagementProvider';
 import { useSubscription } from '@/providers/SubscriptionProvider';
 import { useNotifications } from '@/providers/NotificationProvider';

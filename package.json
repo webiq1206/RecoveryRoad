@@ -6,7 +6,8 @@
     "start": "bunx rork start -p 161tt8zh34s3n4vgfty6c --tunnel",
     "start-web": "bunx rork start -p 161tt8zh34s3n4vgfty6c --web --tunnel",
     "start-web-dev": "DEBUG=expo* bunx rork start -p 161tt8zh34s3n4vgfty6c --web --tunnel",
-    "lint": "expo lint"
+    "lint": "expo lint",
+    "qa:ia-strict": "node scripts/qa-ia-strict.mjs"
   },
   "dependencies": {
     "@expo/vector-icons": "^15.0.3",

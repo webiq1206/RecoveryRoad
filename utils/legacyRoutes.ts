@@ -1,11 +1,14 @@
+import { logger } from "@/utils/logger";
+
 /**
  * Legacy -> canonical route mapping for gradual IA transition.
  *
- * This file is intentionally non-enforcing for now.
- * We can wire strict redirects later once route usage is fully stabilized.
+ * Route resolution is always available via `resolveCanonicalRoute`.
+ * Strict redirect enforcement is opt-in via `EXPO_PUBLIC_ENABLE_STRICT_IA_REDIRECTS`.
  */
 export const LEGACY_ROUTE_MAP: Record<string, string> = {
   '/(tabs)/community': '/connection',
+  '/(tabs)/connection': '/connection',
   '/(tabs)/support': '/support',
   '/(tabs)/rebuild': '/rebuild',
   '/(tabs)/profile': '/profile',
@@ -39,8 +42,7 @@ export function getStrictRedirectTarget(legacyPath: string): string | null {
   if (!target) return null;
 
   if (__DEV__) {
-    // eslint-disable-next-line no-console
-    console.log(`[IA Strict Redirect] ${legacyPath} -> ${target}`);
+    logger.info("IA strict redirect resolved", { legacyPath, target });
   }
 
   return target;

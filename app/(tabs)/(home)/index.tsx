@@ -22,5 +22,5 @@ export default function HomeScreenRedirect() {
     return <Redirect href={strictTarget as any} />;
   }
 
-  return <Redirect href={'/(tabs)/(home)/today-hub' as any} />;
+  return <Redirect href={'/home' as any} />;
 }

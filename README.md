@@ -101,6 +101,20 @@ bun run start -- --ios
 bun run start -- --android
 ```
 
+### **Strict IA Redirect QA**
+
+When validating Information Architecture route migration, use:
+
+- `docs/ia-strict-redirect-smoke.md`
+
+This checklist covers all legacy tab paths and expected canonical routes when `EXPO_PUBLIC_ENABLE_STRICT_IA_REDIRECTS=1`.
+
+Optional helper command:
+
+```bash
+npm run qa:ia-strict
+```
+
 ## How can I deploy this project?
 
 ### **Publish to App Store (iOS)**

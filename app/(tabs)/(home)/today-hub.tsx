@@ -1,7 +1,7 @@
 import React from 'react';
 import { View, Text, StyleSheet, ScrollView, Pressable } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useRouter, Redirect } from 'expo-router';
+import { useRouter, Redirect, usePathname } from 'expo-router';
 import { ArrowRight, AlertTriangle, Activity, Sparkles, BarChart3 } from 'lucide-react-native';
 import * as Haptics from 'expo-haptics';
 import Colors from '@/constants/colors';
@@ -13,11 +13,12 @@ import { useTodayHub, type UiTodayPlanAction } from '@/features/home/hooks/useTo
 import { HomeLoadingSkeleton } from '@/components/LoadingSkeleton';
 import { RecoveryStabilityPanel } from '@/components/RecoveryStabilityPanel';
 import { usePersonalization } from '@/features/home/hooks/usePersonalization';
-import { resolveCanonicalRoute } from '@/utils/legacyRoutes';
+import { getStrictRedirectTarget, resolveCanonicalRoute } from '@/utils/legacyRoutes';
 
 export default function TodayHubScreen() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
+  const pathname = usePathname();
   const vm = useTodayHub();
   const { profile } = useUser();
   const centralProfile = useAppStore((s) => s.userProfile);
@@ -53,6 +54,11 @@ export default function TodayHubScreen() {
           ? 'Moderate urge'
           : 'Low urge'
       : 'Unknown';
+
+  const strictTarget = getStrictRedirectTarget('/(tabs)/(home)/today-hub');
+  if (strictTarget && pathname !== strictTarget) {
+    return <Redirect href={strictTarget as any} />;
+  }
 
   if (vm.isLoading) {
     return <HomeLoadingSkeleton />;

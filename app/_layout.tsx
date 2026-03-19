@@ -23,6 +23,8 @@ import RelapseFlowGate from "@/components/RelapseFlowGate";
 import Colors from "@/constants/colors";
 import { useShakeToCrisis } from "@/hooks/useShakeToCrisis";
 import { trpc, trpcClient } from "@/lib/trpc";
+import { shouldEnableStrictIARedirects } from "@/utils/legacyRoutes";
+import { logger } from "@/utils/logger";
 
 SplashScreen.preventAutoHideAsync();
 
@@ -140,6 +142,12 @@ function SecuredApp() {
 export default function RootLayout() {
   useEffect(() => {
     SplashScreen.hideAsync();
+
+    if (__DEV__) {
+      logger.info("IA strict redirects mode", {
+        enabled: shouldEnableStrictIARedirects(),
+      });
+    }
   }, []);
 
   return (

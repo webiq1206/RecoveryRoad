@@ -482,7 +482,7 @@ function generateAlerts(
       message: "You've been in situations that tend to make things harder. Noticing this is a sign of strength — awareness is your first line of defense.",
       suggestion: 'Take a look at your trigger map. Having a plan for safer alternatives can make all the difference.',
       interventionType: 'connection',
-      route: '/(tabs)/triggers',
+      route: '/triggers',
       createdAt: new Date().toISOString(),
       isDismissed: false,
       isActedOn: false,

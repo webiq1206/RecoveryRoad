@@ -274,7 +274,7 @@ export default function CrisisModeScreen() {
               onTimer={() => goToStep('urge-timer')}
               onBreathing={() => goToStep('breathing')}
               onContactSupport={() => goToStep('connect')}
-              onOpenSupportResources={() => router.push('/(tabs)/support' as any)}
+              onOpenSupportResources={() => router.push('/support' as any)}
               onLeaveEnvironment={() => goToStep('grounding')}
             />
           </>

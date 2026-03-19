@@ -81,7 +81,7 @@ function applyStageProgramActions(
         id: 'stabilize-program-trigger-review',
         title: 'Identify today’s triggers',
         subtitle: 'Name one trigger and decide how you’ll handle it.',
-        route: '/(tabs)/triggers',
+        route: '/triggers',
         kind: 'awareness',
       });
     }
@@ -98,7 +98,7 @@ function applyStageProgramActions(
       id: 'rebuild-program-routine',
       title: 'Rebuild routine block',
       subtitle: 'Complete one routine block that supports the life you’re building.',
-      route: '/(tabs)/rebuild',
+      route: '/rebuild',
       kind: 'growth',
     });
 
@@ -107,7 +107,7 @@ function applyStageProgramActions(
         id: 'rebuild-program-habit',
         title: 'Practice a replacement habit',
         subtitle: 'Swap one old pattern for a healthier habit in a real moment.',
-        route: '/(tabs)/rebuild',
+        route: '/rebuild',
         kind: 'growth',
       });
     }
@@ -116,7 +116,7 @@ function applyStageProgramActions(
       id: 'maintain-program-connection',
       title: 'Protective connection moment',
       subtitle: 'Invest a few minutes in a relationship that protects your recovery.',
-      route: '/(tabs)/connection',
+      route: '/connection',
       kind: 'connection',
     });
 
@@ -173,7 +173,7 @@ export function generateTodayPlan(input: TodayPlanInput): TodayPlan {
         id: 'rebuild-step',
         title: 'One rebuild action',
         subtitle: 'Take one concrete step toward a life-giving goal.',
-        route: '/(tabs)/rebuild',
+        route: '/rebuild',
         kind: 'growth',
       },
     );
@@ -183,14 +183,14 @@ export function generateTodayPlan(input: TodayPlanInput): TodayPlan {
         id: 'connection-touchpoint',
         title: 'Connection touchpoint',
         subtitle: 'Reach out to one safe person or community space.',
-        route: '/(tabs)/connection',
+        route: '/connection',
         kind: 'connection',
       },
       {
         id: 'trigger-review',
         title: 'Light trigger review',
         subtitle: 'Scan for upcoming situations that could pull you off track.',
-        route: '/(tabs)/triggers',
+        route: '/triggers',
         kind: 'awareness',
       },
     );
@@ -218,14 +218,14 @@ export function generateTodayPlan(input: TodayPlanInput): TodayPlan {
         id: 'trigger-planning',
         title: 'Plan around triggers',
         subtitle: 'Adjust one situation or routine to lower friction.',
-        route: '/(tabs)/triggers',
+        route: '/triggers',
         kind: 'awareness',
       },
       {
         id: 'supportive-connection',
         title: 'Supportive connection',
         subtitle: 'Send a short message to someone who gets it.',
-        route: '/(tabs)/connection',
+        route: '/connection',
         kind: 'connection',
       },
     );
@@ -274,7 +274,7 @@ export function generateTodayPlan(input: TodayPlanInput): TodayPlan {
         id: 'rebuild-step',
         title: 'One rebuild step',
         subtitle: 'Invest today in the life you are building.',
-        route: '/(tabs)/rebuild',
+        route: '/rebuild',
         kind: 'growth',
       });
     }
@@ -303,7 +303,7 @@ export function generateTodayPlan(input: TodayPlanInput): TodayPlan {
         id: 'trigger-planning',
         title: 'High-risk trigger planning',
         subtitle: 'Choose one trigger and put a safer plan in place.',
-        route: '/(tabs)/triggers',
+        route: '/triggers',
         kind: 'awareness',
       });
     }
@@ -392,7 +392,7 @@ export function generateTodayPlan(input: TodayPlanInput): TodayPlan {
     id: 'daily-pledge',
     title: "Daily Pledge",
     subtitle: "Commit to today and track your intention.",
-    route: '/(tabs)/pledges',
+    route: '/pledges',
     kind: 'awareness',
   };
   const existingPledgeIndex = priorityActions.findIndex((a) => a.id === 'daily-pledge');

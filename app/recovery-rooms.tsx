@@ -102,7 +102,7 @@ export default function RecoveryRoomsScreen() {
     }
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     joinRoom(room.id);
-    router.push({ pathname: '/(tabs)/connection/room-session' as any, params: { roomId: room.id } });
+    router.push({ pathname: '/room-session' as any, params: { roomId: room.id } });
   }, [displayName, isAnonymousDefault, joinRoom, router]);
 
   const handleEnterRoom = useCallback((room: RecoveryRoom) => {
@@ -111,7 +111,7 @@ export default function RecoveryRoomsScreen() {
       handleJoinRoom(room);
       return;
     }
-    router.push({ pathname: '/(tabs)/connection/room-session' as any, params: { roomId: room.id } });
+    router.push({ pathname: '/room-session' as any, params: { roomId: room.id } });
   }, [handleJoinRoom, router]);
 
   const handleSetName = useCallback(() => {
@@ -127,7 +127,7 @@ export default function RecoveryRoomsScreen() {
     if (pendingRoomId) {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       joinRoom(pendingRoomId);
-      router.push({ pathname: '/(tabs)/connection/room-session' as any, params: { roomId: pendingRoomId } });
+      router.push({ pathname: '/room-session' as any, params: { roomId: pendingRoomId } });
       setPendingRoomId(null);
     }
   }, [nameInput, isAnonymousDefault, setRoomDisplayName, pendingRoomId, joinRoom, router]);

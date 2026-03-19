@@ -42,7 +42,7 @@ export default function FirstDayScreen() {
 
   const handleGoToHome = () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    router.replace('/(tabs)/(home)' as any);
+    router.replace('/home' as any);
   };
 
   return (

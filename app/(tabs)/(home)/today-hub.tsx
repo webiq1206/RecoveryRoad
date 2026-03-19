@@ -204,7 +204,7 @@ export default function TodayHubScreen() {
             ]}
             onPress={() => {
               Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-              router.push('/(tabs)/progress' as any);
+              router.push('/progress' as any);
             }}
             testID="todayhub-quick-progress"
           >

@@ -133,7 +133,7 @@ export default function RecoverySnapshotScreen() {
           style={styles.primaryButton}
           onPress={() => {
             Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-            router.replace('/(tabs)/(home)/today-hub' as any);
+            router.replace('/home' as any);
           }}
           testID="snapshot-continue-todayhub"
         >

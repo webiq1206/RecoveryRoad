@@ -61,7 +61,7 @@ export default function RelapsePreventionTabScreen() {
 
         <Pressable
           style={({ pressed }) => [styles.card, pressed && styles.pressed]}
-          onPress={() => router.push('/(tabs)/triggers' as any)}
+          onPress={() => router.push('/triggers' as any)}
           testID="open-triggers"
         >
           <View style={styles.iconWrap}>
@@ -81,7 +81,7 @@ export default function RelapsePreventionTabScreen() {
 
         <Pressable
           style={({ pressed }) => [styles.card, pressed && styles.pressed]}
-          onPress={() => router.push('/(tabs)/accountability' as any)}
+          onPress={() => router.push('/accountability' as any)}
           testID="open-accountability"
         >
           <View style={styles.iconWrap}>
@@ -97,7 +97,7 @@ export default function RelapsePreventionTabScreen() {
 
         <Pressable
           style={({ pressed }) => [styles.card, pressed && styles.pressed]}
-          onPress={() => router.push('/(tabs)/milestones' as any)}
+          onPress={() => router.push('/milestones' as any)}
           testID="open-milestones"
         >
           <View style={styles.iconWrap}>

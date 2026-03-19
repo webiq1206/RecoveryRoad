@@ -46,7 +46,7 @@ export default function EmergencyScreen() {
 
   const handleBackToToday = () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    router.push('/(tabs)/(home)' as any);
+    router.push('/home' as any);
   };
 
   const widthInterpolated = progressAnim.interpolate({

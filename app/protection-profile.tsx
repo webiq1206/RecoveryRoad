@@ -83,7 +83,7 @@ export default function ProtectionProfileScreen() {
   }, [rp.supportAvailability, rp.goals]);
 
   const handleStartPlan = () => {
-    router.replace('/(tabs)/(home)' as any);
+    router.replace('/home' as any);
   };
 
   return (

@@ -17,7 +17,7 @@ export default function RelapseFlowGate() {
 
   const handleContinueToStabilityBuilder = useCallback(() => {
     dismissRelapseModal();
-    router.replace('/(tabs)/rebuild' as any);
+    router.replace('/rebuild' as any);
   }, [dismissRelapseModal, router]);
 
   const handleCompleteEveningCheckIn = useCallback(() => {

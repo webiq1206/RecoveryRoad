@@ -68,7 +68,7 @@ export default function RelapseRecoveryScreen() {
     if (router.canGoBack()) {
       router.back();
     } else {
-      router.replace('/(tabs)/rebuild' as any);
+      router.replace('/rebuild' as any);
     }
   };
 
@@ -177,7 +177,7 @@ export default function RelapseRecoveryScreen() {
                 style={({ pressed }) => [styles.cardCta, pressed && styles.cardCtaPressed]}
                 onPress={() => {
                   Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                  router.push('/(tabs)/rebuild' as any);
+                  router.push('/rebuild' as any);
                 }}
                 testID="relapse-recovery-rebuild"
               >

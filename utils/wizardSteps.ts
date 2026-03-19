@@ -169,7 +169,7 @@ export function getDailyGuidanceActions(input: DailyGuidanceInput): DailyAction[
     id: 'pledge',
     title: "Today's Pledge",
     subtitle: 'Commit to today and track your intention.',
-    route: '/(tabs)/rebuild',
+    route: '/rebuild',
     priority: todayPledge?.completed ? 0 : 90,
     completed: !!todayPledge?.completed,
   });
@@ -180,7 +180,7 @@ export function getDailyGuidanceActions(input: DailyGuidanceInput): DailyAction[
     id: 'emergency_contact',
     title: 'Add Emergency Contact',
     subtitle: 'Someone to reach in a crisis. Stored only on your device.',
-    route: '/(tabs)/profile',
+    route: '/profile',
     priority: hasEmergencyContact ? 0 : 85,
     completed: hasEmergencyContact,
   });
@@ -191,7 +191,7 @@ export function getDailyGuidanceActions(input: DailyGuidanceInput): DailyAction[
     id: 'trigger_review',
     title: 'Trigger Review',
     subtitle: 'Plan around one situation today.',
-    route: '/(tabs)/triggers',
+    route: '/triggers',
     priority: triggerPriority,
     reason: stabilityScore < 50 ? 'Your stability is low — planning helps.' : undefined,
     completed: false,
@@ -202,7 +202,7 @@ export function getDailyGuidanceActions(input: DailyGuidanceInput): DailyAction[
     id: 'rebuild_action',
     title: 'One Rebuild Action',
     subtitle: 'One small action toward your goal.',
-    route: '/(tabs)/rebuild',
+    route: '/rebuild',
     priority: rebuildGoalsCount > 0 ? 70 : 50,
     completed: false,
   });
@@ -212,7 +212,7 @@ export function getDailyGuidanceActions(input: DailyGuidanceInput): DailyAction[
     id: 'journal',
     title: 'Journal',
     subtitle: 'Reflect and strengthen your mindset.',
-    route: '/(tabs)/journal',
+    route: '/journal',
     priority: hasJournalEntryToday ? 0 : 60,
     completed: hasJournalEntryToday,
   });
@@ -238,7 +238,7 @@ export function getDailyGuidanceActions(input: DailyGuidanceInput): DailyAction[
       id: 'accountability',
       title: 'Accountability Check-In',
       subtitle: 'Check in with your commitment.',
-      route: '/(tabs)/accountability',
+      route: '/accountability',
       priority: 75,
       completed: false,
     });

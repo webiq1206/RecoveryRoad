@@ -13,7 +13,7 @@ export function useRequireProviderMode(): boolean {
   useEffect(() => {
     if (isLoading) return;
     if (!providerModeEnabled) {
-      router.replace('/(tabs)/profile' as any);
+      router.replace('/profile' as any);
     }
   }, [providerModeEnabled, isLoading, router]);
 

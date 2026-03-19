@@ -281,7 +281,7 @@ export default function ConnectionScreen() {
               styles.supportResourcesBtn,
               pressed && { opacity: 0.9 },
             ]}
-            onPress={() => router.push('/(tabs)/support' as any)}
+            onPress={() => router.push('/support' as any)}
             testID="support-resources-btn"
           >
             <MessageCircle size={16} color={Colors.primary} />
@@ -457,7 +457,7 @@ export default function ConnectionScreen() {
         style={({ pressed }) => [styles.recoveryRoomsBanner, pressed && { opacity: 0.9 }]}
         onPress={() => {
           Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-          router.push('/(tabs)/connection/recovery-rooms' as any);
+          router.push('/recovery-rooms' as any);
         }}
         testID="recovery-rooms-btn"
       >

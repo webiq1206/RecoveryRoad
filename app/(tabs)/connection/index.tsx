@@ -1,2 +1,2 @@
-export { default } from "../community/index";
+export { default } from "./ConnectionHub";
 

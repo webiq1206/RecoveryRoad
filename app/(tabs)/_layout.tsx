@@ -88,7 +88,7 @@ export default function TabLayout() {
           }}
         />
         <Tabs.Screen
-          name="check-ins"
+          name="check-ins/index"
           options={{
             title: "Check-Ins",
             tabBarIcon: renderCheckInsIcon,
@@ -113,6 +113,30 @@ export default function TabLayout() {
           options={{
             title: "Profile",
             tabBarIcon: renderProfileIcon,
+          }}
+        />
+        <Tabs.Screen
+          name="community"
+          options={{
+            href: null,
+          }}
+        />
+        <Tabs.Screen
+          name="journal"
+          options={{
+            href: null,
+          }}
+        />
+        <Tabs.Screen
+          name="progress"
+          options={{
+            href: null,
+          }}
+        />
+        <Tabs.Screen
+          name="relapse-prevention/index"
+          options={{
+            href: null,
           }}
         />
       </Tabs>

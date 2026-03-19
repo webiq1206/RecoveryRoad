@@ -50,9 +50,22 @@ export const crisisStyles = StyleSheet.create({
     justifyContent: 'center',
   },
   stepContainer: {
-    flex: 1,
+    flexGrow: 1,
+    flexShrink: 1,
+    minHeight: 0,
+    // Reserve space for the companion + relapse CTA so step content
+    // doesn't paint underneath them on shorter screens.
+    paddingBottom: 120,
     alignItems: 'center',
     justifyContent: 'center',
+    paddingHorizontal: 28,
+  },
+  landingStepContainer: {
+    alignItems: 'center',
+    // Important: Crisis Landing is rendered alongside `CrisisStateActions`.
+    // Using a non-flex container and no translate-based slide animation
+    // prevents overlap with the action cards.
+    justifyContent: 'flex-start',
     paddingHorizontal: 28,
   },
   landingCircle: {

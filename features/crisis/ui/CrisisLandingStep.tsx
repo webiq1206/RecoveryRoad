@@ -14,10 +14,10 @@ export function CrisisLandingStep(props: {
   onQuickCall: (phone: string) => void;
   onCall988: () => void;
 }) {
-  const { fadeAnim, slideAnim, landingPulse, emergencyContacts, onStart, onQuickCall, onCall988 } = props;
+  const { fadeAnim, landingPulse, emergencyContacts, onStart, onQuickCall, onCall988 } = props;
 
   return (
-    <Animated.View style={[crisisStyles.stepContainer, { opacity: fadeAnim, transform: [{ translateY: slideAnim }] }]}>
+    <Animated.View style={[crisisStyles.landingStepContainer, { opacity: fadeAnim }]}>
       <Animated.View style={[crisisStyles.landingCircle, { opacity: landingPulse }]}>
         <Heart size={56} color={CRISIS_COLORS.ACCENT} />
       </Animated.View>

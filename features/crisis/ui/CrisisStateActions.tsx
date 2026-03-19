@@ -1,6 +1,6 @@
 import React from 'react';
 import { Pressable, Text, View } from 'react-native';
-import { Activity, BookOpen, HeartPulse, Phone, Walk } from 'lucide-react-native';
+import { Activity, BookOpen, Heart, Phone, ArrowRight } from 'lucide-react-native';
 
 import { crisisStyles, CRISIS_COLORS } from './styles';
 
@@ -94,7 +94,7 @@ export function CrisisStateActions({
           testID="crisis-action-breathing"
         >
           <View style={crisisStyles.stateActionIcon}>
-            <HeartPulse size={18} color={CRISIS_COLORS.ACCENT} />
+            <Heart size={18} color={CRISIS_COLORS.ACCENT} />
           </View>
           <View style={crisisStyles.stateActionTextWrap}>
             <Text style={crisisStyles.stateActionTitle}>Guided breathing</Text>
@@ -151,7 +151,7 @@ export function CrisisStateActions({
           testID="crisis-action-leave"
         >
           <View style={crisisStyles.stateActionIcon}>
-            <Walk size={18} color={CRISIS_COLORS.ACCENT} />
+            <ArrowRight size={18} color={CRISIS_COLORS.ACCENT} />
           </View>
           <View style={crisisStyles.stateActionTextWrap}>
             <Text style={crisisStyles.stateActionTitle}>Leave this environment</Text>

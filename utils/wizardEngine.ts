@@ -66,6 +66,11 @@ export interface WizardEngineInput {
   hasRebuildConfigured: boolean;
   hasAccountabilityConfigured: boolean;
   hasTriggers: boolean;
+  hasCrisisToolCompletedToday: boolean;
+  hasCopingToolCompletedToday: boolean;
+  hasConnectionTouchpointCompletedToday: boolean;
+  hasAccountabilityCheckInCompletedToday: boolean;
+  hasRelapsePlan: boolean;
   emergencyContacts: EmergencyContact[];
   accountabilityData: AccountabilityData | null;
 
@@ -425,7 +430,7 @@ function buildCandidateActions(input: WizardEngineInput): CandidateAction[] {
       subtitle: 'Grounding, breathing, and safety tools for right now.',
       route: '/crisis-mode',
       kind: 'crisis',
-      completed: false,
+      completed: input.hasCrisisToolCompletedToday,
       basePriority: 100,
     });
   }
@@ -435,9 +440,9 @@ function buildCandidateActions(input: WizardEngineInput): CandidateAction[] {
       id: 'coping-exercise',
       title: 'Grounding Exercise',
       subtitle: 'A quick breathing or grounding practice to steady yourself.',
-      route: '/tools',
+      route: '/tools/breathing',
       kind: 'coping',
-      completed: false,
+      completed: input.hasCopingToolCompletedToday,
       basePriority: 70,
     });
   }
@@ -461,7 +466,7 @@ function buildCandidateActions(input: WizardEngineInput): CandidateAction[] {
       subtitle: 'Identify one high-risk situation and plan your response.',
       route: '/triggers',
       kind: 'awareness',
-      completed: false,
+      completed: input.hasTriggers,
       basePriority: 65,
     });
   }
@@ -483,22 +488,20 @@ function buildCandidateActions(input: WizardEngineInput): CandidateAction[] {
       subtitle: 'Send a message or check in with someone in your circle.',
       route: '/connection',
       kind: 'connection',
-      completed: false,
+      completed: input.hasConnectionTouchpointCompletedToday,
       basePriority: 55,
     });
   }
 
-  if (!input.hasEmergencyContacts) {
-    candidates.push({
-      id: 'add-emergency-contact',
-      title: 'Add a Crisis Contact',
-      subtitle: 'Someone to reach when things get hard. Stored only on your device.',
-      route: '/connection',
-      kind: 'connection',
-      completed: false,
-      basePriority: 80,
-    });
-  }
+  candidates.push({
+    id: 'add-emergency-contact',
+    title: 'Add a Crisis Contact',
+    subtitle: 'Someone to reach when things get hard. Stored only on your device.',
+    route: '/connection',
+    kind: 'connection',
+    completed: input.hasEmergencyContacts,
+    basePriority: 80,
+  });
 
   const hasActiveContract =
     input.accountabilityData?.contracts?.some(
@@ -511,7 +514,7 @@ function buildCandidateActions(input: WizardEngineInput): CandidateAction[] {
       subtitle: 'Check in with your commitment.',
       route: '/accountability',
       kind: 'awareness',
-      completed: false,
+      completed: input.hasAccountabilityCheckInCompletedToday,
       basePriority: 58,
     });
   }
@@ -525,7 +528,7 @@ function buildCandidateActions(input: WizardEngineInput): CandidateAction[] {
         subtitle: 'Refresh your warning signs and safety steps before the evening.',
         route: '/relapse-plan',
         kind: 'coping',
-        completed: false,
+        completed: input.hasRelapsePlan,
         basePriority: 62,
       });
     }

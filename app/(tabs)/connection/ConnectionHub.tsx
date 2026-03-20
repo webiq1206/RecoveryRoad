@@ -15,6 +15,7 @@ import * as Haptics from 'expo-haptics';
 import Colors from '@/constants/colors';
 import { useConnection } from '@/providers/ConnectionProvider';
 import { TrustedContact, PeerChat, SafeRoom, PeerMessage, RoomMessage, SponsorMessage } from '@/types';
+import { useHydrateToolUsageStore, useToolUsageStore } from '@/features/tools/state/useToolUsageStore';
 
 type ConnectionTab = 'circle' | 'peers' | 'rooms' | 'sponsor';
 
@@ -37,6 +38,8 @@ const ROLE_COLORS: Record<TrustedContact['role'], string> = {
 export default function ConnectionScreen() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
+  useHydrateToolUsageStore();
+  const logToolUsage = useToolUsageStore.use.logToolUsage();
   const {
     trustedContacts, peerChats, safeRooms, sponsorPairing, displayName,
     isLoading, setUserDisplayName,
@@ -106,6 +109,26 @@ export default function ConnectionScreen() {
       Alert.alert('Unable to Call', 'Could not open the phone dialer.');
     });
   }, []);
+
+  const handleSMSContact = useCallback((phone: string) => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+
+    const cleaned = phone.replace(/[^0-9+]/g, '');
+    const fromName = displayName || 'Me';
+    const message = encodeURIComponent(`Hi - it's ${fromName}. Just checking in. Could use a little support right now.`);
+    const separator = Platform.OS === 'ios' ? '&' : '?';
+
+    logToolUsage({
+      toolId: 'connect',
+      context: 'daily_guidance',
+      action: 'completed',
+      meta: { method: 'sms', phone: cleaned },
+    });
+
+    Linking.openURL(`sms:${cleaned}${separator}body=${message}`).catch(() => {
+      Alert.alert('Unable to Text', `Please text ${phone} manually.`);
+    });
+  }, [displayName, logToolUsage]);
 
   const handleRemoveContact = useCallback((id: string, name: string) => {
     Alert.alert('Remove Contact', `Remove ${name} from your trusted circle?`, [
@@ -240,6 +263,13 @@ export default function ConnectionScreen() {
           </Pressable>
           <Pressable
             style={styles.contactActionBtn}
+            onPress={() => handleSMSContact(item.phone)}
+            hitSlop={8}
+          >
+            <Send size={18} color={Colors.primary} />
+          </Pressable>
+          <Pressable
+            style={styles.contactActionBtn}
             onPress={() => updateContactAvailability(item.id, !item.isAvailable)}
             hitSlop={8}
           >
@@ -259,7 +289,7 @@ export default function ConnectionScreen() {
         </View>
       </View>
     );
-  }, [handleCallContact, handleRemoveContact, updateContactAvailability]);
+  }, [handleCallContact, handleSMSContact, handleRemoveContact, updateContactAvailability]);
 
   const renderCircleTab = () => (
     <FlatList

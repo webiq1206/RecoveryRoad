@@ -13,16 +13,23 @@ import { usePledges } from '@/core/domains/usePledges';
 import { useSupportContacts } from '@/core/domains/useSupportContacts';
 import { useAccountability } from '@/core/domains/useAccountability';
 import { useJournal } from '@/core/domains/useJournal';
+import { useRelapse } from '@/core/domains/useRelapse';
 import { useAppMeta } from '@/core/domains/useAppMeta';
 import { useAppStore } from '@/stores/useAppStore';
 import { useRiskPrediction } from '@/providers/RiskPredictionProvider';
 import { useStageDetection } from '@/providers/StageDetectionProvider';
+import { useConnection } from '@/providers/ConnectionProvider';
 import { useEngagement } from '@/providers/EngagementProvider';
 import { usePersonalization } from '@/features/home/hooks/usePersonalization';
 import {
   useWizardBehaviorStore,
   useHydrateWizardBehaviorStore,
 } from '@/stores/useWizardBehaviorStore';
+import {
+  useHydrateToolUsageStore,
+  useToolUsageStore,
+} from '@/features/tools/state/useToolUsageStore';
+import type { ToolId } from '@/features/tools/types';
 import {
   generateWizardPlan,
   type WizardPlan,
@@ -59,8 +66,16 @@ function getToday(): string {
   return new Date().toISOString().split('T')[0];
 }
 
+function getDateKey(dateValue: string | undefined | null): string {
+  if (!dateValue) return '';
+  // Supports both `YYYY-MM-DD` and ISO timestamps like `2026-03-20T12:34:56.000Z`.
+  // We intentionally avoid `new Date(dateValue)` to prevent timezone-induced date shifts.
+  return dateValue.includes('T') ? dateValue.split('T')[0] : dateValue;
+}
+
 export function useWizardEngineHook(): WizardEngineResult {
   useHydrateWizardBehaviorStore();
+  useHydrateToolUsageStore();
 
   const userHook = useUser();
   const profile = userHook?.profile;
@@ -79,11 +94,25 @@ export function useWizardEngineHook(): WizardEngineResult {
   const contactsHook = useSupportContacts();
   const emergencyContacts = contactsHook?.emergencyContacts ?? [];
 
+  const { peerChats, safeRooms, sponsorPairing, trustedContacts } = useConnection();
+
+  const emergencyContactsCombined = useMemo(() => {
+    if ((emergencyContacts?.length ?? 0) > 0) return emergencyContacts;
+    // Connection screen currently stores these as "trusted circle" contacts.
+    // Bridge them to emergency contacts for daily guidance until the stores are unified.
+    return (trustedContacts ?? []).map((c) => ({ id: c.id, name: c.name, phone: c.phone }));
+  }, [emergencyContacts, trustedContacts]);
+
   const accountabilityHook = useAccountability();
   const accountabilityData = accountabilityHook?.accountabilityData;
 
   const journalHook = useJournal();
   const journal = journalHook?.journal ?? [];
+
+  const relapseHook = useRelapse();
+  const hasRelapsePlan = !!relapseHook?.relapsePlan;
+
+  const toolUsageEvents = useToolUsageStore.use.events();
 
   const appMetaHook = useAppMeta();
   const stabilityScore = appMetaHook?.stabilityScore ?? 50;
@@ -153,7 +182,7 @@ export function useWizardEngineHook(): WizardEngineResult {
 
   const hasJournalEntryToday = useMemo(() => {
     const today = getToday();
-    return (journal ?? []).some((e) => e.date === today);
+    return (journal ?? []).some((e) => getDateKey(e.date) === today);
   }, [journal]);
 
   const daysSinceLastSession = useMemo(
@@ -164,19 +193,75 @@ export function useWizardEngineHook(): WizardEngineResult {
   const today = getToday();
   const rebuildHabitsCompletedToday = useMemo(
     () =>
-      (rebuildData?.habits ?? []).filter(
-        (h) => (h as { completedDates?: string[] }).completedDates?.includes(today),
-      ).length,
+      (rebuildData?.habits ?? []).filter((h) => getDateKey(h.lastCompleted) === today).length,
     [rebuildData?.habits, today],
   );
 
   const rebuildRoutinesCompletedToday = useMemo(
     () =>
-      (rebuildData?.routines ?? []).filter(
-        (r) => (r as { isCompleted?: boolean }).isCompleted,
-      ).length,
-    [rebuildData?.routines],
+      (rebuildData?.routines ?? []).filter((r) => getDateKey(r.completedAt) === today).length,
+    [rebuildData?.routines, today],
   );
+
+  const hasCrisisToolCompletedToday = useMemo(() => {
+    const crisisToolIds: ToolId[] = [
+      'breathing',
+      'grounding',
+      'urge-timer',
+      'connect',
+    ];
+
+    // Crisis Mode embedded steps only reliably log `opened` as the user progresses.
+    // We treat "opened any crisis step" as "crisis tools engagement completed".
+    return toolUsageEvents.some((e) => {
+      if (!crisisToolIds.includes(e.toolId)) return false;
+      if (getDateKey(e.timestamp) !== today) return false;
+      return (e.context === 'crisis' && e.action === 'opened') || (e.action === 'completed' && e.toolId !== 'journal-prompt');
+    });
+  }, [toolUsageEvents, today]);
+
+  const hasCopingToolCompletedToday = useMemo(() => {
+    const copingToolIds: ToolId[] = ['breathing', 'urge-timer'];
+    return toolUsageEvents.some((e) => {
+      if (!copingToolIds.includes(e.toolId)) return false;
+      if (getDateKey(e.timestamp) !== today) return false;
+      // Embedded crisis steps emit `opened` with `context: 'crisis'`.
+      // Tools screens emit `completed` when the user finishes.
+      return e.action === 'completed' || (e.context === 'crisis' && e.action === 'opened');
+    });
+  }, [toolUsageEvents, today]);
+
+  const hasConnectionTouchpointCompletedToday = useMemo(() => {
+    const isOwnMessageToday = (timestamp: string, isOwn: boolean) =>
+      isOwn && getDateKey(timestamp) === today;
+
+    const viaConnectTool = toolUsageEvents.some((e) => {
+      return e.toolId === 'connect' && e.action === 'completed' && getDateKey(e.timestamp) === today;
+    });
+    if (viaConnectTool) return true;
+
+    const sentInPeers = peerChats.some((c) =>
+      (c.messages ?? []).some((m) => isOwnMessageToday(m.timestamp, m.isOwn)),
+    );
+    if (sentInPeers) return true;
+
+    const sentInRooms = safeRooms.some((r) =>
+      (r.messages ?? []).some((m) => isOwnMessageToday(m.timestamp, m.isOwn)),
+    );
+    if (sentInRooms) return true;
+
+    const sentInSponsor = (sponsorPairing?.messages ?? []).some((m) =>
+      isOwnMessageToday(m.timestamp, m.isOwn),
+    );
+
+    return sentInSponsor;
+  }, [peerChats, safeRooms, sponsorPairing, today, toolUsageEvents]);
+
+  const hasAccountabilityCheckInCompletedToday = useMemo(() => {
+    return (accountabilityData?.contracts ?? []).some((c) =>
+      (c.checkIns ?? []).some((ci) => getDateKey(ci.date) === today),
+    );
+  }, [accountabilityData, today]);
 
   const stabilityTrend: 'rising' | 'declining' | 'stable' = useMemo(() => {
     const raw = trendLabel?.toLowerCase() ?? '';
@@ -193,7 +278,7 @@ export function useWizardEngineHook(): WizardEngineResult {
         centralProfile?.hasCompletedOnboarding ?? safeProfile.hasCompletedOnboarding ?? false,
       profile: safeProfile,
       daysSober,
-      hasEmergencyContacts: (emergencyContacts?.length ?? 0) > 0,
+      hasEmergencyContacts: emergencyContactsCombined.length > 0,
       hasRebuildConfigured:
         (rebuildData?.habits?.length ?? 0) > 0 ||
         (rebuildData?.routines?.length ?? 0) > 0 ||
@@ -202,7 +287,7 @@ export function useWizardEngineHook(): WizardEngineResult {
         (accountabilityData?.partners?.length ?? 0) > 0 ||
         (accountabilityData?.contracts?.length ?? 0) > 0,
       hasTriggers: (safeProfile.recoveryProfile?.triggers?.length ?? 0) > 0,
-      emergencyContacts: emergencyContacts ?? [],
+      emergencyContacts: emergencyContactsCombined,
       accountabilityData: accountabilityData ?? null,
       todayCheckIns: todayCheckIns ?? [],
       currentPeriod,
@@ -219,6 +304,11 @@ export function useWizardEngineHook(): WizardEngineResult {
       rebuildGoalsCount: rebuildData?.goals?.length ?? 0,
       rebuildHabitsCompletedToday,
       rebuildRoutinesCompletedToday,
+      hasCrisisToolCompletedToday,
+      hasCopingToolCompletedToday,
+      hasConnectionTouchpointCompletedToday,
+      hasAccountabilityCheckInCompletedToday,
+      hasRelapsePlan,
       identityCurrentWeek: rebuildData?.identityProgram?.currentWeek ?? 0,
       highUrge: personalization?.highUrgeCrisisHint?.shouldHighlightCrisisTools ?? false,
       nightRisk: personalization?.nightRiskWarning?.shouldWarn ?? false,
@@ -231,7 +321,7 @@ export function useWizardEngineHook(): WizardEngineResult {
       centralProfile?.hasCompletedOnboarding,
       safeProfile,
       daysSober,
-      emergencyContacts,
+      emergencyContactsCombined,
       rebuildData,
       accountabilityData,
       todayCheckIns,
@@ -252,6 +342,11 @@ export function useWizardEngineHook(): WizardEngineResult {
       streak?.currentStreak,
       behaviorState,
       daysSinceLastSession,
+      hasCrisisToolCompletedToday,
+      hasCopingToolCompletedToday,
+      hasConnectionTouchpointCompletedToday,
+      hasAccountabilityCheckInCompletedToday,
+      hasRelapsePlan,
     ],
   );
 

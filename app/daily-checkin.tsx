@@ -10,7 +10,7 @@ import {
   ScrollView,
   TextInput,
 } from 'react-native';
-import { useRouter } from 'expo-router';
+import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import {
   X,
@@ -256,7 +256,12 @@ const sliderStyles = StyleSheet.create({
 export default function DailyCheckInScreen() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
-  const flow = useDailyCheckInFlow();
+  const { period: periodParam } = useLocalSearchParams<{ period?: string }>();
+  const periodOverride =
+    periodParam === 'morning' || periodParam === 'afternoon' || periodParam === 'evening'
+      ? periodParam
+      : undefined;
+  const flow = useDailyCheckInFlow({ period: periodOverride });
 
   const {
     METRICS_CONFIG,

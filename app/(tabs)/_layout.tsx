@@ -9,7 +9,6 @@ import {
 } from "lucide-react-native";
 import React, { useCallback } from "react";
 import Colors from "@/constants/colors";
-import { CrisisStrip } from "@/components/CrisisStrip";
 
 type IconType = typeof Home;
 
@@ -139,8 +138,37 @@ export default function TabLayout() {
             href: null,
           }}
         />
+        <Tabs.Screen
+          name="support"
+          options={{
+            href: null,
+          }}
+        />
+        <Tabs.Screen
+          name="accountability"
+          options={{
+            href: null,
+          }}
+        />
+        <Tabs.Screen
+          name="milestones"
+          options={{
+            href: null,
+          }}
+        />
+        <Tabs.Screen
+          name="pledges"
+          options={{
+            href: null,
+          }}
+        />
+        <Tabs.Screen
+          name="triggers"
+          options={{
+            href: null,
+          }}
+        />
       </Tabs>
-      <CrisisStrip />
     </View>
   );
 }

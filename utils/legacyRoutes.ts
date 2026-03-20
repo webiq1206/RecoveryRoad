@@ -20,8 +20,6 @@ export const LEGACY_ROUTE_MAP: Record<string, string> = {
   '/(tabs)/pledges': '/pledges',
   '/(tabs)/connection/recovery-rooms': '/recovery-rooms',
   '/(tabs)/connection/room-session': '/room-session',
-  '/(tabs)/(home)': '/home',
-  '/(tabs)/(home)/today-hub': '/home',
 };
 
 export function resolveCanonicalRoute(path: string): string {

@@ -25,8 +25,6 @@ Use this checklist when `EXPO_PUBLIC_ENABLE_STRICT_IA_REDIRECTS=1`.
 - `/(tabs)/pledges` -> `/pledges`
 - `/(tabs)/connection/recovery-rooms` -> `/recovery-rooms`
 - `/(tabs)/connection/room-session` -> `/room-session`
-- `/(tabs)/(home)` -> `/home`
-- `/(tabs)/(home)/today-hub` -> `/home`
 
 ## Critical Flow Smoke Cases
 

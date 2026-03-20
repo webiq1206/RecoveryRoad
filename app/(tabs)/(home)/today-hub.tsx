@@ -2,7 +2,7 @@ import React from 'react';
 import { View, Text, StyleSheet, ScrollView, Pressable } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter, Redirect, usePathname } from 'expo-router';
-import { ArrowRight, AlertTriangle, Activity, Sparkles, BarChart3 } from 'lucide-react-native';
+import { ArrowRight, AlertTriangle, Activity, Sparkles, BarChart3, Check } from 'lucide-react-native';
 import * as Haptics from 'expo-haptics';
 import Colors from '@/constants/colors';
 import { MOOD_EMOJIS, MOOD_LABELS } from '@/constants/milestones';
@@ -14,6 +14,13 @@ import { HomeLoadingSkeleton } from '@/components/LoadingSkeleton';
 import { RecoveryStabilityPanel } from '@/components/RecoveryStabilityPanel';
 import { usePersonalization } from '@/features/home/hooks/usePersonalization';
 import { getStrictRedirectTarget, resolveCanonicalRoute } from '@/utils/legacyRoutes';
+import type { CheckInTimeOfDay } from '@/types';
+
+const CHECK_IN_PERIODS: { period: CheckInTimeOfDay; title: string }[] = [
+  { period: 'morning', title: 'Morning\nCheck-In' },
+  { period: 'afternoon', title: 'Afternoon\nCheck-In' },
+  { period: 'evening', title: 'Evening\nCheck-In' },
+];
 
 export default function TodayHubScreen() {
   const insets = useSafeAreaInsets();
@@ -22,7 +29,7 @@ export default function TodayHubScreen() {
   const vm = useTodayHub();
   const { profile } = useUser();
   const centralProfile = useAppStore((s) => s.userProfile);
-  const { todayCheckIn } = useCheckin();
+  const { todayCheckIn, todayCheckIns } = useCheckin();
   const personalization = usePersonalization();
 
   const displayProfile = centralProfile ?? profile;
@@ -70,13 +77,25 @@ export default function TodayHubScreen() {
 
   const { stability, relapseRisk, todayPlan, primaryAction, showRelapsePlanCta } = vm;
 
+  const isPeriodComplete = (period: CheckInTimeOfDay) =>
+    todayCheckIns.some((c) => c.timeOfDay === period);
+  const filteredPriorityActions = todayPlan.priorityActions.filter(
+    (action) => action.id !== primaryAction?.id
+  );
+  const filteredOptionalActions = todayPlan.optionalActions.filter(
+    (action) => action.id !== primaryAction?.id
+  );
+  const quickActionRoutes = new Set(['/daily-checkin', '/tools', '/progress']);
+  const shouldHidePrimaryAction =
+    !!primaryAction && quickActionRoutes.has(resolveCanonicalRoute(primaryAction.route));
+
   return (
     <View style={[styles.wrapper, { paddingTop: insets.top }]}>
       <ScrollView
         style={styles.scroll}
         contentContainerStyle={[
           styles.content,
-          { paddingBottom: 24 + 72 + insets.bottom },
+          { paddingBottom: 24 + insets.bottom },
         ]}
         showsVerticalScrollIndicator={false}
       >
@@ -168,25 +187,53 @@ export default function TodayHubScreen() {
           <ArrowRight size={18} color={Colors.white} />
         </Pressable>
 
+        {/* Time-of-day check-ins */}
+        <Text style={styles.sectionLabel}>Check-ins today</Text>
+        <View style={styles.checkInRow}>
+          {CHECK_IN_PERIODS.map(({ period, title }) => {
+            const done = isPeriodComplete(period);
+            const a11yPeriod = title.replace('\n', ' ');
+            return (
+              <Pressable
+                key={period}
+                style={({ pressed }) => [
+                  styles.checkInChip,
+                  done && styles.checkInChipDone,
+                  pressed && styles.pressed,
+                ]}
+                onPress={() => {
+                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                  router.push({
+                    pathname: '/daily-checkin',
+                    params: { period },
+                  } as any);
+                }}
+                testID={`todayhub-checkin-${period}`}
+                accessibilityLabel={done ? `${a11yPeriod} completed` : a11yPeriod}
+              >
+                <View style={styles.checkInChipIconWrap}>
+                  {done ? (
+                    <Check size={16} color={Colors.primary} />
+                  ) : (
+                    <Activity size={16} color={Colors.primary} />
+                  )}
+                </View>
+                <Text
+                  style={[styles.checkInChipLabel, done && styles.checkInChipLabelDone]}
+                  numberOfLines={2}
+                >
+                  {title}
+                </Text>
+                <Text style={styles.checkInChipSub}>
+                  {done ? 'Done' : 'Tap'}
+                </Text>
+              </Pressable>
+            );
+          })}
+        </View>
+
         {/* Quick actions */}
         <View style={styles.quickRow}>
-          <Pressable
-            style={({ pressed }) => [
-              styles.quickCard,
-              pressed && styles.pressed,
-            ]}
-            onPress={() => {
-              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-              router.push('/daily-checkin' as any);
-            }}
-            testID="todayhub-quick-checkin"
-          >
-            <View style={styles.quickIconWrap}>
-              <Activity size={18} color={Colors.primary} />
-            </View>
-            <Text style={styles.quickLabel}>Check-in</Text>
-          </Pressable>
-
           <Pressable
             style={({ pressed }) => [
               styles.quickCard,
@@ -256,41 +303,45 @@ export default function TodayHubScreen() {
           </Pressable>
         )}
 
-        {/* Immediate next action */}
-        <Text style={styles.sectionLabel}>Immediate next action</Text>
-        {primaryAction ? (
-          <Pressable
-            style={({ pressed }) => [
-              styles.primaryActionCard,
-              pressed && styles.pressed,
-            ]}
-            onPress={() => {
-              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
-              router.push(resolveCanonicalRoute(primaryAction.route) as any);
-            }}
-            testID="todayhub-primary-action"
-          >
-            <View style={styles.primaryIconWrap}>
-              <primaryAction.icon size={24} color={Colors.primary} />
-            </View>
-            <View style={styles.primaryTextWrap}>
-              <Text style={styles.primaryTitle}>{primaryAction.title}</Text>
-              <Text style={styles.primarySubtitle}>{primaryAction.subtitle}</Text>
-            </View>
-            <ArrowRight size={20} color={Colors.primary} />
-          </Pressable>
-        ) : (
-          <View style={styles.emptyStateCard}>
-            <Text style={styles.emptyStateText}>
-              We&apos;ll suggest your next steps once you&apos;ve completed a few check-ins.
-            </Text>
-          </View>
+        {!shouldHidePrimaryAction && (
+          <>
+            {/* Immediate next action */}
+            <Text style={styles.sectionLabel}>Immediate next action</Text>
+            {primaryAction ? (
+              <Pressable
+                style={({ pressed }) => [
+                  styles.primaryActionCard,
+                  pressed && styles.pressed,
+                ]}
+                onPress={() => {
+                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
+                  router.push(resolveCanonicalRoute(primaryAction.route) as any);
+                }}
+                testID="todayhub-primary-action"
+              >
+                <View style={styles.primaryIconWrap}>
+                  <primaryAction.icon size={24} color={Colors.primary} />
+                </View>
+                <View style={styles.primaryTextWrap}>
+                  <Text style={styles.primaryTitle}>{primaryAction.title}</Text>
+                  <Text style={styles.primarySubtitle}>{primaryAction.subtitle}</Text>
+                </View>
+                <ArrowRight size={20} color={Colors.primary} />
+              </Pressable>
+            ) : (
+              <View style={styles.emptyStateCard}>
+                <Text style={styles.emptyStateText}>
+                  We&apos;ll suggest your next steps once you&apos;ve completed a few check-ins.
+                </Text>
+              </View>
+            )}
+          </>
         )}
 
         {/* Daily plan */}
         <Text style={styles.planTitle}>Daily plan</Text>
         <View style={styles.planCard}>
-          {todayPlan.priorityActions.map((action: UiTodayPlanAction) => (
+          {filteredPriorityActions.map((action: UiTodayPlanAction) => (
             <Pressable
               key={action.id}
               style={({ pressed }) => [
@@ -313,7 +364,7 @@ export default function TodayHubScreen() {
               <ArrowRight size={18} color={Colors.textSecondary} />
             </Pressable>
           ))}
-          {todayPlan.optionalActions.map((action: UiTodayPlanAction) => (
+          {filteredOptionalActions.map((action: UiTodayPlanAction) => (
             <Pressable
               key={action.id}
               style={({ pressed }) => [
@@ -456,6 +507,53 @@ const styles = StyleSheet.create({
     fontSize: 15,
     fontWeight: '700',
     color: Colors.white,
+  },
+  checkInRow: {
+    flexDirection: 'row',
+    gap: 8,
+    marginBottom: 14,
+  },
+  checkInChip: {
+    flex: 1,
+    backgroundColor: Colors.cardBackground,
+    borderRadius: 14,
+    paddingVertical: 12,
+    paddingHorizontal: 6,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 4,
+    minHeight: 88,
+  },
+  checkInChipDone: {
+    borderColor: Colors.primary + '55',
+    backgroundColor: Colors.primary + '08',
+  },
+  checkInChipIconWrap: {
+    width: 28,
+    height: 28,
+    borderRadius: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: Colors.surface,
+  },
+  checkInChipLabel: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: Colors.text,
+    textAlign: 'center',
+    lineHeight: 14,
+  },
+  checkInChipLabelDone: {
+    color: Colors.textSecondary,
+  },
+  checkInChipSub: {
+    fontSize: 10,
+    fontWeight: '600',
+    color: Colors.textMuted,
+    textTransform: 'uppercase',
+    letterSpacing: 0.6,
   },
   quickRow: {
     flexDirection: 'row',

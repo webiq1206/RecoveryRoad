@@ -22,6 +22,7 @@ import {
 } from '@/features/checkin/constants/checkinMetrics';
 import type { DailyCheckIn, EmotionalTag } from '@/types';
 import { useAppStore } from '@/stores/useAppStore';
+import { selectCurrentCheckInPeriod } from '@/core/contracts/checkin';
 
 export interface PeriodConfig {
   label: string;
@@ -39,19 +40,25 @@ const DEFAULT_VALUES: Record<string, number> = {
   emotionalState: 50,
 };
 
-export function useDailyCheckInFlow() {
+export function useDailyCheckInFlow(options?: { period?: CheckInTimeOfDay }) {
   const { profile, daysSober } = useUser();
   const {
     addCheckIn,
     todayCheckIns,
     morningCheckIn,
-    currentCheckInPeriod,
-    currentPeriodCheckIn,
     checkIns,
     logNearMiss,
   } = useCheckin();
   const addCheckInToCentralStore = useAppStore.use.addCheckIn();
   const { triggerLoop, generateSupportiveNotification } = useRetention();
+
+  const currentCheckInPeriod =
+    options?.period ?? selectCurrentCheckInPeriod(new Date());
+
+  const currentPeriodCheckIn = useMemo(
+    () => todayCheckIns.find((c) => c.timeOfDay === currentCheckInPeriod) ?? null,
+    [todayCheckIns, currentCheckInPeriod],
+  );
 
   const isMorning = currentCheckInPeriod === 'morning';
   const sleepLocked = !isMorning && morningCheckIn !== null;

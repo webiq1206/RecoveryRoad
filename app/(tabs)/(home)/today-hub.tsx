@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import {
   View,
   Text,
@@ -6,6 +6,7 @@ import {
   ScrollView,
   Pressable,
   Animated as RNAnimated,
+  Alert,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter, Redirect, usePathname } from 'expo-router';
@@ -31,6 +32,10 @@ import { useWizardEngineHook } from '@/hooks/useWizardEngine';
 import { HomeLoadingSkeleton } from '@/components/LoadingSkeleton';
 import { RecoveryStabilityPanel } from '@/components/RecoveryStabilityPanel';
 import { getStrictRedirectTarget, resolveCanonicalRoute } from '@/utils/legacyRoutes';
+import {
+  getCheckInWindowHint,
+  isCheckInPeriodInWindow,
+} from '@/utils/checkInWindows';
 import type { CheckInTimeOfDay } from '@/types';
 import type { WizardAction } from '@/utils/wizardEngine';
 
@@ -77,6 +82,13 @@ export default function TodayHubScreen() {
   const { todayCheckIn, todayCheckIns } = useCheckin();
   const { plan: wizardPlan, recentCompletion, clearRecentCompletion } =
     useWizardEngineHook();
+
+  /** Re-render every minute so check-in windows update at period boundaries. */
+  const [, setCheckInWindowTick] = useState(0);
+  useEffect(() => {
+    const id = setInterval(() => setCheckInWindowTick((n) => n + 1), 60_000);
+    return () => clearInterval(id);
+  }, []);
 
   const displayProfile = centralProfile ?? profile;
 
@@ -197,6 +209,25 @@ export default function TodayHubScreen() {
           </View>
         )}
 
+        {/* Primary crisis entry — above encouragement so support is one tap away */}
+        <Pressable
+          style={({ pressed }) => [
+            styles.struggleButton,
+            pressed && styles.pressed,
+          ]}
+          onPress={() => {
+            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
+            router.push('/crisis-mode' as any);
+          }}
+          testID="todayhub-struggle-button"
+        >
+          <View style={styles.struggleIconWrap}>
+            <AlertTriangle size={20} color={Colors.white} />
+          </View>
+          <Text style={styles.struggleText}>I&apos;m struggling right now</Text>
+          <ArrowRight size={18} color={Colors.white} />
+        </Pressable>
+
         {/* Encouragement message */}
         {dailyGuidance.encouragement && (
           <View style={styles.encouragementCard}>
@@ -224,30 +255,22 @@ export default function TodayHubScreen() {
           </View>
         </View>
 
-        {/* Primary crisis entry */}
-        <Pressable
-          style={({ pressed }) => [
-            styles.struggleButton,
-            pressed && styles.pressed,
-          ]}
-          onPress={() => {
-            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
-            router.push('/crisis-mode' as any);
-          }}
-          testID="todayhub-struggle-button"
-        >
-          <View style={styles.struggleIconWrap}>
-            <AlertTriangle size={20} color={Colors.white} />
-          </View>
-          <Text style={styles.struggleText}>I&apos;m struggling right now</Text>
-          <ArrowRight size={18} color={Colors.white} />
-        </Pressable>
+        {/* Today's Stability — directly under mood & urge */}
+        <RecoveryStabilityPanel
+          score={stability.score}
+          stabilityTrend={stability.trend}
+          relapseRiskCategory={relapseRisk.category}
+          relapseRiskLabel={relapseRisk.label}
+          relapseRiskTrendLabel={relapseRisk.trendLabel}
+        />
 
         {/* Time-of-day check-ins */}
         <Text style={styles.sectionLabel}>Check-ins today</Text>
         <View style={styles.checkInRow}>
           {CHECK_IN_PERIODS.map(({ period, title }) => {
             const done = isPeriodComplete(period);
+            const inWindow = isCheckInPeriodInWindow(period);
+            const locked = !done && !inWindow;
             const a11yPeriod = title.replace('\n', ' ');
             return (
               <Pressable
@@ -255,9 +278,18 @@ export default function TodayHubScreen() {
                 style={({ pressed }) => [
                   styles.checkInChip,
                   done && styles.checkInChipDone,
+                  locked && styles.checkInChipLocked,
                   pressed && styles.pressed,
                 ]}
                 onPress={() => {
+                  if (locked) {
+                    Haptics.selectionAsync();
+                    Alert.alert(
+                      title.replace('\n', ' '),
+                      `${getCheckInWindowHint(period)}. You can complete this check-in during that window.`,
+                    );
+                    return;
+                  }
                   Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
                   router.push({
                     pathname: '/daily-checkin',
@@ -265,22 +297,34 @@ export default function TodayHubScreen() {
                   } as any);
                 }}
                 testID={`todayhub-checkin-${period}`}
-                accessibilityLabel={done ? `${a11yPeriod} completed` : a11yPeriod}
+                accessibilityLabel={
+                  done
+                    ? `${a11yPeriod} completed`
+                    : locked
+                      ? `${a11yPeriod}, not available until ${getCheckInWindowHint(period)}`
+                      : a11yPeriod
+                }
               >
                 <View style={styles.checkInChipIconWrap}>
                   {done ? (
                     <Check size={16} color={Colors.primary} />
                   ) : (
-                    <Activity size={16} color={Colors.primary} />
+                    <Activity size={16} color={locked ? Colors.textMuted : Colors.primary} />
                   )}
                 </View>
                 <Text
-                  style={[styles.checkInChipLabel, done && styles.checkInChipLabelDone]}
+                  style={[
+                    styles.checkInChipLabel,
+                    done && styles.checkInChipLabelDone,
+                    locked && styles.checkInChipLabelLocked,
+                  ]}
                   numberOfLines={2}
                 >
                   {title}
                 </Text>
-                <Text style={styles.checkInChipSub}>{done ? 'Done' : 'Tap'}</Text>
+                <Text style={[styles.checkInChipSub, locked && styles.checkInChipSubLocked]}>
+                  {done ? 'Done' : locked ? 'Locked' : 'Tap'}
+                </Text>
               </Pressable>
             );
           })}
@@ -372,15 +416,6 @@ export default function TodayHubScreen() {
             <Text style={styles.quickLabel}>Progress</Text>
           </Pressable>
         </View>
-
-        {/* Stability + relapse risk panel */}
-        <RecoveryStabilityPanel
-          score={stability.score}
-          stabilityTrend={stability.trend}
-          relapseRiskCategory={relapseRisk.category}
-          relapseRiskLabel={relapseRisk.label}
-          relapseRiskTrendLabel={relapseRisk.trendLabel}
-        />
 
         {showRelapsePlanCta && (
           <Pressable
@@ -693,6 +728,12 @@ const styles = StyleSheet.create({
     borderColor: Colors.primary + '55',
     backgroundColor: Colors.primary + '08',
   },
+  checkInChipLocked: {
+    opacity: 0.65,
+    borderStyle: 'dashed',
+    borderColor: Colors.border,
+    backgroundColor: Colors.surface,
+  },
   checkInChipIconWrap: {
     width: 28,
     height: 28,
@@ -711,12 +752,18 @@ const styles = StyleSheet.create({
   checkInChipLabelDone: {
     color: Colors.textSecondary,
   },
+  checkInChipLabelLocked: {
+    color: Colors.textMuted,
+  },
   checkInChipSub: {
     fontSize: 10,
     fontWeight: '600',
     color: Colors.textMuted,
     textTransform: 'uppercase',
     letterSpacing: 0.6,
+  },
+  checkInChipSubLocked: {
+    color: Colors.textMuted,
   },
   completionCard: {
     flexDirection: 'row',

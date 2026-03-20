@@ -396,22 +396,8 @@ interface CandidateAction {
 function buildCandidateActions(input: WizardEngineInput): CandidateAction[] {
   const candidates: CandidateAction[] = [];
   const band = getStabilityBand(input.stabilityScore);
-  const period = input.currentPeriod;
-  const periodLabel = period === 'morning' ? 'Morning' : period === 'afternoon' ? 'Afternoon' : 'Evening';
 
-  const hasCurrentCheckIn = input.todayCheckIns.some((c) => c.timeOfDay === period);
-
-  candidates.push({
-    id: `checkin_${period}`,
-    title: `${periodLabel} Check-In`,
-    subtitle: band === 'low'
-      ? "Name how you're arriving so your support can adjust."
-      : "Capture how you're doing to keep your guidance accurate.",
-    route: '/daily-checkin',
-    kind: 'awareness',
-    completed: hasCurrentCheckIn,
-    basePriority: 90,
-  });
+  // Time-of-day check-ins live only under "Check-ins today" on the home screen, not in Today's guidance.
 
   candidates.push({
     id: 'daily-pledge',
@@ -537,6 +523,27 @@ function buildCandidateActions(input: WizardEngineInput): CandidateAction[] {
   return candidates;
 }
 
+function buildScoredWizardActions(input: WizardEngineInput): WizardAction[] {
+  const candidates = buildCandidateActions(input);
+  const scored = candidates.map((c) => ({
+    ...c,
+    priority: scoreAction(c, input),
+  }));
+  scored.sort((a, b) => {
+    if (a.completed !== b.completed) return a.completed ? 1 : -1;
+    return b.priority - a.priority;
+  });
+  return scored.map((s) => ({
+    id: s.id,
+    title: s.title,
+    subtitle: s.subtitle,
+    route: s.route,
+    kind: s.kind,
+    completed: s.completed,
+    priority: s.priority,
+  }));
+}
+
 // ── Risk warnings ────────────────────────────────────────────────────────
 
 function buildRiskWarnings(input: WizardEngineInput): string[] {
@@ -571,67 +578,41 @@ function buildRiskWarnings(input: WizardEngineInput): string[] {
 export function generateWizardPlan(input: WizardEngineInput): WizardPlan {
   const setupProgress = buildSetupProgress(input);
 
-  // Re-entry mode: user returning after 2+ day gap
+  // Re-entry mode: user returning after 2+ day gap (no check-in rows here — those are only under Check-ins today)
   if (input.daysSinceLastSession >= 2) {
     const isLongGap = input.daysSinceLastSession >= 5;
     const reentryMsg = isLongGap
       ? pickRandom(REENTRY_MESSAGES_LONG_GAP)
       : pickRandom(REENTRY_MESSAGES);
 
-    const reentryAction: WizardAction = {
-      id: `checkin_${input.currentPeriod}`,
-      title: isLongGap ? "Tell us how you're feeling" : `${input.currentPeriod.charAt(0).toUpperCase() + input.currentPeriod.slice(1)} Check-In`,
-      subtitle: isLongGap
-        ? "Just one question. No pressure."
-        : "Start with a quick check-in. Everything else can wait.",
-      route: '/daily-checkin',
-      kind: 'awareness',
-      completed: input.todayCheckIns.some((c) => c.timeOfDay === input.currentPeriod),
-      priority: 100,
-    };
+    const actions = buildScoredWizardActions(input);
+    const incompleteActions = actions.filter((a) => !a.completed);
+    const isComplete = incompleteActions.length === 0;
+    const primaryAction = incompleteActions[0] ?? null;
+    const riskWarnings = buildRiskWarnings(input);
 
     return {
       setupProgress,
       dailyGuidance: {
-        primaryAction: reentryAction.completed ? null : reentryAction,
-        actions: [reentryAction],
-        riskWarnings: [],
+        primaryAction,
+        actions,
+        riskWarnings: isComplete ? [] : riskWarnings,
         encouragement: reentryMsg,
-        contextHint: 'Start with one check-in. Everything else can wait.',
-        isComplete: reentryAction.completed,
-        completionMessage: reentryAction.completed
-          ? "Welcome back. You're right where you need to be."
-          : null,
+        contextHint: isComplete
+          ? null
+          : "Welcome back — use Check-ins today when you're in that window, or choose a step below.",
+        isComplete,
+        completionMessage: isComplete ? getCompletionMessage(input.daysSober) : null,
         isReentryMode: true,
       },
     };
   }
 
   // Normal mode
-  const candidates = buildCandidateActions(input);
+  const actions = buildScoredWizardActions(input);
   const contextHint = buildContextHint(input);
   const encouragement = buildEncouragement(input);
   const riskWarnings = buildRiskWarnings(input);
-
-  const scored = candidates.map((c) => ({
-    ...c,
-    priority: scoreAction(c, input),
-  }));
-
-  scored.sort((a, b) => {
-    if (a.completed !== b.completed) return a.completed ? 1 : -1;
-    return b.priority - a.priority;
-  });
-
-  const actions: WizardAction[] = scored.map((s) => ({
-    id: s.id,
-    title: s.title,
-    subtitle: s.subtitle,
-    route: s.route,
-    kind: s.kind,
-    completed: s.completed,
-    priority: s.priority,
-  }));
 
   const incompleteActions = actions.filter((a) => !a.completed);
   const isComplete = incompleteActions.length === 0;

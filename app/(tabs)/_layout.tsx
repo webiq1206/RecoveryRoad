@@ -6,6 +6,7 @@ import {
   Hammer,
   Users,
   User,
+  BookOpen,
 } from "lucide-react-native";
 import React, { useCallback } from "react";
 import Colors from "@/constants/colors";
@@ -101,6 +102,13 @@ export default function TabLayout() {
     [],
   );
 
+  const renderJournalIcon = useCallback(
+    ({ color }: { color: string }) => (
+      <TabIcon IconComponent={BookOpen} color={color} size={ICON_SIZE} />
+    ),
+    [],
+  );
+
   return (
     <View style={{ flex: 1 }}>
       <Tabs
@@ -136,6 +144,13 @@ export default function TabLayout() {
           }}
         />
         <Tabs.Screen
+          name="journal"
+          options={{
+            title: "Journal",
+            tabBarIcon: renderJournalIcon,
+          }}
+        />
+        <Tabs.Screen
           name="rebuild"
           options={{
             title: "Rebuild",
@@ -158,12 +173,6 @@ export default function TabLayout() {
         />
         <Tabs.Screen
           name="community"
-          options={{
-            href: null,
-          }}
-        />
-        <Tabs.Screen
-          name="journal"
           options={{
             href: null,
           }}

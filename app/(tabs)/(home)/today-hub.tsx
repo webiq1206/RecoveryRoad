@@ -13,8 +13,8 @@ import {
   ArrowRight,
   AlertTriangle,
   Activity,
-  Sparkles,
   BarChart3,
+  BookOpen,
   Check,
   CheckCircle2,
   ChevronRight,
@@ -302,6 +302,15 @@ export default function TodayHubScreen() {
               >
                 <Text style={styles.completionLink}>See your progress</Text>
               </Pressable>
+              <Pressable
+                onPress={() => {
+                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                  router.push('/journal' as any);
+                }}
+                testID="todayhub-completion-journal-link"
+              >
+                <Text style={styles.completionLink}>Open journal — past entries & new entry</Text>
+              </Pressable>
             </View>
           </View>
         )}
@@ -340,14 +349,14 @@ export default function TodayHubScreen() {
             style={({ pressed }) => [styles.quickCard, pressed && styles.pressed]}
             onPress={() => {
               Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-              router.push('/tools' as any);
+              router.push('/journal' as any);
             }}
-            testID="todayhub-quick-tools"
+            testID="todayhub-quick-journal"
           >
             <View style={styles.quickIconWrap}>
-              <Sparkles size={18} color={Colors.primary} />
+              <BookOpen size={18} color={Colors.primary} />
             </View>
-            <Text style={styles.quickLabel}>Tools</Text>
+            <Text style={styles.quickLabel}>Journal</Text>
           </Pressable>
           <Pressable
             style={({ pressed }) => [styles.quickCard, pressed && styles.pressed]}
@@ -770,7 +779,7 @@ const styles = StyleSheet.create({
   },
   quickRow: {
     flexDirection: 'row',
-    gap: 10,
+    gap: 8,
     marginBottom: 18,
   },
   quickCard: {

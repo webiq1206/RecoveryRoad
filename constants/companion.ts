@@ -250,20 +250,20 @@ const SHAME_RESPONSES: Record<RecoveryStage, string[]> = {
   thriving: [
     "Even after everything, shame still visits sometimes. But it doesn't live here anymore.",
     "You've transformed the very thing shame tried to define you by. That's extraordinary.",
-    "Shame is a chapter in your story — not the title. You wrote something better.",
+    "Shame is a chapter in your story - not the title. You wrote something better.",
   ],
 };
 
 const HOPELESSNESS_RESPONSES: Record<RecoveryStage, string[]> = {
   early: [
-    "I hear you. It feels endless right now. But you're only seeing this moment — not what's ahead.",
+    "I hear you. It feels endless right now. But you're only seeing this moment - not what's ahead.",
     "The first days feel like the hardest because they are. That doesn't mean it stays this way.",
     "You don't need to believe it will get better right now. Just stay one more hour. Then one more.",
     "Hopelessness is a symptom of pain, not a prediction of your future.",
   ],
   building: [
     "Look at the days behind you. Each one felt impossible once, and you did it anyway.",
-    "This moment of doubt doesn't erase what you've built. It's just fog — it lifts.",
+    "This moment of doubt doesn't erase what you've built. It's just fog - it lifts.",
     "You've already proven hopelessness wrong. You're still here.",
   ],
   strengthening: [
@@ -279,9 +279,9 @@ const HOPELESSNESS_RESPONSES: Record<RecoveryStage, string[]> = {
 
 const RUMINATION_RESPONSES: Record<RecoveryStage, string[]> = {
   early: [
-    "Your mind is replaying old tapes. That's normal — your brain is still processing. Let's redirect gently.",
+    "Your mind is replaying old tapes. That's normal - your brain is still processing. Let's redirect gently.",
     "Replaying the past keeps you there. Right now, you're here. This moment is new.",
-    "What happened before doesn't have to happen again. You're different now — even if just by a day.",
+    "What happened before doesn't have to happen again. You're different now - even if just by a day.",
     "Try naming what you're feeling instead of replaying what happened. It shifts the loop.",
   ],
   building: [
@@ -303,7 +303,7 @@ const SELF_CRITICISM_RESPONSES: Record<RecoveryStage, string[]> = {
   early: [
     "Would you say that to a friend who was trying their hardest? Be that friend to yourself.",
     "Recovery isn't about being perfect. It's about showing up imperfectly and trying anyway.",
-    "That inner critic is loud right now. But it doesn't know the whole story — you do.",
+    "That inner critic is loud right now. But it doesn't know the whole story - you do.",
     "The standard you're holding yourself to? It's not fair. Give yourself the grace you'd give someone else.",
   ],
   building: [
@@ -323,7 +323,7 @@ const SELF_CRITICISM_RESPONSES: Record<RecoveryStage, string[]> = {
 
 const AVOIDANCE_RESPONSES: Record<RecoveryStage, string[]> = {
   early: [
-    "It's okay to not be ready. But I want you to know — this space is safe whenever you are.",
+    "It's okay to not be ready. But I want you to know - this space is safe whenever you are.",
     "Avoidance protects you short-term. When you're ready, facing things heals you long-term.",
     "You don't have to go deep right now. Even acknowledging 'this is hard' is enough.",
     "I notice you might be pulling back. That's a natural instinct. I'll be here when you're ready.",
@@ -639,7 +639,7 @@ export function getEmotionalInsight(
   if (avgCraving > 70 && moodTrend < -15) {
     return {
       insight: pickRandom([
-        "Your cravings have been intense lately while your mood dips. This is a critical moment — reach out to someone.",
+        "Your cravings have been intense lately while your mood dips. This is a critical moment - reach out to someone.",
         "I see a pattern: rising cravings with falling mood. Let's use your tools right now.",
         "This combination of high cravings and low mood is your signal. Use your crisis plan.",
       ]),
@@ -698,7 +698,7 @@ export function generateRebuildEncouragement(
     ],
     milestone: [
       "You just recorded a win. On hard days, come back and read these.",
-      "Confidence isn't born — it's built from moments exactly like this one.",
+      "Confidence isn't born - it's built from moments exactly like this one.",
       "This milestone is evidence. You are changing.",
     ],
   };

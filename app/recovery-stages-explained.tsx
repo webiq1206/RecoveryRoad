@@ -50,7 +50,7 @@ export default function RecoveryStagesExplainedScreen() {
       <View style={styles.introCard}>
         <Info size={20} color={Colors.primary} />
         <Text style={styles.introText}>
-          Your recovery stage reflects where you are in your journey. It adapts automatically based on your check-ins, sobriety, mood, cravings, and stress — so the app can give you the right level of support at the right time.
+          Your recovery stage reflects where you are in your journey. It adapts automatically based on your check-ins, sobriety, mood, cravings, and stress - so the app can give you the right level of support at the right time.
         </Text>
       </View>
 
@@ -99,24 +99,24 @@ export default function RecoveryStagesExplainedScreen() {
           <Text style={styles.rangeTitle}>Composite score ranges</Text>
           <View style={styles.rangeRow}>
             <View style={[styles.rangeDot, { backgroundColor: '#EF5350' }]} />
-            <Text style={styles.rangeText}><Text style={styles.rangeBold}>0–31</Text> — Crisis</Text>
+            <Text style={styles.rangeText}><Text style={styles.rangeBold}>0–31</Text> - Crisis</Text>
           </View>
           <View style={styles.rangeRow}>
             <View style={[styles.rangeDot, { backgroundColor: '#FFB347' }]} />
-            <Text style={styles.rangeText}><Text style={styles.rangeBold}>32–51</Text> — Stabilize</Text>
+            <Text style={styles.rangeText}><Text style={styles.rangeBold}>32–51</Text> - Stabilize</Text>
           </View>
           <View style={styles.rangeRow}>
             <View style={[styles.rangeDot, { backgroundColor: '#2EC4B6' }]} />
-            <Text style={styles.rangeText}><Text style={styles.rangeBold}>52–71</Text> — Rebuild</Text>
+            <Text style={styles.rangeText}><Text style={styles.rangeBold}>52–71</Text> - Rebuild</Text>
           </View>
           <View style={styles.rangeRow}>
             <View style={[styles.rangeDot, { backgroundColor: '#4CAF50' }]} />
-            <Text style={styles.rangeText}><Text style={styles.rangeBold}>72–100</Text> — Maintain</Text>
+            <Text style={styles.rangeText}><Text style={styles.rangeBold}>72–100</Text> - Maintain</Text>
           </View>
         </View>
         <View style={styles.spacer} />
         <Text style={styles.tipText}>
-          Stages can only advance one step at a time — you won't skip from Crisis directly to Rebuild. If conditions worsen, you can move back to receive more support. This is not failure; it's the app caring for you.
+          Stages can only advance one step at a time - you won't skip from Crisis directly to Rebuild. If conditions worsen, you can move back to receive more support. This is not failure; it's the app caring for you.
         </Text>
       </StageCard>
 
@@ -154,7 +154,7 @@ export default function RecoveryStagesExplainedScreen() {
         />
         <SignalRow
           label="Immediate interventions"
-          description="Crisis tools are front and center — breathing exercises, emergency contacts, and grounding techniques."
+          description="Crisis tools are front and center - breathing exercises, emergency contacts, and grounding techniques."
         />
         <View style={styles.spacer} />
         <Text style={styles.tipText}>
@@ -168,7 +168,7 @@ export default function RecoveryStagesExplainedScreen() {
         accentColor="#FFB347"
       >
         <Text style={styles.bodyText}>
-          The Stabilize stage begins when the worst intensity starts to ease. You're building a foundation — developing routines and coping strategies that will carry you forward.
+          The Stabilize stage begins when the worst intensity starts to ease. You're building a foundation - developing routines and coping strategies that will carry you forward.
         </Text>
         <View style={styles.spacer} />
         <Text style={styles.subHeading}>What it means</Text>
@@ -224,7 +224,7 @@ export default function RecoveryStagesExplainedScreen() {
         />
         <View style={styles.spacer} />
         <Text style={styles.tipText}>
-          Rebuild is where identity modules, exercises, and community engagement become especially powerful. You're not just sober — you're becoming who you want to be.
+          Rebuild is where identity modules, exercises, and community engagement become especially powerful. You're not just sober - you're becoming who you want to be.
         </Text>
       </StageCard>
 
@@ -239,7 +239,7 @@ export default function RecoveryStagesExplainedScreen() {
         <View style={styles.spacer} />
         <Text style={styles.subHeading}>What it means</Text>
         <Text style={styles.bodyText}>
-          Your composite score is consistently high — strong stability, low cravings, good mood, managed stress, and regular engagement. You've demonstrated lasting change.
+          Your composite score is consistently high - strong stability, low cravings, good mood, managed stress, and regular engagement. You've demonstrated lasting change.
         </Text>
         <View style={styles.spacer} />
         <Text style={styles.subHeading}>How the app adapts</Text>
@@ -264,7 +264,7 @@ export default function RecoveryStagesExplainedScreen() {
       <View style={styles.footerCard}>
         <Zap size={16} color={Colors.accentWarm} />
         <Text style={styles.footerText}>
-          Your stage updates automatically as you use the app. There's no "right" pace through the stages — what matters is that you keep showing up. Every check-in, every journal entry, every pledge honored moves you forward.
+          Your stage updates automatically as you use the app. There's no "right" pace through the stages - what matters is that you keep showing up. Every check-in, every journal entry, every pledge honored moves you forward.
         </Text>
       </View>
 

@@ -6,7 +6,7 @@ import { ShieldAlert } from 'lucide-react-native';
 import * as Haptics from 'expo-haptics';
 import { useRelapse } from '@/core/domains/useRelapse';
 
-/** Warm red — distinct but not alarming (not neon) */
+/** Warm red - distinct but not alarming (not neon) */
 const CRISIS_STRIP_COLOR = '#B85454';
 
 const TAB_BAR_HEIGHT = 49;

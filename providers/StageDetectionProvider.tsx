@@ -51,7 +51,7 @@ const STAGE_CONFIGS: Record<RecoveryStage, StageConfig> = {
     stage: 'stabilize',
     label: 'Stabilizing',
     description: 'Building your foundation. Developing routines and coping strategies.',
-    transitionMessage: "You're moving into a more stable place. The worst intensity is easing — let's build on that momentum.",
+    transitionMessage: "You're moving into a more stable place. The worst intensity is easing - let's build on that momentum.",
     uiIntensity: 'moderate',
     supportFrequency: 'frequent',
     aiTone: 'supportive',
@@ -313,9 +313,9 @@ function buildTransitionReason(fromStage: RecoveryStage, toStage: RecoveryStage,
       .map(s => s.factor)
       .slice(0, 3);
     if (negativeFactors.length > 0) {
-      return `Your ${negativeFactors.join(', ').toLowerCase()} suggest you could use more support right now. This is not a setback — it's self-awareness.`;
+      return `Your ${negativeFactors.join(', ').toLowerCase()} suggest you could use more support right now. This is not a setback - it's self-awareness.`;
     }
-    return "Your recent patterns suggest more support would help. Adjusting to give you what you need — you're still building; this is care.";
+    return "Your recent patterns suggest more support would help. Adjusting to give you what you need - you're still building; this is care.";
   }
 }
 

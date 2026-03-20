@@ -10,7 +10,7 @@ export const WORKBOOK_SECTIONS_16_20: WorkbookSection[] = [
       { id: 's16q1', type: 'reflection', question: 'What gives your life meaning right now?' },
       { id: 's16q2', type: 'journaling', question: 'If you could do anything in the world and money was not an issue, what would you do?' },
       { id: 's16q3', type: 'reflection', question: 'What activities make you lose track of time? What is it about them?' },
-      { id: 's16q4', type: 'assignment', question: 'Write your personal values — the top 10 things that matter most to you. Rank them.' },
+      { id: 's16q4', type: 'assignment', question: 'Write your personal values - the top 10 things that matter most to you. Rank them.' },
       { id: 's16q5', type: 'reflection', question: 'How does your recovery connect to a larger purpose?' },
       { id: 's16q6', type: 'journaling', question: 'Write about a cause or issue you care deeply about. Why does it matter to you?' },
       { id: 's16q7', type: 'exercise', question: 'Volunteer for a cause this week or help someone in need. Write about the experience.' },
@@ -26,7 +26,7 @@ export const WORKBOOK_SECTIONS_16_20: WorkbookSection[] = [
       { id: 's16q17', type: 'reflection', question: 'How has your sense of purpose changed since beginning recovery?' },
       { id: 's16q18', type: 'assignment', question: 'Research local organizations where you could volunteer or contribute. Write about options that interest you.' },
       { id: 's16q19', type: 'reflection', question: 'What skills or talents do you have that could benefit others?' },
-      { id: 's16q20', type: 'journaling', question: 'Write your "purpose autobiography" — how your life experiences have prepared you for your purpose.' },
+      { id: 's16q20', type: 'journaling', question: 'Write your "purpose autobiography" - how your life experiences have prepared you for your purpose.' },
     ],
   },
   {

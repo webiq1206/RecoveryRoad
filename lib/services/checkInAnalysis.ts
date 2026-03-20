@@ -67,7 +67,7 @@ export function getEmotionalReflection(
       "High cravings with low mood is a signal worth paying attention to. Consider reaching out to your support network today.";
   } else if (values.emotionalState < 30) {
     emotionalNote =
-      "Your emotions feel unstable right now. That's okay — awareness is the first step. Try a grounding exercise.";
+      "Your emotions feel unstable right now. That's okay - awareness is the first step. Try a grounding exercise.";
   } else if (values.sleepQuality < 25) {
     emotionalNote =
       "Poor sleep affects everything. Tonight, try winding down 30 minutes earlier. Your recovery body needs rest.";

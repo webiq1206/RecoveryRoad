@@ -45,7 +45,7 @@ export default function CheckInsTabScreen() {
       <View style={styles.body}>
         <Text style={styles.sectionLabel}>Today&apos;s Check-Ins</Text>
         <Text style={styles.bodyText}>
-          Complete up to three check-ins each day — morning, afternoon, and evening — to keep
+          Complete up to three check-ins each day - morning, afternoon, and evening - to keep
           your Stability and Early Warning systems accurate.
         </Text>
 

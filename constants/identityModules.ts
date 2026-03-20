@@ -5,14 +5,14 @@ export const IDENTITY_MODULES: IdentityModule[] = [
     id: 'week-1-self-worth',
     week: 1,
     title: 'Rediscovering Your Worth',
-    description: 'Begin reconnecting with your inherent value — separate from addiction, mistakes, or labels.',
+    description: 'Begin reconnecting with your inherent value - separate from addiction, mistakes, or labels.',
     category: 'self_worth',
     affirmation: 'I am more than what happened to me.',
     exercises: [
       {
         id: 'w1-e1',
         title: 'Three Truths About Me',
-        prompt: 'Write three things that are true about you that have nothing to do with addiction. These can be simple — "I care about my family," "I notice beauty in nature," "I try even when it\'s hard."',
+        prompt: 'Write three things that are true about you that have nothing to do with addiction. These can be simple - "I care about my family," "I notice beauty in nature," "I try even when it\'s hard."',
         hint: 'Focus on who you are, not what you\'ve done.',
         type: 'writing',
       },
@@ -55,7 +55,7 @@ export const IDENTITY_MODULES: IdentityModule[] = [
       {
         id: 'w2-e3',
         title: 'Letting Go Visualization',
-        prompt: 'Close your eyes for 2 minutes. Imagine placing one heavy burden — a regret, a label, a memory — into a river and watching it float away. Describe the experience.',
+        prompt: 'Close your eyes for 2 minutes. Imagine placing one heavy burden - a regret, a label, a memory - into a river and watching it float away. Describe the experience.',
         type: 'visualization',
       },
     ],
@@ -100,7 +100,7 @@ export const IDENTITY_MODULES: IdentityModule[] = [
       {
         id: 'w4-e1',
         title: 'Morning Values Check',
-        prompt: 'Each morning this week, pick one value to focus on. At the end of today, write about one moment where you lived that value — even imperfectly.',
+        prompt: 'Each morning this week, pick one value to focus on. At the end of today, write about one moment where you lived that value - even imperfectly.',
         type: 'action',
       },
       {
@@ -113,7 +113,7 @@ export const IDENTITY_MODULES: IdentityModule[] = [
         id: 'w4-e3',
         title: 'Values Boundary',
         prompt: 'Write about one boundary you need to set or strengthen to protect a core value. What would honoring that boundary look like this week?',
-        hint: 'Boundaries aren\'t walls — they\'re acts of self-respect.',
+        hint: 'Boundaries aren\'t walls - they\'re acts of self-respect.',
         type: 'writing',
       },
     ],
@@ -129,13 +129,13 @@ export const IDENTITY_MODULES: IdentityModule[] = [
       {
         id: 'w5-e1',
         title: 'What Makes You Come Alive',
-        prompt: 'When was the last time you felt truly engaged in something — not numbing, but genuinely alive? Describe that moment. What were you doing? Who were you with?',
+        prompt: 'When was the last time you felt truly engaged in something - not numbing, but genuinely alive? Describe that moment. What were you doing? Who were you with?',
         type: 'reflection',
       },
       {
         id: 'w5-e2',
         title: 'Contribution Map',
-        prompt: 'How could your experiences — including the hard ones — help someone else someday? Write about how your journey might become a source of strength for others.',
+        prompt: 'How could your experiences - including the hard ones - help someone else someday? Write about how your journey might become a source of strength for others.',
         hint: 'Pain that is processed can become purpose.',
         type: 'writing',
       },
@@ -158,13 +158,13 @@ export const IDENTITY_MODULES: IdentityModule[] = [
       {
         id: 'w6-e1',
         title: 'One Meaningful Act',
-        prompt: 'Do one thing today that connects to your purpose — even something tiny. Help someone, create something, learn something. Write about what you did and why it mattered.',
+        prompt: 'Do one thing today that connects to your purpose - even something tiny. Help someone, create something, learn something. Write about what you did and why it mattered.',
         type: 'action',
       },
       {
         id: 'w6-e2',
         title: 'Future Self Letter',
-        prompt: 'Write a letter from your future self — one year from now, living with purpose. What does your day look like? What are you proud of? What advice do you give present-you?',
+        prompt: 'Write a letter from your future self - one year from now, living with purpose. What does your day look like? What are you proud of? What advice do you give present-you?',
         type: 'visualization',
       },
       {
@@ -179,14 +179,14 @@ export const IDENTITY_MODULES: IdentityModule[] = [
     id: 'week-7-goals',
     week: 7,
     title: 'Dreaming Again',
-    description: 'Reconnect with the ability to dream about your future — addiction may have stolen that, but it\'s still there.',
+    description: 'Reconnect with the ability to dream about your future - addiction may have stolen that, but it\'s still there.',
     category: 'life_goals',
     affirmation: 'I deserve to dream about my future.',
     exercises: [
       {
         id: 'w7-e1',
         title: 'If Nothing Could Stop Me',
-        prompt: 'If fear, money, and the past didn\'t matter — what would you want your life to look like in 3 years? Describe it freely, without filtering.',
+        prompt: 'If fear, money, and the past didn\'t matter - what would you want your life to look like in 3 years? Describe it freely, without filtering.',
         hint: 'Let yourself want things again.',
         type: 'visualization',
       },
@@ -222,7 +222,7 @@ export const IDENTITY_MODULES: IdentityModule[] = [
         id: 'w8-e2',
         title: 'Obstacle Planning',
         prompt: 'For your biggest goal, list 3 obstacles that could derail you. For each one, write a plan: "If _____ happens, I will _____."',
-        hint: 'Planning for obstacles isn\'t pessimism — it\'s wisdom.',
+        hint: 'Planning for obstacles isn\'t pessimism - it\'s wisdom.',
         type: 'reflection',
       },
       {

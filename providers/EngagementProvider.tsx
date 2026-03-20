@@ -80,7 +80,7 @@ const SUPPORTIVE_MESSAGES = [
   "Growth isn't always loud. Sometimes it's the quiet moments of choosing differently.",
   "You deserve the peace you're building for yourself.",
   "Each day sober is a gift you give to your future self.",
-  "You're not just surviving — you're learning to thrive.",
+  "You're not just surviving - you're learning to thrive.",
   "The person you were yesterday would be proud of who you are today.",
   "Healing is not a destination. It's the courage to keep walking.",
   "You've already proven you can do hard things.",

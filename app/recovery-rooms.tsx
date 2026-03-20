@@ -300,7 +300,7 @@ export default function RecoveryRoomsScreen() {
 
         {!isFull && spotsLeft <= 2 && !item.isJoined && (
           <View style={styles.urgencyBar}>
-            <Text style={styles.urgencyText}>Almost full — join now to secure your spot</Text>
+            <Text style={styles.urgencyText}>Almost full - join now to secure your spot</Text>
           </View>
         )}
       </Pressable>

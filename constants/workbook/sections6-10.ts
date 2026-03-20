@@ -68,7 +68,7 @@ export const WORKBOOK_SECTIONS_6_10: WorkbookSection[] = [
       { id: 's8q3', type: 'journaling', question: 'Write about how stress and your addiction are connected.' },
       { id: 's8q4', type: 'exercise', question: 'Practice the "4-7-8" breathing technique for 5 minutes. Write about the effect on your stress level.' },
       { id: 's8q5', type: 'reflection', question: 'What physical symptoms do you experience when stressed?' },
-      { id: 's8q6', type: 'assignment', question: 'Create a "stress first aid kit" — list 10 things that help you decompress.', hint: 'Bath, walk, music, tea, calling a friend, etc.' },
+      { id: 's8q6', type: 'assignment', question: 'Create a "stress first aid kit" - list 10 things that help you decompress.', hint: 'Bath, walk, music, tea, calling a friend, etc.' },
       { id: 's8q7', type: 'reflection', question: 'How do you typically respond to stress? Fight, flight, freeze, or fawn?' },
       { id: 's8q8', type: 'journaling', question: 'Write about a time you handled stress well without turning to your addiction.' },
       { id: 's8q9', type: 'reflection', question: 'What role does perfectionism play in your stress levels?' },

@@ -6,7 +6,6 @@ import {
   ScrollView,
   Pressable,
   Animated,
-  Switch,
   Platform,
 } from 'react-native';
 import { useRouter } from 'expo-router';
@@ -183,17 +182,6 @@ const DAILY_STEPS: StepCardProps[] = [
 
 export default function HowToUseScreen() {
   const router = useRouter();
-  const [guidedMode, setGuidedMode] = useState<boolean>(false);
-
-  const handleGuidedToggle = useCallback((value: boolean) => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    setGuidedMode(value);
-  }, []);
-
-  const handleStartDay = useCallback(() => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-    router.push('/wizard' as any);
-  }, [router]);
 
   return (
     <View style={styles.container}>
@@ -216,44 +204,24 @@ export default function HowToUseScreen() {
           <Text style={styles.heroTitle}>How to Use{'\n'}Recovery Companion</Text>
           <Text style={styles.heroSubtitle}>
             This app works best when used daily, in a specific order.
-            It's a recovery protection system — not just a tracker.
+            It's a recovery protection system - not just a tracker.
           </Text>
           <Text style={styles.heroNote}>
             Each step builds on the last, creating a shield around your day.
           </Text>
         </View>
 
-        <View style={styles.guidedModeCard}>
-          <View style={styles.guidedLeft}>
-            <View style={styles.guidedIconBg}>
-              <Play size={16} color={Colors.primary} />
-            </View>
-            <View style={styles.guidedTextWrap}>
-              <Text style={styles.guidedTitle}>Guided Mode</Text>
-              <Text style={styles.guidedDesc}>
-                Walk through each daily step with prompts and reminders
-              </Text>
-            </View>
-          </View>
-          <Switch
-            value={guidedMode}
-            onValueChange={handleGuidedToggle}
-            trackColor={{ false: Colors.surface, true: Colors.primary + '40' }}
-            thumbColor={guidedMode ? Colors.primary : Colors.textMuted}
-            testID="guided-mode-toggle"
-          />
-        </View>
-
-        {guidedMode && (
-          <Pressable
-            style={({ pressed }) => [styles.startDayBtn, pressed && { opacity: 0.85 }]}
-            onPress={handleStartDay}
-            testID="start-guided-day"
-          >
-            <Sun size={18} color={Colors.white} />
-            <Text style={styles.startDayText}>Start Today's Recovery Flow</Text>
-          </Pressable>
-        )}
+        <Pressable
+          style={({ pressed }) => [styles.startDayBtn, pressed && { opacity: 0.85 }]}
+          onPress={() => {
+            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+            router.push('/(tabs)/(home)/today-hub' as any);
+          }}
+          testID="start-guided-day"
+        >
+          <Sun size={18} color={Colors.white} />
+          <Text style={styles.startDayText}>Go to Today</Text>
+        </Pressable>
 
         <ExpandableSection
           title="Daily Recovery Flow"
@@ -294,7 +262,7 @@ export default function HowToUseScreen() {
           <View style={styles.infoCard}>
             <Text style={styles.infoCardTitle}>Why it works</Text>
             <Text style={styles.infoCardText}>
-              Cravings follow a wave pattern — they rise, peak, and pass. Crisis Mode helps you ride the wave without acting on it. Each time you use it, you build stronger neural pathways for self-regulation.
+              Cravings follow a wave pattern - they rise, peak, and pass. Crisis Mode helps you ride the wave without acting on it. Each time you use it, you build stronger neural pathways for self-regulation.
             </Text>
           </View>
         </ExpandableSection>
@@ -367,7 +335,7 @@ export default function HowToUseScreen() {
             />
           </View>
           <Text style={[styles.bodyText, { marginTop: 12 }]}>
-            You may move between stages — that's normal. The app adjusts its guidance to meet you where you are.
+            You may move between stages - that's normal. The app adjusts its guidance to meet you where you are.
           </Text>
         </ExpandableSection>
 
@@ -416,7 +384,7 @@ export default function HowToUseScreen() {
           </View>
           <View style={[styles.infoCard, { borderColor: '#FFB34720', marginTop: 8 }]}>
             <Text style={styles.infoCardText}>
-              Recovery isn't about being perfect. It's about showing up. Every check-in, every grounding exercise, every connection matters — even on the hard days.
+              Recovery isn't about being perfect. It's about showing up. Every check-in, every grounding exercise, every connection matters - even on the hard days.
             </Text>
           </View>
         </ExpandableSection>

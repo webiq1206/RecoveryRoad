@@ -623,7 +623,7 @@ export default function OnboardingScreen() {
 
       case 'goals':
         return (
-          <View style={styles.stepContent}>
+          <ScrollView style={styles.stepContent} showsVerticalScrollIndicator={false} contentContainerStyle={styles.optionsListContent}>
             <View style={styles.stepIconWrap}>
               <Target size={28} color={Colors.primary} />
             </View>
@@ -633,30 +633,24 @@ export default function OnboardingScreen() {
             {goals.length > 0 && (
               <Text style={styles.selectionCount}>{goals.length} selected</Text>
             )}
-            <ScrollView
-              style={styles.optionsList}
-              showsVerticalScrollIndicator={false}
-              contentContainerStyle={styles.optionsListContent}
-            >
-              {GOAL_OPTIONS.map((goal) => {
-                const selected = goals.includes(goal);
-                return (
-                  <Pressable
-                    key={goal}
-                    style={[styles.optionChip, selected && styles.optionChipSelected]}
-                    onPress={() => toggleItem(goal, goals, setGoals)}
-                    testID={`goal-${goal}`}
-                  >
-                    <Text style={[styles.optionChipText, selected && styles.optionChipTextSelected]}>{goal}</Text>
-                    {selected && (
-                      <View style={styles.checkDot}>
-                        <Text style={styles.checkDotText}>✓</Text>
-                      </View>
-                    )}
-                  </Pressable>
-                );
-              })}
-            </ScrollView>
+            {GOAL_OPTIONS.map((goal) => {
+              const selected = goals.includes(goal);
+              return (
+                <Pressable
+                  key={goal}
+                  style={[styles.optionChip, selected && styles.optionChipSelected]}
+                  onPress={() => toggleItem(goal, goals, setGoals)}
+                  testID={`goal-${goal}`}
+                >
+                  <Text style={[styles.optionChipText, selected && styles.optionChipTextSelected]}>{goal}</Text>
+                  {selected && (
+                    <View style={styles.checkDot}>
+                      <Text style={styles.checkDotText}>✓</Text>
+                    </View>
+                  )}
+                </Pressable>
+              );
+            })}
 
             <View style={styles.privacySection}>
               <Text style={styles.privacySectionTitle}>Privacy Controls</Text>
@@ -683,7 +677,7 @@ export default function OnboardingScreen() {
                 />
               </View>
             </View>
-          </View>
+          </ScrollView>
         );
 
       default:
@@ -723,7 +717,7 @@ export default function OnboardingScreen() {
           </View>
         </ScrollView>
 
-        <View style={styles.bottomRow}>
+        <View style={[styles.bottomRow, { justifyContent: 'center' }]}>
           <Pressable
             style={styles.nextBtn}
             onPress={() => {
@@ -765,14 +759,18 @@ export default function OnboardingScreen() {
       </Animated.View>
 
       <View style={styles.bottomRow}>
-        {step > 0 ? (
-          <Pressable style={styles.backBtn} onPress={handleBack} testID="back-btn">
-            <ChevronLeft size={20} color={Colors.textSecondary} />
-            <Text style={styles.backText}>Back</Text>
-          </Pressable>
-        ) : (
-          <View />
-        )}
+        <Pressable
+          style={styles.backBtn}
+          onPress={step > 0 ? handleBack : () => {
+            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+            setHasStarted(false);
+            setStep(0);
+          }}
+          testID="back-btn"
+        >
+          <ChevronLeft size={20} color={Colors.textSecondary} />
+          <Text style={styles.backText}>Back</Text>
+        </Pressable>
 
         {step < totalStepsInWizard - 1 ? (
           <Pressable
@@ -866,11 +864,11 @@ const styles = StyleSheet.create({
     letterSpacing: 0.5,
   },
   heroTitle: {
-    fontSize: 30,
+    fontSize: 22,
     fontWeight: '700' as const,
     color: Colors.text,
     textAlign: 'center' as const,
-    lineHeight: 38,
+    lineHeight: 30,
     marginBottom: 12,
   },
   heroSubtitle: {

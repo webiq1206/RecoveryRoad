@@ -83,7 +83,7 @@ const SAMPLE_ROOMS: RecoveryRoom[] = [
     rules: [
       'Be kind and respectful at all times',
       'What is shared here stays here',
-      'No advice unless asked — just listen and support',
+      'No advice unless asked - just listen and support',
       'Use "I" statements when sharing',
       'Respect the facilitator and group flow',
     ],
@@ -121,7 +121,7 @@ const SAMPLE_ROOMS: RecoveryRoom[] = [
       { id: 'rrm_6', roomId: 'rr_2', authorName: 'Still Water', authorId: 'u_sw', content: 'I was where you are 3 weeks ago. It passed. It always passes. Stay with us.', timestamp: '2026-02-16T05:55:00.000Z', isOwn: false, isAnonymous: false, isModeratorMessage: false, isReported: false, reportReason: '' },
     ],
     rules: [
-      'This is a crisis-safe space — be gentle',
+      'This is a crisis-safe space - be gentle',
       'No graphic descriptions of substance use',
       'Support, do not advise',
       'If you feel unsafe, reach out to crisis resources',
@@ -171,7 +171,7 @@ const SAMPLE_ROOMS: RecoveryRoom[] = [
       { id: 'rrm_8', roomId: 'rr_3', authorName: 'Open Sky', authorId: 'u_os', content: 'This is my favorite part of the day. Thank you for holding this space.', timestamp: '2026-02-15T21:02:00.000Z', isOwn: false, isAnonymous: false, isModeratorMessage: false, isReported: false, reportReason: '' },
     ],
     rules: [
-      'Silence is welcome — you do not need to speak',
+      'Silence is welcome - you do not need to speak',
       'Follow the facilitator\'s guidance during sessions',
       'Share reflections after, not during, exercises',
       'Be patient with yourself and others',
@@ -210,8 +210,8 @@ const SAMPLE_ROOMS: RecoveryRoom[] = [
       { id: 'rrm_11', roomId: 'rr_4', authorName: 'Rising Sun', authorId: 'u_rs', content: 'I remember day 5. I am on day 28 now. It is so worth it. Keep going.', timestamp: '2026-02-16T04:20:00.000Z', isOwn: false, isAnonymous: false, isModeratorMessage: false, isReported: false, reportReason: '' },
     ],
     rules: [
-      'Zero judgment — everyone starts somewhere',
-      'No pressure to share — listening counts',
+      'Zero judgment - everyone starts somewhere',
+      'No pressure to share - listening counts',
       'Be honest about where you are',
       'Celebrate every single day',
       'Anonymous participation always welcome',
@@ -222,7 +222,7 @@ const SAMPLE_ROOMS: RecoveryRoom[] = [
   {
     id: 'rr_5',
     name: 'Rebuilding Trust',
-    description: 'For navigating relationships during recovery. Family, friends, partners — it is all welcome here.',
+    description: 'For navigating relationships during recovery. Family, friends, partners - it is all welcome here.',
     topic: 'relationships',
     memberCount: 6,
     maxMembers: 8,
@@ -249,10 +249,10 @@ const SAMPLE_ROOMS: RecoveryRoom[] = [
       { id: 'rrm_13', roomId: 'rr_5', authorName: 'Golden Leaf', authorId: 'u_gl', content: 'For me it is showing up consistently. Small promises kept. That is how trust comes back.', timestamp: '2026-02-15T19:35:00.000Z', isOwn: false, isAnonymous: false, isModeratorMessage: false, isReported: false, reportReason: '' },
     ],
     rules: [
-      'Respect everyone\'s relationships — no unsolicited opinions',
+      'Respect everyone\'s relationships - no unsolicited opinions',
       'Share your experience, not advice',
       'Keep details about others vague for privacy',
-      'Be compassionate — recovery affects everyone differently',
+      'Be compassionate - recovery affects everyone differently',
     ],
     isLive: false,
     currentSessionId: null,

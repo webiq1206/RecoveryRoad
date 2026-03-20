@@ -59,7 +59,7 @@ export const MOTIVATIONAL_PACKAGES_16_20: MotivationalPackage[] = [
     statements: [
       'You are worth more than your worst moments.',
       'Your value does not decrease based on someone else\'s inability to see your worth.',
-      'You are a diamond in the rough — recovery is the polishing.',
+      'You are a diamond in the rough - recovery is the polishing.',
       'You deserve good things. Believe that.',
       'Self-worth comes from within. No substance can provide it.',
       'You are enough. You have always been enough.',
@@ -109,7 +109,7 @@ export const MOTIVATIONAL_PACKAGES_16_20: MotivationalPackage[] = [
       'The life you are creating in recovery is your masterpiece.',
       'What you do today echoes in eternity.',
       'Your recovery story will change lives.',
-      'You are not just saving yourself — you are saving your future.',
+      'You are not just saving yourself - you are saving your future.',
       'Leave footprints of love, not tracks of destruction.',
       'A year from now you will be glad you started today.',
       'The greatest legacy is a life lived in integrity.',

@@ -322,7 +322,7 @@ export default function ProviderPortalScreen() {
             </View>
             <Text style={styles.setupTitle}>Provider Companion Portal</Text>
             <Text style={styles.setupSubtitle}>
-              Set up your secure portal to monitor client progress, receive risk alerts, and generate treatment insights — all with consent-based data sharing.
+              Set up your secure portal to monitor client progress, receive risk alerts, and generate treatment insights - all with consent-based data sharing.
             </Text>
 
             <View style={styles.setupCard}>

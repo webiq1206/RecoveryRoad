@@ -2,13 +2,13 @@ export const BRAND = {
   tagline: 'Recovery Protection & Life Rebuild System',
   shortTagline: 'Protect. Stabilize. Rebuild.',
   appName: 'Guardian',
-  mission: 'A system that protects your recovery and helps you rebuild your life — not just count days.',
+  mission: 'A system that protects your recovery and helps you rebuild your life - not just count days.',
 } as const;
 
 export const ONBOARDING_COPY = {
   hero: {
     title: 'Protect your recovery\nRebuild your life',
-    subtitle: 'Recovery Companion is more than a "Days of Sobriety" counter. It\'s a complete recovery protection system that adapts to you — detecting risk early, supporting you in crisis, and helping you build the life you deserve.',
+    subtitle: 'Recovery Companion is more than a "Days of Sobriety" counter. It\'s a complete recovery protection system that adapts to you - detecting risk early, supporting you in crisis, and helping you build the life you deserve.',
     cta: 'Begin Setup',
   },
   valueProps: [
@@ -25,7 +25,7 @@ export const ONBOARDING_COPY = {
     {
       icon: 'rebuild' as const,
       title: 'Life Rebuild Framework',
-      description: 'Purpose-driven tools for habits, identity, goals, and relationships — because recovery is about building something new.',
+      description: 'Purpose-driven tools for habits, identity, goals, and relationships - because recovery is about building something new.',
     },
     {
       icon: 'lock' as const,
@@ -64,11 +64,11 @@ export const ONBOARDING_COPY = {
     },
     support: {
       title: 'Your support network',
-      subtitle: 'We fill gaps in support — you\'re never alone here.',
+      subtitle: 'We fill gaps in support - you\'re never alone here.',
     },
     goals: {
       title: 'What are you\nrebuilding toward?',
-      subtitle: 'Recovery isn\'t just leaving something behind — it\'s building something better.',
+      subtitle: 'Recovery isn\'t just leaving something behind - it\'s building something better.',
     },
   },
   completeCta: 'Activate My Protection',
@@ -88,7 +88,7 @@ export const HOME_COPY = {
     },
     crisis: {
       title: 'Protection Mode Active',
-      description: 'Your system has detected elevated risk. Use your safety tools — they\'re designed for exactly this.',
+      description: 'Your system has detected elevated risk. Use your safety tools - they\'re designed for exactly this.',
       action: 'Access Safety Tools',
     },
     elevated: {
@@ -141,7 +141,7 @@ export const MILESTONE_SHARE_MESSAGES: Record<number, { headline: string; body: 
   },
   90: {
     headline: 'Quarter Year of Freedom',
-    body: 'Ninety days of recovery protection. I\'m not just surviving — I\'m rebuilding.',
+    body: 'Ninety days of recovery protection. I\'m not just surviving - I\'m rebuilding.',
   },
   180: {
     headline: 'Six Months Transformed',
@@ -157,7 +157,7 @@ export const MILESTONE_SHARE_MESSAGES: Record<number, { headline: string; body: 
   },
   1095: {
     headline: 'Three Years Free',
-    body: 'Over a thousand days of protection. Recovery isn\'t a destination — it\'s a way of living.',
+    body: 'Over a thousand days of protection. Recovery isn\'t a destination - it\'s a way of living.',
   },
   1825: {
     headline: 'Five Years of Freedom',
@@ -165,4 +165,4 @@ export const MILESTONE_SHARE_MESSAGES: Record<number, { headline: string; body: 
   },
 };
 
-export const SHAREABLE_FOOTER = 'Protected by Guardian — Recovery Protection & Life Rebuild System';
+export const SHAREABLE_FOOTER = 'Protected by Guardian - Recovery Protection & Life Rebuild System';

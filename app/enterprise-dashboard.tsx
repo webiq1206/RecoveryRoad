@@ -21,6 +21,7 @@ import {
   TrendingUp,
   TrendingDown,
   Minus,
+  ChevronLeft,
   ChevronRight,
   Shield,
   BarChart3,
@@ -154,6 +155,10 @@ export default function EnterpriseDashboard() {
       <ScrollView style={styles.scroll} contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
         <Animated.View style={{ opacity: fadeAnim, transform: [{ translateY: slideAnim }] }}>
           <View style={styles.header}>
+            <Pressable style={styles.backBtn} onPress={() => router.back()} testID="back-btn">
+              <ChevronLeft size={22} color={Colors.textSecondary} />
+              <Text style={styles.backBtnText}>Back</Text>
+            </Pressable>
             <View style={styles.headerTop}>
               <View style={styles.orgBadge}>
                 <Building2 size={18} color={Colors.primary} />
@@ -401,6 +406,18 @@ const styles = StyleSheet.create({
   },
   header: {
     marginBottom: 24,
+  },
+  backBtn: {
+    flexDirection: 'row' as const,
+    alignItems: 'center' as const,
+    gap: 2,
+    paddingVertical: 4,
+    marginBottom: 12,
+    alignSelf: 'flex-start' as const,
+  },
+  backBtnText: {
+    fontSize: 15,
+    color: Colors.textSecondary,
   },
   headerTop: {
     flexDirection: 'row',

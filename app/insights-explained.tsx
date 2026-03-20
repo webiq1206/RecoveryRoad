@@ -62,7 +62,7 @@ export default function InsightsExplainedScreen() {
         accentColor="#2EC4B6"
       >
         <Text style={styles.bodyText}>
-          Your Stability Score is a number from 0 to 100 that reflects how steady and grounded you've been recently. It's your emotional and behavioral baseline — a snapshot of where you stand right now.
+          Your Stability Score is a number from 0 to 100 that reflects how steady and grounded you've been recently. It's your emotional and behavioral baseline - a snapshot of where you stand right now.
         </Text>
         <View style={styles.spacer} />
         <Text style={styles.subHeading}>How it's calculated</Text>
@@ -96,15 +96,15 @@ export default function InsightsExplainedScreen() {
           <Text style={styles.rangeTitle}>Score ranges</Text>
           <View style={styles.rangeRow}>
             <View style={[styles.rangeDot, { backgroundColor: Colors.success }]} />
-            <Text style={styles.rangeText}><Text style={styles.rangeBold}>60–100</Text> — Stable and grounded</Text>
+            <Text style={styles.rangeText}><Text style={styles.rangeBold}>60–100</Text> - Stable and grounded</Text>
           </View>
           <View style={styles.rangeRow}>
             <View style={[styles.rangeDot, { backgroundColor: Colors.accentWarm }]} />
-            <Text style={styles.rangeText}><Text style={styles.rangeBold}>40–59</Text> — Some fluctuation, keep going</Text>
+            <Text style={styles.rangeText}><Text style={styles.rangeBold}>40–59</Text> - Some fluctuation, keep going</Text>
           </View>
           <View style={styles.rangeRow}>
             <View style={[styles.rangeDot, { backgroundColor: Colors.danger }]} />
-            <Text style={styles.rangeText}><Text style={styles.rangeBold}>0–39</Text> — Needs attention, use your tools</Text>
+            <Text style={styles.rangeText}><Text style={styles.rangeBold}>0–39</Text> - Needs attention, use your tools</Text>
           </View>
         </View>
         <View style={styles.spacer} />
@@ -133,11 +133,11 @@ export default function InsightsExplainedScreen() {
           <Text style={styles.rangeTitle}>Score ranges</Text>
           <View style={styles.rangeRow}>
             <View style={[styles.rangeDot, { backgroundColor: Colors.primary }]} />
-            <Text style={styles.rangeText}><Text style={styles.rangeBold}>50–100</Text> — Strong and growing</Text>
+            <Text style={styles.rangeText}><Text style={styles.rangeBold}>50–100</Text> - Strong and growing</Text>
           </View>
           <View style={styles.rangeRow}>
             <View style={[styles.rangeDot, { backgroundColor: Colors.accentWarm }]} />
-            <Text style={styles.rangeText}><Text style={styles.rangeBold}>0–49</Text> — Room to grow, keep showing up</Text>
+            <Text style={styles.rangeText}><Text style={styles.rangeBold}>0–49</Text> - Room to grow, keep showing up</Text>
           </View>
         </View>
       </ExplainerCard>
@@ -260,18 +260,18 @@ export default function InsightsExplainedScreen() {
         <Text style={styles.subHeading}>What affects it</Text>
         <FactorRow
           label="Community engagement (100%)"
-          description="Earned through social micro-wins — actions like joining recovery rooms, engaging in community posts, or reaching out to peers. Earning 10 social wins earns full marks."
+          description="Earned through social micro-wins - actions like joining recovery rooms, engaging in community posts, or reaching out to peers. Earning 10 social wins earns full marks."
         />
         <View style={styles.spacer} />
         <Text style={styles.tipText}>
-          Recovery is stronger together. Even small acts of connection — reading a post, sending encouragement — contribute to this score.
+          Recovery is stronger together. Even small acts of connection - reading a post, sending encouragement - contribute to this score.
         </Text>
       </ExplainerCard>
 
       <View style={styles.footerCard}>
         <Zap size={16} color={Colors.accentWarm} />
         <Text style={styles.footerText}>
-          All scores update automatically as you use the app. There's no "right" pace — what matters is that you keep showing up.
+          All scores update automatically as you use the app. There's no "right" pace - what matters is that you keep showing up.
         </Text>
       </View>
 

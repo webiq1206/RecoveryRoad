@@ -105,7 +105,7 @@ export default function ClientDetailScreen() {
   const handleShareReport = useCallback(async (report: ClientReport) => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     const text = `Recovery Progress Report - ${report.clientName}\n` +
-      `Period: ${formatDate(report.periodStart)} — ${formatDate(report.periodEnd)}\n\n` +
+      `Period: ${formatDate(report.periodStart)} - ${formatDate(report.periodEnd)}\n\n` +
       `Summary:\n${report.summary}\n\n` +
       `Key Metrics:\n` +
       `• Stability: ${report.stabilityAvg}/100\n` +
@@ -263,7 +263,7 @@ export default function ClientDetailScreen() {
               <View style={styles.riskAlert}>
                 <AlertTriangle size={14} color={Colors.accent} />
                 <Text style={styles.riskAlertText}>
-                  {client.riskTrend === 'rising' ? 'Risk level is trending upward — consider increasing session frequency' : 'Elevated risk level — monitor closely'}
+                  {client.riskTrend === 'rising' ? 'Risk level is trending upward - consider increasing session frequency' : 'Elevated risk level - monitor closely'}
                 </Text>
               </View>
             )}
@@ -535,7 +535,7 @@ export default function ClientDetailScreen() {
                     <View style={styles.reportCardHeader}>
                       <View>
                         <Text style={styles.reportDate}>
-                          {formatDate(report.periodStart)} — {formatDate(report.periodEnd)}
+                          {formatDate(report.periodStart)} - {formatDate(report.periodEnd)}
                         </Text>
                         <Text style={styles.reportGenerated}>Generated {formatDate(report.generatedAt)}</Text>
                       </View>

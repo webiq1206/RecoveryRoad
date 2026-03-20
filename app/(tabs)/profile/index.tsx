@@ -225,7 +225,7 @@ export default function ProfileScreen() {
   const handleClearData = useCallback(() => {
     Alert.alert(
       'Clear All Data',
-      "You're still building. Clearing data only removes what's stored here — it doesn't change your progress. This will permanently delete all your recovery data including pledges, journal entries, and settings. This cannot be undone.",
+      "You're still building. Clearing data only removes what's stored here - it doesn't change your progress. This will permanently delete all your recovery data including pledges, journal entries, and settings. This cannot be undone.",
       [
         { text: 'Cancel', style: 'cancel' },
         {
@@ -518,429 +518,32 @@ export default function ProfileScreen() {
         </Pressable>
       )}
 
-      {/* Privacy & Identity */}
-      <Text style={[styles.sectionLabel, { marginTop: 28 }]}>PRIVACY & IDENTITY</Text>
-
-      <View style={styles.groupCard}>
-        <View style={styles.groupRow}>
-          <View style={styles.groupRowLeft}>
-            <View style={[styles.settingIcon, { backgroundColor: privacyControls.isAnonymous ? 'rgba(46,196,182,0.12)' : 'rgba(90,106,122,0.12)' }]}>
-              {privacyControls.isAnonymous ? <EyeOff size={17} color={Colors.primary} /> : <Eye size={17} color={Colors.textMuted} />}
-            </View>
-            <View style={{ flex: 1 }}>
-              <Text style={styles.settingLabel}>Anonymous Mode</Text>
-              <Text style={styles.settingValue}>
-                {privacyControls.isAnonymous ? `Shown as "${anonymousName}"` : 'Your real name is visible'}
-              </Text>
-            </View>
-          </View>
-          <Switch
-            value={privacyControls.isAnonymous}
-            onValueChange={() => handleTogglePrivacy('isAnonymous')}
-            trackColor={{ false: Colors.surface, true: Colors.primary + '40' }}
-            thumbColor={privacyControls.isAnonymous ? Colors.primary : Colors.textMuted}
-          />
-        </View>
-
-        <View style={styles.groupSeparator} />
-
-        <View style={styles.groupRow}>
-          <View style={styles.groupRowLeft}>
-            <View style={[styles.settingIcon, { backgroundColor: 'rgba(66,165,245,0.12)' }]}>
-              <BarChart3 size={17} color="#42A5F5" />
-            </View>
-            <View style={{ flex: 1 }}>
-              <Text style={styles.settingLabel}>Share Progress</Text>
-              <Text style={styles.settingValue}>Let community see your milestones</Text>
-            </View>
-          </View>
-          <Switch
-            value={privacyControls.shareProgress}
-            onValueChange={() => handleTogglePrivacy('shareProgress')}
-            trackColor={{ false: Colors.surface, true: Colors.primary + '40' }}
-            thumbColor={privacyControls.shareProgress ? Colors.primary : Colors.textMuted}
-          />
-        </View>
-
-        <View style={styles.groupSeparator} />
-
-        <View style={styles.groupRow}>
-          <View style={styles.groupRowLeft}>
-            <View style={[styles.settingIcon, { backgroundColor: 'rgba(255,152,0,0.12)' }]}>
-              <Sparkles size={17} color="#FF9800" />
-            </View>
-            <View style={{ flex: 1 }}>
-              <Text style={styles.settingLabel}>Share Mood</Text>
-              <Text style={styles.settingValue}>Show emotional state to peers</Text>
-            </View>
-          </View>
-          <Switch
-            value={privacyControls.shareMood}
-            onValueChange={() => handleTogglePrivacy('shareMood')}
-            trackColor={{ false: Colors.surface, true: Colors.primary + '40' }}
-            thumbColor={privacyControls.shareMood ? Colors.primary : Colors.textMuted}
-          />
-        </View>
-
-        <View style={styles.groupSeparator} />
-
-        <View style={styles.groupRow}>
-          <View style={styles.groupRowLeft}>
-            <View style={[styles.settingIcon, { backgroundColor: 'rgba(171,71,188,0.12)' }]}>
-              <MessageCircle size={17} color="#AB47BC" />
-            </View>
-            <View style={{ flex: 1 }}>
-              <Text style={styles.settingLabel}>Community Messages</Text>
-              <Text style={styles.settingValue}>Allow others to message you</Text>
-            </View>
-          </View>
-          <Switch
-            value={privacyControls.allowCommunityMessages}
-            onValueChange={() => handleTogglePrivacy('allowCommunityMessages')}
-            trackColor={{ false: Colors.surface, true: Colors.primary + '40' }}
-            thumbColor={privacyControls.allowCommunityMessages ? Colors.primary : Colors.textMuted}
-          />
-        </View>
-      </View>
-
-      {/* Notifications */}
-      <Text style={[styles.sectionLabel, { marginTop: 28 }]}>NOTIFICATIONS</Text>
-
-      <View style={styles.groupCard}>
-        <View style={styles.groupRow}>
-          <View style={styles.groupRowLeft}>
-            <View style={[styles.settingIcon, { backgroundColor: notificationPreferences.enabled ? 'rgba(46,196,182,0.12)' : 'rgba(90,106,122,0.12)' }]}>
-              {notificationPreferences.enabled ? <Bell size={17} color={Colors.primary} /> : <BellOff size={17} color={Colors.textMuted} />}
-            </View>
-            <View>
-              <Text style={styles.settingLabel}>Supportive Reminders</Text>
-              <Text style={styles.settingValue}>{notificationPreferences.enabled ? 'On' : 'Off'}</Text>
-            </View>
-          </View>
-          <Switch
-            value={notificationPreferences.enabled}
-            onValueChange={(val) => {
-              Haptics.selectionAsync();
-              updateNotificationPrefs({ enabled: val });
-            }}
-            trackColor={{ false: Colors.surface, true: Colors.primary + '40' }}
-            thumbColor={notificationPreferences.enabled ? Colors.primary : Colors.textMuted}
-          />
-        </View>
-
-        {notificationPreferences.enabled && (
-          <>
-            <View style={styles.groupSeparator} />
-            <View style={styles.groupRow}>
-              <View style={styles.groupRowLeft}>
-                <View style={[styles.settingIcon, { backgroundColor: 'rgba(255,179,71,0.12)' }]}>
-                  <Sun size={17} color={Colors.accentWarm} />
-                </View>
-                <View>
-                  <Text style={styles.settingLabel}>Morning Check-in</Text>
-                  <Text style={styles.settingValue}>Gentle reminder to start your day</Text>
-                </View>
-              </View>
-              <Switch
-                value={notificationPreferences.morningCheckin}
-                onValueChange={(val) => {
-                  Haptics.selectionAsync();
-                  updateNotificationPrefs({ morningCheckin: val });
-                }}
-                trackColor={{ false: Colors.surface, true: Colors.primary + '40' }}
-                thumbColor={notificationPreferences.morningCheckin ? Colors.primary : Colors.textMuted}
-              />
-            </View>
-
-            <View style={styles.groupSeparator} />
-            <View style={styles.groupRow}>
-              <View style={styles.groupRowLeft}>
-                <View style={[styles.settingIcon, { backgroundColor: 'rgba(124,140,248,0.12)' }]}>
-                  <MoonIcon size={17} color="#7C8CF8" />
-                </View>
-                <View>
-                  <Text style={styles.settingLabel}>Evening Reflection</Text>
-                  <Text style={styles.settingValue}>Wind down with a moment of peace</Text>
-                </View>
-              </View>
-              <Switch
-                value={notificationPreferences.eveningReflection}
-                onValueChange={(val) => {
-                  Haptics.selectionAsync();
-                  updateNotificationPrefs({ eveningReflection: val });
-                }}
-                trackColor={{ false: Colors.surface, true: Colors.primary + '40' }}
-                thumbColor={notificationPreferences.eveningReflection ? Colors.primary : Colors.textMuted}
-              />
-            </View>
-
-            <View style={styles.groupSeparator} />
-            <View style={styles.groupRow}>
-              <View style={styles.groupRowLeft}>
-                <View style={[styles.settingIcon, { backgroundColor: 'rgba(255,152,0,0.12)' }]}>
-                  <ShieldAlert size={17} color="#FF9800" />
-                </View>
-                <View>
-                  <Text style={styles.settingLabel}>Risk-Based Alerts</Text>
-                  <Text style={styles.settingValue}>Support during vulnerable moments</Text>
-                </View>
-              </View>
-              <Switch
-                value={notificationPreferences.riskBasedAlerts}
-                onValueChange={(val) => {
-                  Haptics.selectionAsync();
-                  updateNotificationPrefs({ riskBasedAlerts: val });
-                }}
-                trackColor={{ false: Colors.surface, true: Colors.primary + '40' }}
-                thumbColor={notificationPreferences.riskBasedAlerts ? Colors.primary : Colors.textMuted}
-              />
-            </View>
-
-            <View style={styles.groupSeparator} />
-            <View style={styles.groupRow}>
-              <View style={styles.groupRowLeft}>
-                <View style={[styles.settingIcon, { backgroundColor: 'rgba(66,165,245,0.12)' }]}>
-                  <Award size={17} color="#42A5F5" />
-                </View>
-                <View>
-                  <Text style={styles.settingLabel}>Milestone Reminders</Text>
-                  <Text style={styles.settingValue}>Celebrate approaching milestones</Text>
-                </View>
-              </View>
-              <Switch
-                value={notificationPreferences.milestoneReminders}
-                onValueChange={(val) => {
-                  Haptics.selectionAsync();
-                  updateNotificationPrefs({ milestoneReminders: val });
-                }}
-                trackColor={{ false: Colors.surface, true: Colors.primary + '40' }}
-                thumbColor={notificationPreferences.milestoneReminders ? Colors.primary : Colors.textMuted}
-              />
-            </View>
-          </>
-        )}
-      </View>
-
-      {notificationPreferences.enabled && (
-        <>
-          <Text style={[styles.sectionLabel, { marginTop: 20 }]}>NOTIFICATION INTENSITY</Text>
-
-          <View style={styles.intensityContainer}>
-            {(Object.keys(NOTIFICATION_INTENSITY_CONFIG) as NotificationIntensity[]).map((level) => {
-              const config = NOTIFICATION_INTENSITY_CONFIG[level];
-              const isActive = intensity === level;
-              return (
-                <Pressable
-                  key={level}
-                  style={[styles.intensityOption, isActive && styles.intensityOptionActive]}
-                  onPress={() => {
-                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                    setIntensity(level as NotificationIntensityLevel);
-                  }}
-                  testID={`intensity-${level}`}
-                >
-                  <View style={styles.intensityHeader}>
-                    <Text style={[styles.intensityLabel, isActive && styles.intensityLabelActive]}>
-                      {config.label}
-                    </Text>
-                    {isActive && (
-                      <View style={styles.intensityBadge}>
-                        <Check size={10} color={Colors.white} strokeWidth={3} />
-                      </View>
-                    )}
-                  </View>
-                  <Text style={[styles.intensityDesc, isActive && styles.intensityDescActive]}>
-                    {config.description}
-                  </Text>
-                  <Text style={styles.intensityLimit}>
-                    Up to {config.maxPerDay}/day
-                  </Text>
-                </Pressable>
-              );
-            })}
-          </View>
-
-          <View style={styles.frequencyInfo}>
-            <View style={styles.frequencyRow}>
-              <Activity size={14} color={Colors.textMuted} />
-              <Text style={styles.frequencyText}>
-                Today: {todayNotificationCount}/{effectiveMaxPerDay} notifications
-              </Text>
-            </View>
-            <View style={styles.frequencyRow}>
-              <Gauge size={14} color={Colors.textMuted} />
-              <Text style={styles.frequencyText}>
-                Adaptive rate: {Math.round(frequencyMultiplier * 100)}%
-              </Text>
-            </View>
-            {!isPermissionGranted && (
-              <View style={styles.frequencyRow}>
-                <BellOff size={14} color={Colors.danger} />
-                <Text style={[styles.frequencyText, { color: Colors.danger }]}>
-                  Notification permission not granted
-                </Text>
-              </View>
-            )}
-          </View>
-
-          <Pressable
-            style={[styles.settingRow, { marginTop: 8 }]}
-            onPress={() => {
-              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-              if (isPaused) {
-                resumeNotifications();
-              } else {
-                pauseNotifications(4);
-              }
-            }}
-            testID="pause-notifications"
-          >
-            <View style={styles.settingLeft}>
-              <View style={[styles.settingIcon, { backgroundColor: isPaused ? 'rgba(255,152,0,0.12)' : 'rgba(46,196,182,0.12)' }]}>
-                {isPaused ? <PauseCircle size={17} color="#FF9800" /> : <PlayCircle size={17} color={Colors.primary} />}
-              </View>
-              <View>
-                <Text style={styles.settingLabel}>{isPaused ? 'Resume Notifications' : 'Pause for 4 Hours'}</Text>
-                <Text style={styles.settingValue}>{isPaused ? 'Notifications are currently paused' : 'Take a break from reminders'}</Text>
-              </View>
-            </View>
-            <View style={[styles.settingIcon, { backgroundColor: 'transparent' }]}>
-              {isPaused ? <PlayCircle size={17} color={Colors.primary} /> : <Clock size={17} color={Colors.textMuted} />}
-            </View>
-          </Pressable>
-        </>
-      )}
-
-      {/* Subscription */}
-      <Text style={[styles.sectionLabel, { marginTop: 28 }]}>SUBSCRIPTION</Text>
-
-      {isPremium ? (
-        <View style={styles.subscriptionCard}>
-          <View style={styles.settingLeft}>
-            <View style={[styles.settingIcon, { backgroundColor: 'rgba(212,165,116,0.12)' }]}>
-              <Crown size={17} color="#D4A574" />
-            </View>
-            <View>
-              <Text style={styles.settingLabel}>Premium Active</Text>
-              <Text style={styles.settingValue}>All features unlocked</Text>
-            </View>
-          </View>
-          <Pressable
-            style={styles.manageSub}
-            onPress={() => {
-              Alert.alert(
-                'Manage Subscription',
-                'Your data will be preserved if you cancel.',
-                [
-                  { text: 'Keep Premium', style: 'cancel' },
-                  {
-                    text: 'Cancel Subscription',
-                    style: 'destructive',
-                    onPress: () => {
-                      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
-                      cancelSubscription();
-                    },
-                  },
-                ]
-              );
-            }}
-          >
-            <Text style={styles.manageSubText}>Manage</Text>
-          </Pressable>
-        </View>
-      ) : (
-        <Pressable
-          style={({ pressed }) => [styles.upgradeRow, pressed && { opacity: 0.85 }]}
-          onPress={() => {
-            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-            router.push('/premium-upgrade');
-          }}
-        >
-          <View style={styles.settingLeft}>
-            <View style={[styles.settingIcon, { backgroundColor: 'rgba(212,165,116,0.12)' }]}>
-              <Crown size={17} color="#D4A574" />
-            </View>
-            <View>
-              <Text style={[styles.settingLabel, { color: '#D4A574' }]}>Upgrade to Premium</Text>
-              <Text style={styles.settingValue}>Unlock all recovery tools</Text>
-            </View>
-          </View>
-          <ChevronRight size={16} color="#D4A574" />
-        </Pressable>
-      )}
-
-      {/* Provider Mode — only from Profile settings; gates provider/enterprise screens */}
-      <Text style={[styles.sectionLabel, { marginTop: 28 }]}>PROVIDER MODE</Text>
-      <View style={styles.settingRow}>
-        <View style={styles.settingLeft}>
-          <View style={[styles.settingIcon, { backgroundColor: 'rgba(90,106,122,0.12)' }]}>
-            <Building2 size={17} color={Colors.textSecondary} />
-          </View>
-          <View>
-            <Text style={styles.settingLabel}>Provider Mode</Text>
-            <Text style={styles.settingValue}>Show provider portal, compliance & enterprise screens</Text>
-          </View>
-        </View>
-        <Switch
-          value={providerModeEnabled}
-          onValueChange={(v) => {
-            Haptics.selectionAsync();
-            setProviderModeEnabled(v);
-          }}
-          trackColor={{ false: Colors.border, true: Colors.primary + '80' }}
-          thumbColor={providerModeEnabled ? Colors.primary : Colors.textMuted}
-          testID="provider-mode-toggle"
-        />
-      </View>
-
-      {/* Security */}
-      <Text style={[styles.sectionLabel, { marginTop: 28 }]}>SECURITY</Text>
-
+      {/* Settings link */}
+      <Text style={[styles.sectionLabel, { marginTop: 28 }]}>SETTINGS</Text>
       <Pressable
         style={({ pressed }) => [styles.settingRow, pressed && { opacity: 0.85 }]}
         onPress={() => {
           Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-          router.push('/security-settings' as any);
+          router.push('/settings' as any);
         }}
-        testID="security-settings-link"
+        testID="settings-link"
       >
         <View style={styles.settingLeft}>
-          <View style={[styles.settingIcon, { backgroundColor: 'rgba(46,196,182,0.12)' }]}>
-            <Lock size={17} color={Colors.primary} />
+          <View style={[styles.settingIcon, { backgroundColor: 'rgba(90,106,122,0.12)' }]}>
+            <Shield size={17} color={Colors.textSecondary} />
           </View>
           <View>
-            <Text style={styles.settingLabel}>Security & Privacy</Text>
-            <Text style={styles.settingValue}>PIN, biometrics, encryption, audit log</Text>
+            <Text style={styles.settingLabel}>Settings</Text>
+            <Text style={styles.settingValue}>Privacy, notifications, security, and more</Text>
           </View>
         </View>
         <ChevronRight size={16} color={Colors.textMuted} />
       </Pressable>
 
-      {providerModeEnabled && (
-        <>
-      <Pressable
-        style={({ pressed }) => [styles.settingRow, pressed && { opacity: 0.85 }]}
-        onPress={() => {
-          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-          router.push('/compliance-mode' as any);
-        }}
-        testID="compliance-mode-link"
-      >
-        <View style={styles.settingLeft}>
-          <View style={[styles.settingIcon, { backgroundColor: 'rgba(90,106,122,0.12)' }]}>
-            <Scale size={17} color={Colors.textSecondary} />
-          </View>
-          <View>
-            <Text style={styles.settingLabel}>Compliance Mode</Text>
-            <Text style={styles.settingValue}>Optional court-ordered tracking</Text>
-          </View>
-        </View>
-        <ChevronRight size={16} color={Colors.textMuted} />
-      </Pressable>
-        </>
-      )}
+      {/* Privacy, Notifications, Provider Mode, Security, Compliance, Danger Zone
+          have been moved to app/settings.tsx */}
 
-      {/* Help */}
+      {/* Recovery */}
       <Text style={[styles.sectionLabel, { marginTop: 28 }]}>RECOVERY</Text>
 
       <Pressable
@@ -970,7 +573,7 @@ export default function ProfileScreen() {
             <Heart size={17} color="#EF5350" />
           </View>
           <View>
-            <Text style={styles.settingLabel}>Today was hard — log a setback</Text>
+            <Text style={styles.settingLabel}>Today was hard - log a setback</Text>
             <Text style={styles.settingValue}>One event doesn't erase your progress</Text>
           </View>
         </View>
@@ -1125,21 +728,6 @@ export default function ProfileScreen() {
       </Pressable>
         </>
       )}
-
-      {/* Danger Zone */}
-      <Text style={[styles.sectionLabel, { marginTop: 28 }]}>DANGER ZONE</Text>
-
-      <Pressable style={styles.dangerRow} onPress={handleClearData}>
-        <View style={styles.settingLeft}>
-          <View style={[styles.settingIcon, { backgroundColor: 'rgba(239,83,80,0.12)' }]}>
-            <RotateCcw size={17} color={Colors.danger} />
-          </View>
-          <View>
-            <Text style={[styles.settingLabel, { color: Colors.danger }]}>Clear All Data</Text>
-            <Text style={styles.settingValue}>You're still building — clearing only removes stored data</Text>
-          </View>
-        </View>
-      </Pressable>
 
       <View style={styles.bottomSpacer} />
 

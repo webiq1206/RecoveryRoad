@@ -42,7 +42,7 @@ function RiskLevelRow({ color, label, range }: { color: string; label: string; r
     <View style={styles.rangeRow}>
       <View style={[styles.rangeDot, { backgroundColor: color }]} />
       <Text style={styles.rangeText}>
-        <Text style={styles.rangeBold}>{range}</Text> — {label}
+        <Text style={styles.rangeBold}>{range}</Text> - {label}
       </Text>
     </View>
   );
@@ -61,7 +61,7 @@ export default function EarlyWarningExplainedScreen() {
       <View style={styles.introCard}>
         <Info size={20} color={Colors.primary} />
         <Text style={styles.introText}>
-          The Early Warning system continuously monitors patterns in your check-ins to detect signs of increased risk before a crisis develops. It watches four key characteristics — Emotional, Behavioral, Triggers, and Stability — and combines them into an overall risk level so the app can respond with the right support at the right time.
+          The Early Warning system continuously monitors patterns in your check-ins to detect signs of increased risk before a crisis develops. It watches four key characteristics - Emotional, Behavioral, Triggers, and Stability - and combines them into an overall risk level so the app can respond with the right support at the right time.
         </Text>
       </View>
 
@@ -95,19 +95,19 @@ export default function EarlyWarningExplainedScreen() {
         />
         <View style={styles.spacer} />
         <Text style={styles.bodyText}>
-          As you use the app, these weights adjust automatically. If emotional dips tend to precede your hardest moments, the system learns to weigh Emotional more heavily for you — making predictions more personal and accurate over time.
+          As you use the app, these weights adjust automatically. If emotional dips tend to precede your hardest moments, the system learns to weigh Emotional more heavily for you - making predictions more personal and accurate over time.
         </Text>
         <View style={styles.spacer} />
         <View style={styles.rangeCard}>
           <Text style={styles.rangeTitle}>Overall risk levels</Text>
-          <RiskLevelRow color="#43A047" label="Low — Your patterns look strong and stable" range="0–24" />
-          <RiskLevelRow color="#FDD835" label="Guarded — Some signals worth monitoring" range="25–44" />
-          <RiskLevelRow color="#FB8C00" label="Elevated — Multiple signals need attention" range="45–64" />
-          <RiskLevelRow color="#E53935" label="High — Immediate support recommended" range="65–100" />
+          <RiskLevelRow color="#43A047" label="Low - Your patterns look strong and stable" range="0–24" />
+          <RiskLevelRow color="#FDD835" label="Guarded - Some signals worth monitoring" range="25–44" />
+          <RiskLevelRow color="#FB8C00" label="Elevated - Multiple signals need attention" range="45–64" />
+          <RiskLevelRow color="#E53935" label="High - Immediate support recommended" range="65–100" />
         </View>
         <View style={styles.spacer} />
         <Text style={styles.tipText}>
-          The system also tracks your risk trend — whether your overall risk is rising, stable, or falling. A rising trend at an elevated level triggers stronger support than a stable one at the same score.
+          The system also tracks your risk trend - whether your overall risk is rising, stable, or falling. A rising trend at an elevated level triggers stronger support than a stable one at the same score.
         </Text>
       </CharacteristicCard>
 
@@ -126,7 +126,7 @@ export default function EarlyWarningExplainedScreen() {
         accentColor="#CE93D8"
       >
         <Text style={styles.bodyText}>
-          The Emotional characteristic measures the state of your inner world — how you're feeling day to day and whether your emotional patterns suggest increasing vulnerability.
+          The Emotional characteristic measures the state of your inner world - how you're feeling day to day and whether your emotional patterns suggest increasing vulnerability.
         </Text>
         <View style={styles.spacer} />
         <Text style={styles.subHeading}>What it tracks</Text>
@@ -153,7 +153,7 @@ export default function EarlyWarningExplainedScreen() {
         </Text>
         <View style={styles.spacer} />
         <Text style={styles.tipText}>
-          Journaling about what you're feeling — even briefly — can help process emotions and often improves this score over time. The app may suggest journaling when emotional risk rises.
+          Journaling about what you're feeling - even briefly - can help process emotions and often improves this score over time. The app may suggest journaling when emotional risk rises.
         </Text>
       </CharacteristicCard>
 
@@ -163,7 +163,7 @@ export default function EarlyWarningExplainedScreen() {
         accentColor="#FF6B35"
       >
         <Text style={styles.bodyText}>
-          The Behavioral characteristic captures the physical and habitual signals that often precede a relapse — cravings, stress, sleep disruption, and how early you are in recovery.
+          The Behavioral characteristic captures the physical and habitual signals that often precede a relapse - cravings, stress, sleep disruption, and how early you are in recovery.
         </Text>
         <View style={styles.spacer} />
         <Text style={styles.subHeading}>What it tracks</Text>
@@ -190,7 +190,7 @@ export default function EarlyWarningExplainedScreen() {
         <View style={styles.spacer} />
         <Text style={styles.subHeading}>What affects it</Text>
         <Text style={styles.bodyText}>
-          High cravings are the primary driver. Reporting craving levels above 70 for multiple days will significantly raise behavioral risk. Combined with poor sleep and high stress, this creates a compounding effect. As your sober days increase, the baseline behavioral risk naturally decreases — your body and mind are adapting.
+          High cravings are the primary driver. Reporting craving levels above 70 for multiple days will significantly raise behavioral risk. Combined with poor sleep and high stress, this creates a compounding effect. As your sober days increase, the baseline behavioral risk naturally decreases - your body and mind are adapting.
         </Text>
         <View style={styles.spacer} />
         <Text style={styles.tipText}>
@@ -223,7 +223,7 @@ export default function EarlyWarningExplainedScreen() {
         <View style={styles.spacer} />
         <Text style={styles.subHeading}>What affects it</Text>
         <Text style={styles.bodyText}>
-          Environment safety is the biggest factor here — it accounts for 50% of trigger risk. If you consistently report low environment scores (below 30), this characteristic will be elevated. The combination of unsafe environments with high cravings is especially significant, as it suggests active trigger exposure rather than just general discomfort.
+          Environment safety is the biggest factor here - it accounts for 50% of trigger risk. If you consistently report low environment scores (below 30), this characteristic will be elevated. The combination of unsafe environments with high cravings is especially significant, as it suggests active trigger exposure rather than just general discomfort.
         </Text>
         <View style={styles.spacer} />
         <Text style={styles.tipText}>
@@ -237,13 +237,13 @@ export default function EarlyWarningExplainedScreen() {
         accentColor="#2EC4B6"
       >
         <Text style={styles.bodyText}>
-          The Stability characteristic measures the overall steadiness of your recovery — whether your foundation is holding firm or starting to show cracks.
+          The Stability characteristic measures the overall steadiness of your recovery - whether your foundation is holding firm or starting to show cracks.
         </Text>
         <View style={styles.spacer} />
         <Text style={styles.subHeading}>What it tracks</Text>
         <SignalRow
           label="Stability Score Average"
-          description="Your average stability score over the last 7 check-ins. This is the core metric — lower stability directly increases risk."
+          description="Your average stability score over the last 7 check-ins. This is the core metric - lower stability directly increases risk."
         />
         <SignalRow
           label="Stability Trend"
@@ -256,7 +256,7 @@ export default function EarlyWarningExplainedScreen() {
         <View style={styles.spacer} />
         <Text style={styles.subHeading}>What affects it</Text>
         <Text style={styles.bodyText}>
-          Your stability score from each check-in is the primary input. It's essentially the inverse — a stability score of 80 means only 20 points of stability risk. What makes this characteristic important is the trend detection: if stability is dropping even from a high baseline, the system picks up on it early. Missing check-ins amplifies the signal because disengagement is itself a risk factor.
+          Your stability score from each check-in is the primary input. It's essentially the inverse - a stability score of 80 means only 20 points of stability risk. What makes this characteristic important is the trend detection: if stability is dropping even from a high baseline, the system picks up on it early. Missing check-ins amplifies the signal because disengagement is itself a risk factor.
         </Text>
         <View style={styles.spacer} />
         <Text style={styles.tipText}>
@@ -267,7 +267,7 @@ export default function EarlyWarningExplainedScreen() {
       <View style={styles.footerCard}>
         <Zap size={16} color={Colors.accentWarm} />
         <Text style={styles.footerText}>
-          The Early Warning system is designed to catch problems before they become crises. It's not a judgment — it's a safety net. When risk rises, the app adjusts its tone, frequency, and tools to match what you need. Every check-in you complete makes these predictions more accurate and personal to your journey.
+          The Early Warning system is designed to catch problems before they become crises. It's not a judgment - it's a safety net. When risk rises, the app adjusts its tone, frequency, and tools to match what you need. Every check-in you complete makes these predictions more accurate and personal to your journey.
         </Text>
       </View>
 

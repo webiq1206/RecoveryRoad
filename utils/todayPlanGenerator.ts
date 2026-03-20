@@ -25,10 +25,11 @@ export type TodayPlanInput = {
   stabilityScore: number;
   relapseRisk: RiskCategory;
   recoveryStage: RecoveryStage;
-  missedEngagementScore: number; // 0–100, higher = more missed actions
-  triggerRiskScore: number; // 0–100, higher = more trigger exposure
+  missedEngagementScore: number; // 0-100, higher = more missed actions
+  triggerRiskScore: number; // 0-100, higher = more trigger exposure
   stageProgramDay?: number; // 1-based day in current stage program
   stageProgramDuration?: number; // total days in current stage program
+  totalCheckIns?: number; // how many check-ins the user has completed
   // Simple rule-based personalization flags
   highUrge?: boolean;
   nightRisk?: boolean;
@@ -143,19 +144,21 @@ export function generateTodayPlan(input: TodayPlanInput): TodayPlan {
     recoveryStage,
     missedEngagementScore,
     triggerRiskScore,
+    totalCheckIns = 0,
     highUrge = false,
     nightRisk = false,
     lowMood = false,
   } = input;
 
   const stabilityBand = getStabilityBand(stabilityScore);
+  const isNewUser = totalCheckIns < 2;
 
   const priorityActions: TodayPlanAction[] = [];
   const optionalActions: TodayPlanAction[] = [];
   const riskWarnings: string[] = [];
 
   const hasHighRelapseRisk = relapseRisk === 'high' || relapseRisk === 'elevated';
-  const hasManyMissedActions = missedEngagementScore >= 50;
+  const hasManyMissedActions = !isNewUser && missedEngagementScore >= 50;
   const hasHighTriggerRisk = triggerRiskScore >= 60;
 
   // Stability-driven core plan
@@ -291,9 +294,16 @@ export function generateTodayPlan(input: TodayPlanInput): TodayPlan {
         kind: 'awareness',
       });
     }
-    riskWarnings.push(
-      'You have a few missed check-ins. Short, consistent actions matter more than perfection.',
-    );
+    const missedDays = Math.round((missedEngagementScore / 100) * 7);
+    if (missedDays >= 5) {
+      riskWarnings.push(
+        "It's been a while since your last check-in. A quick one today helps you reconnect with your progress.",
+      );
+    } else {
+      riskWarnings.push(
+        'You have a few missed check-ins. Short, consistent actions matter more than perfection.',
+      );
+    }
   }
 
   // Trigger activity adjustments
@@ -329,7 +339,7 @@ export function generateTodayPlan(input: TodayPlanInput): TodayPlan {
       crisisAction = {
         id: 'crisis-tools',
         title: 'Use crisis tools now',
-        subtitle: 'Your urges are high — jump straight into grounding and safety tools.',
+        subtitle: 'Your urges are high - jump straight into grounding and safety tools.',
         route: '/crisis-mode',
         kind: 'crisis',
       };
@@ -367,7 +377,7 @@ export function generateTodayPlan(input: TodayPlanInput): TodayPlan {
       optionalActions.unshift({
         id: 'coping-exercise',
         title: 'One small grounding step',
-        subtitle: 'Low mood calls for tiny, kind actions — start with one quick exercise.',
+        subtitle: 'Low mood calls for tiny, kind actions - start with one quick exercise.',
         route: '/crisis-mode',
         kind: 'coping',
       });

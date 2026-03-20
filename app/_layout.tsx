@@ -93,6 +93,7 @@ function RootLayoutNav() {
         <Stack.Screen name="first-day" options={{ title: 'Your First Day', headerShown: false, animation: defaultAnimation }} />
         <Stack.Screen name="daily-guidance" options={{ title: 'Your Day', animation: defaultAnimation }} />
         <Stack.Screen name="wizard" options={{ title: 'Guided Wizard', animation: defaultAnimation }} />
+        <Stack.Screen name="settings" options={{ title: 'Settings', animation: defaultAnimation }} />
       </Stack>
       <RelapseFlowGate />
     </>

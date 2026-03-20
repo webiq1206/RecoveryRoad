@@ -1,5 +1,5 @@
 /**
- * Central Stability Engine — single source of truth for all stability scoring logic.
+ * Central Stability Engine - single source of truth for all stability scoring logic.
  * Do not duplicate scoring logic in screens or providers.
  */
 

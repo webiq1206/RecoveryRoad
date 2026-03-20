@@ -1,72 +1,17 @@
 /**
  * View-model hook for the Today Hub screen.
- * Encapsulates stability, risk, today plan, and primary action derivation.
+ * Provides stability, risk, and loading state.
+ * Daily guidance is now handled by hooks/useWizardEngine.ts.
  */
 
-import type { ComponentType } from 'react';
 import { useMemo } from 'react';
 import { useRiskPrediction } from '@/providers/RiskPredictionProvider';
-import { useStageDetection } from '@/providers/StageDetectionProvider';
 import { useUser } from '@/core/domains/useUser';
 import { useCheckin } from '@/core/domains/useCheckin';
 import { useAppStore } from '@/stores/useAppStore';
 import { calculateStability } from '@/utils/stabilityEngine';
-import {
-  generateTodayPlan,
-  type TodayPlan,
-  type TodayPlanAction,
-} from '@/utils/todayPlanGenerator';
-import { usePersonalization } from '@/features/home/hooks/usePersonalization';
 import type { StabilityZoneId } from '@/components/RecoveryStabilityPanel';
 import type { StabilityTrend } from '@/utils/stabilityEngine';
-import {
-  Sun,
-  AlertTriangle,
-  Users,
-  PhoneCall,
-  Brain,
-  BookOpenCheck,
-  HandHeart,
-} from 'lucide-react-native';
-
-type IconComponent = ComponentType<{ size?: number; color?: string }>;
-
-export type UiTodayPlanAction = TodayPlanAction & {
-  icon: IconComponent;
-};
-
-export type UiTodayPlan = TodayPlan & {
-  priorityActions: UiTodayPlanAction[];
-  optionalActions: UiTodayPlanAction[];
-};
-
-const ACTION_ICON_MAP: Record<string, IconComponent> = {
-  'daily-checkin': Sun,
-  'daily-pledge': HandHeart,
-  'grounding-checkin': Sun,
-  'rebuild-step': BookOpenCheck,
-  'connection-touchpoint': Users,
-  'supportive-connection': Users,
-  'trigger-review': AlertTriangle,
-  'trigger-planning': AlertTriangle,
-  'coping-exercise': Brain,
-  'brief-journal': Brain,
-  'crisis-tools': AlertTriangle,
-  'reach-out-support': PhoneCall,
-  'relapse-plan': BookOpenCheck,
-};
-
-function attachIcons(plan: TodayPlan): UiTodayPlan {
-  const mapAction = (action: TodayPlanAction): UiTodayPlanAction => ({
-    ...action,
-    icon: ACTION_ICON_MAP[action.id] ?? Sun,
-  });
-  return {
-    ...plan,
-    priorityActions: plan.priorityActions.map(mapAction),
-    optionalActions: plan.optionalActions.map(mapAction),
-  };
-}
 
 export interface TodayHubViewModel {
   isLoading: boolean;
@@ -81,8 +26,6 @@ export interface TodayHubViewModel {
     label: string;
     trendLabel: string;
   };
-  todayPlan: UiTodayPlan;
-  primaryAction: UiTodayPlanAction | null;
   showRelapsePlanCta: boolean;
 }
 
@@ -98,16 +41,11 @@ export function useTodayHub(): TodayHubViewModel {
   const { checkIns } = useCheckin();
   const centralProfile = useAppStore((s) => s.userProfile);
   const centralDailyCheckIns = useAppStore((s) => s.dailyCheckIns);
-  const centralProgress = useAppStore((s) => s.progress);
-  const { currentStage, currentProgram } = useStageDetection();
   const {
     riskCategory,
     riskLabel,
     trendLabel: riskTrendLabel,
-    missedEngagement,
-    currentPrediction,
   } = useRiskPrediction();
-  const personalization = usePersonalization();
 
   const stabilityResult = useMemo(() => {
     const rp = (centralProfile ?? profile).recoveryProfile;
@@ -140,40 +78,6 @@ export function useTodayHub(): TodayHubViewModel {
     return calculateStability(input, previousScores);
   }, [centralProfile, centralDailyCheckIns, profile.recoveryProfile, checkIns]);
 
-  const todayPlanDomain = useMemo(
-    () =>
-      generateTodayPlan({
-        stabilityScore: stabilityResult.score,
-        relapseRisk: riskCategory,
-        recoveryStage: currentStage ?? profile.recoveryProfile.recoveryStage,
-        missedEngagementScore: missedEngagement,
-        triggerRiskScore: currentPrediction?.triggerRisk ?? 0,
-        stageProgramDay: currentProgram?.day,
-        stageProgramDuration: currentProgram?.duration,
-        highUrge: personalization.highUrgeCrisisHint.shouldHighlightCrisisTools,
-        nightRisk: personalization.nightRiskWarning.shouldWarn,
-        lowMood: personalization.lowMoodSuggestions.shouldSuggest,
-      }),
-    [
-      stabilityResult.score,
-      riskCategory,
-      currentStage,
-      profile.recoveryProfile.recoveryStage,
-      missedEngagement,
-      currentPrediction?.triggerRisk,
-      currentProgram?.day,
-      currentProgram?.duration,
-      personalization.highUrgeCrisisHint.shouldHighlightCrisisTools,
-      personalization.nightRiskWarning.shouldWarn,
-      personalization.lowMoodSuggestions.shouldSuggest,
-    ]
-  );
-
-  const todayPlan = useMemo(() => attachIcons(todayPlanDomain), [todayPlanDomain]);
-
-  const primaryAction =
-    todayPlan.priorityActions[0] ?? todayPlan.optionalActions[0] ?? null;
-
   return useMemo(
     () => ({
       isLoading,
@@ -188,8 +92,6 @@ export function useTodayHub(): TodayHubViewModel {
         label: riskLabel,
         trendLabel: riskTrendLabel || 'Stable',
       },
-      todayPlan,
-      primaryAction,
       showRelapsePlanCta: riskCategory === 'high',
     }),
     [
@@ -200,8 +102,6 @@ export function useTodayHub(): TodayHubViewModel {
       riskCategory,
       riskLabel,
       riskTrendLabel,
-      todayPlan,
-      primaryAction,
     ]
   );
 }

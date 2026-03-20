@@ -469,7 +469,7 @@ export default function AccountabilityScreen() {
           <FileText size={40} color={Colors.textMuted} />
           <Text style={styles.emptyTitle}>No commitments yet</Text>
           <Text style={styles.emptySubtext}>
-            Create a personal contract — a promise to yourself that anchors your recovery.
+            Create a personal contract - a promise to yourself that anchors your recovery.
           </Text>
         </View>
       ) : (
@@ -508,7 +508,7 @@ export default function AccountabilityScreen() {
           <Users size={40} color={Colors.textMuted} />
           <Text style={styles.emptyTitle}>No partners connected</Text>
           <Text style={styles.emptySubtext}>
-            Add someone you trust. They don't need the app — just someone who cares.
+            Add someone you trust. They don't need the app - just someone who cares.
           </Text>
         </View>
       ) : (
@@ -595,7 +595,7 @@ export default function AccountabilityScreen() {
           {daysSober < 7
             ? "The first week is the hardest. Take it one hour at a time. You don't have to be perfect."
             : daysSober < 30
-            ? "You're building new neural pathways. Cravings are normal — they're proof your brain is rewiring."
+            ? "You're building new neural pathways. Cravings are normal - they're proof your brain is rewiring."
             : daysSober < 90
             ? "You've passed the acute phase. Watch for complacency. Stay connected, stay honest."
             : "You're in sustained recovery. Guard against overconfidence. Your commitments keep you grounded."}
@@ -672,7 +672,7 @@ export default function AccountabilityScreen() {
                 <X size={22} color={Colors.textSecondary} />
               </Pressable>
             </View>
-            <Text style={styles.modalSubtitle}>A promise to yourself. Not a rule — a choice.</Text>
+            <Text style={styles.modalSubtitle}>A promise to yourself. Not a rule - a choice.</Text>
 
             <Text style={styles.inputLabel}>WHAT ARE YOU COMMITTING TO?</Text>
             <TextInput

@@ -23,8 +23,8 @@ export default class ErrorBoundary extends Component<Props, State> {
   }
 
   componentDidCatch(error: Error, errorInfo: ErrorInfo) {
-    console.log('ErrorBoundary caught error:', error.message);
-    console.log('Component stack:', errorInfo.componentStack);
+    console.error('[ErrorBoundary]', error.message, error.stack);
+    console.error('[ErrorBoundary] Component stack:', errorInfo.componentStack);
   }
 
   handleRetry = () => {
@@ -39,8 +39,13 @@ export default class ErrorBoundary extends Component<Props, State> {
             <Text style={styles.emoji}>🛡️</Text>
             <Text style={styles.title}>Something went wrong</Text>
             <Text style={styles.message}>
-              {this.props.fallbackMessage || "Don't worry — your data is safe. Let's try again."}
+              {this.props.fallbackMessage || "Don't worry - your data is safe. Let's try again."}
             </Text>
+            {__DEV__ && this.state.error && (
+              <Text style={{ fontSize: 11, color: '#FF6B6B', marginBottom: 12, textAlign: 'center' }}>
+                {this.state.error.message}
+              </Text>
+            )}
             <Pressable
               style={({ pressed }) => [styles.retryBtn, pressed && { opacity: 0.8, transform: [{ scale: 0.97 }] }]}
               onPress={this.handleRetry}

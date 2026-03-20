@@ -136,7 +136,7 @@ export default function InsightsHubScreen() {
       <View style={styles.footerCard}>
         <Shield size={16} color={Colors.primary} />
         <Text style={styles.footerText}>
-          These insights are here to inform and support you — not to judge you. Use them as
+          These insights are here to inform and support you - not to judge you. Use them as
           a compass, then keep listening to your own wisdom and needs.
         </Text>
       </View>

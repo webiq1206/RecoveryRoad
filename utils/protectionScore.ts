@@ -1,5 +1,5 @@
 /**
- * Centralized protection score calculation. Use this in screens — do not calculate in UI.
+ * Centralized protection score calculation. Use this in screens - do not calculate in UI.
  * Higher intensity / poor sleep / more triggers reduce score; higher support increases it.
  */
 

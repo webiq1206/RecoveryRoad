@@ -88,7 +88,7 @@ export const MOTIVATIONAL_PACKAGES_1_5: MotivationalPackage[] = [
       'Your energy is returning. Feel the difference.',
       'Sleep is deeper, mornings are brighter.',
       'You are becoming the healthiest version of yourself.',
-      'Honor your body — it is the only place you have to live.',
+      'Honor your body - it is the only place you have to live.',
     ],
     imageUrls: [
       'https://images.unsplash.com/photo-1571019613454-1cb2f99b2d8b?w=600',

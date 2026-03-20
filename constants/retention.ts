@@ -32,7 +32,7 @@ export const RETENTION_LOOPS: {
     icon: 'trending-up',
     triggers: ['journal_written', 'exercise_completed', 'goal_progress', 'identity_work', 'exercise_completed'],
     reinforcementMessages: [
-      "You're not just recovering — you're evolving.",
+      "You're not just recovering - you're evolving.",
       "Every insight you write down becomes part of your foundation.",
       "Growth often feels invisible. But look how far you've come.",
       "The work you're doing today is building tomorrow's freedom.",
@@ -48,7 +48,7 @@ export const RETENTION_LOOPS: {
     triggers: ['pledge_honored', 'routine_completed', 'trigger_managed', 'boundary_set', 'habit_practiced'],
     reinforcementMessages: [
       "You made a choice aligned with who you want to be.",
-      "Control isn't about perfection — it's about intention. You showed that today.",
+      "Control isn't about perfection - it's about intention. You showed that today.",
       "Every time you follow through, you build trust with yourself.",
       "Your consistency is quietly rewriting your self-image.",
       "You're proving to yourself that you can be relied on.",
@@ -66,7 +66,7 @@ export const RETENTION_LOOPS: {
       "Reaching out takes courage. You have it.",
       "You don't have to carry this alone. And you're not.",
       "Someone else's day got better because you showed up.",
-      "Belonging isn't earned — it's chosen. You chose it today.",
+      "Belonging isn't earned - it's chosen. You chose it today.",
     ],
   },
 ];
@@ -168,7 +168,7 @@ export const BEHAVIORAL_NOTIFICATION_TEMPLATES: {
     title: 'Your Morning Awaits',
     messages: [
       "A new day, a new chance to choose well. Your routine is ready when you are.",
-      "Good morning. Start small — even one intentional choice sets the tone.",
+      "Good morning. Start small - even one intentional choice sets the tone.",
       "Today doesn't need to be perfect. Just present.",
     ],
     timing: 'morning',
@@ -200,7 +200,7 @@ export const BEHAVIORAL_NOTIFICATION_TEMPLATES: {
     type: 'milestone',
     title: 'Quiet Victory',
     messages: [
-      "You've been showing up consistently. That's not small — it's everything.",
+      "You've been showing up consistently. That's not small - it's everything.",
       "Your streak reflects something deeper: commitment to yourself.",
       "Consistency isn't glamorous, but it's where real change lives.",
     ],
@@ -245,7 +245,7 @@ export const BEHAVIORAL_NOTIFICATION_TEMPLATES: {
     title: 'Trust Building',
     messages: [
       "Your confidence in your recovery is growing. You're earning your own trust.",
-      "Every managed trigger, every honored pledge — they all add up to this moment.",
+      "Every managed trigger, every honored pledge - they all add up to this moment.",
       "You're becoming someone you can rely on. That's the deepest kind of healing.",
     ],
     timing: 'afternoon',

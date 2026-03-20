@@ -28,6 +28,7 @@ import {
   Sun,
   Sunset,
   CloudMoon,
+  Check,
 } from 'lucide-react-native';
 import { useRouter } from 'expo-router';
 import * as Haptics from 'expo-haptics';
@@ -62,7 +63,7 @@ const REINFORCEMENT_MESSAGES = [
   "Every single day you choose yourself is a victory.",
   "You are rewriting your story, one brave moment at a time.",
   "The strength you show today builds the life you deserve tomorrow.",
-  "Progress isn't always visible — but it's always happening inside you.",
+  "Progress isn't always visible - but it's always happening inside you.",
   "You've already survived 100% of your hardest days.",
   "Healing isn't linear, but you're on the right path.",
   "The person you're becoming is worth every effort.",
@@ -137,11 +138,38 @@ interface TriggerPatternInsight {
   description: string;
 }
 
+const EARLY_MILESTONES = [
+  { day: 1, label: 'Day 1', message: 'You started. That decision alone is powerful.' },
+  { day: 3, label: '3 Days', message: 'You made it through the hardest beginning.' },
+  { day: 7, label: '1 Week', message: 'A full week of choosing yourself.' },
+  { day: 14, label: '2 Weeks', message: 'Real patterns are forming.' },
+  { day: 30, label: '1 Month', message: "A month of building something new." },
+];
+
+const EARLY_ENCOURAGEMENT: Record<string, string> = {
+  'day1': "Every journey starts with a single step. You've taken yours.",
+  'day2-3': "The hardest days are the first ones. You're still here.",
+  'day4-7': "A week is within reach. Each day you show up, you're rewriting your story.",
+};
+
+function getEarlyEncouragement(daysSober: number): string {
+  if (daysSober <= 1) return EARLY_ENCOURAGEMENT['day1'];
+  if (daysSober <= 3) return EARLY_ENCOURAGEMENT['day2-3'];
+  return EARLY_ENCOURAGEMENT['day4-7'];
+}
+
+function getStabilityStatusLabel(score: number): string {
+  if (score >= 70) return 'Steady';
+  if (score >= 50) return 'Guarded';
+  if (score >= 30) return 'Fragile';
+  return 'High Risk';
+}
+
 function StabilityTimelineScreen() {
   const router = useRouter();
   const { pledges } = usePledges();
   const { rebuildData } = useRebuild();
-  const { profile } = useUser();
+  const { profile, daysSober } = useUser();
   const { checkIns } = useCheckin();
   const centralProfile = useAppStore((s) => s.userProfile);
   const centralDailyCheckIns = useAppStore((s) => s.dailyCheckIns);
@@ -299,7 +327,7 @@ function StabilityTimelineScreen() {
       stabilityTrend === 'up'
         ? 'Your stability improved this week.'
         : stabilityTrend === 'down'
-          ? 'Your stability dipped this week — that awareness matters.'
+          ? 'Your stability dipped this week - that awareness matters.'
           : 'Your stability held fairly steady this week.';
 
     let triggerSentence = '';
@@ -310,7 +338,7 @@ function StabilityTimelineScreen() {
     } else if (periodLabel) {
       triggerSentence = `${periodLabel.charAt(0).toUpperCase() + periodLabel.slice(1)} were your most vulnerable times.`;
     } else {
-      triggerSentence = 'You did not record clear trigger patterns yet — keep logging check-ins.';
+      triggerSentence = 'You did not record clear trigger patterns yet - keep logging check-ins.';
     }
 
     const riskSentence =
@@ -343,6 +371,129 @@ function StabilityTimelineScreen() {
     return set;
   }, [centralDailyCheckIns, checkIns, pledges]);
 
+  const uniqueCheckInDays = useMemo(() => {
+    const sourceCheckIns = centralDailyCheckIns.length > 0 ? centralDailyCheckIns : checkIns;
+    return new Set(sourceCheckIns.map((c) => c.date)).size;
+  }, [centralDailyCheckIns, checkIns]);
+
+  const isEarlyDays = uniqueCheckInDays < 7;
+
+  const latestScore = useMemo(() => {
+    const sourceCheckIns = centralDailyCheckIns.length > 0 ? centralDailyCheckIns : checkIns;
+    if (sourceCheckIns.length === 0) return 50;
+    const sorted = [...sourceCheckIns].sort(
+      (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime(),
+    );
+    return sorted[0].stabilityScore;
+  }, [centralDailyCheckIns, checkIns]);
+
+  if (isEarlyDays) {
+    const soberDate = new Date((centralProfile ?? profile).soberDate);
+    return (
+      <ScrollView
+        style={styles.container}
+        contentContainerStyle={styles.content}
+        showsVerticalScrollIndicator={false}
+        testID="stability-timeline-screen"
+      >
+        {/* Status header */}
+        <View style={earlyStyles.statusHeader}>
+          <Text style={earlyStyles.statusLabel}>
+            Your stability is{' '}
+            <Text style={{ color: Colors.primary }}>
+              {getStabilityStatusLabel(latestScore)}
+            </Text>
+          </Text>
+        </View>
+
+        {/* Hero */}
+        <View style={earlyStyles.heroCard}>
+          <Text style={earlyStyles.heroTitle}>Your recovery journey has begun</Text>
+          <Text style={earlyStyles.heroDays}>
+            Day {daysSober}
+          </Text>
+          <Text style={earlyStyles.heroSub}>
+            Since {soberDate.toLocaleDateString(undefined, { month: 'long', day: 'numeric', year: 'numeric' })}
+          </Text>
+        </View>
+
+        {/* Encouragement */}
+        <View style={earlyStyles.encouragementCard}>
+          <Heart size={18} color={Colors.primary} />
+          <Text style={earlyStyles.encouragementText}>
+            {getEarlyEncouragement(daysSober)}
+          </Text>
+        </View>
+
+        {/* Milestone timeline */}
+        <Text style={earlyStyles.sectionTitle}>Milestones ahead</Text>
+        <View style={earlyStyles.milestoneCard}>
+          {EARLY_MILESTONES.map((m, i) => {
+            const isReached = daysSober >= m.day;
+            const isNext =
+              !isReached && (i === 0 || daysSober >= EARLY_MILESTONES[i - 1].day);
+            return (
+              <View
+                key={m.day}
+                style={[
+                  earlyStyles.milestoneRow,
+                  isNext && earlyStyles.milestoneRowActive,
+                ]}
+              >
+                <View
+                  style={[
+                    earlyStyles.milestoneDot,
+                    isReached && earlyStyles.milestoneDotDone,
+                    isNext && earlyStyles.milestoneDotActive,
+                  ]}
+                >
+                  {isReached && <Check size={12} color="#FFF" />}
+                </View>
+                <View style={earlyStyles.milestoneTextWrap}>
+                  <Text
+                    style={[
+                      earlyStyles.milestoneLabel,
+                      isReached && earlyStyles.milestoneLabelDone,
+                    ]}
+                  >
+                    {m.label}
+                  </Text>
+                  <Text style={earlyStyles.milestoneMsg}>{m.message}</Text>
+                </View>
+              </View>
+            );
+          })}
+        </View>
+
+        {/* Simple stats */}
+        <Text style={earlyStyles.sectionTitle}>Your progress so far</Text>
+        <View style={earlyStyles.statsRow}>
+          <View style={earlyStyles.statCard}>
+            <Text style={earlyStyles.statNumber}>{uniqueCheckInDays}</Text>
+            <Text style={earlyStyles.statLabel}>Check-ins</Text>
+          </View>
+          <View style={earlyStyles.statCard}>
+            <Text style={earlyStyles.statNumber}>{consistentCheckInDays}</Text>
+            <Text style={earlyStyles.statLabel}>Day streak</Text>
+          </View>
+          <View style={earlyStyles.statCard}>
+            <Text style={earlyStyles.statNumber}>
+              {latestScore}
+            </Text>
+            <Text style={earlyStyles.statLabel}>Stability</Text>
+          </View>
+        </View>
+
+        <View style={earlyStyles.reinforcementCard}>
+          <Sparkles size={16} color={Colors.primary} />
+          <Text style={earlyStyles.reinforcementText}>
+            {getReinforcementMessage(daysSober)}
+          </Text>
+        </View>
+      </ScrollView>
+    );
+  }
+
   return (
     <ScrollView
       style={styles.container}
@@ -350,6 +501,16 @@ function StabilityTimelineScreen() {
       showsVerticalScrollIndicator={false}
       testID="stability-timeline-screen"
     >
+      {/* Status header */}
+      <View style={earlyStyles.statusHeader}>
+        <Text style={earlyStyles.statusLabel}>
+          Your stability is{' '}
+          <Text style={{ color: Colors.primary }}>
+            {getStabilityStatusLabel(latestScore)}
+          </Text>
+        </Text>
+      </View>
+
       <View style={styles.taglineCard}>
         <Text style={styles.tagline}>You are building stability.</Text>
       </View>
@@ -1268,5 +1429,164 @@ const trigStyles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '600' as const,
     color: Colors.primary,
+  },
+});
+
+const earlyStyles = StyleSheet.create({
+  statusHeader: {
+    marginBottom: 12,
+  },
+  statusLabel: {
+    fontSize: 16,
+    fontWeight: '700' as const,
+    color: Colors.text,
+  },
+  heroCard: {
+    backgroundColor: Colors.primary + '0C',
+    borderRadius: 20,
+    padding: 24,
+    alignItems: 'center' as const,
+    marginBottom: 16,
+    borderWidth: 1,
+    borderColor: Colors.primary + '25',
+  },
+  heroTitle: {
+    fontSize: 18,
+    fontWeight: '800' as const,
+    color: Colors.text,
+    textAlign: 'center' as const,
+    marginBottom: 8,
+  },
+  heroDays: {
+    fontSize: 40,
+    fontWeight: '900' as const,
+    color: Colors.primary,
+  },
+  heroSub: {
+    fontSize: 13,
+    color: Colors.textSecondary,
+    marginTop: 4,
+  },
+  encouragementCard: {
+    flexDirection: 'row' as const,
+    alignItems: 'flex-start' as const,
+    backgroundColor: Colors.cardBackground,
+    borderRadius: 14,
+    padding: 14,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    marginBottom: 20,
+    gap: 10,
+  },
+  encouragementText: {
+    flex: 1,
+    fontSize: 14,
+    fontWeight: '600' as const,
+    color: Colors.text,
+    lineHeight: 21,
+  },
+  sectionTitle: {
+    fontSize: 16,
+    fontWeight: '700' as const,
+    color: Colors.text,
+    marginBottom: 10,
+  },
+  milestoneCard: {
+    backgroundColor: Colors.cardBackground,
+    borderRadius: 18,
+    padding: 16,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    marginBottom: 20,
+    gap: 14,
+  },
+  milestoneRow: {
+    flexDirection: 'row' as const,
+    alignItems: 'flex-start' as const,
+    gap: 12,
+    opacity: 0.5,
+  },
+  milestoneRowActive: {
+    opacity: 1,
+  },
+  milestoneDot: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    backgroundColor: Colors.surface,
+    borderWidth: 2,
+    borderColor: Colors.border,
+    alignItems: 'center' as const,
+    justifyContent: 'center' as const,
+    marginTop: 2,
+  },
+  milestoneDotDone: {
+    backgroundColor: Colors.primary,
+    borderColor: Colors.primary,
+    opacity: 1,
+  },
+  milestoneDotActive: {
+    borderColor: Colors.primary,
+    backgroundColor: Colors.primary + '20',
+  },
+  milestoneTextWrap: {
+    flex: 1,
+  },
+  milestoneLabel: {
+    fontSize: 14,
+    fontWeight: '700' as const,
+    color: Colors.textSecondary,
+  },
+  milestoneLabelDone: {
+    color: Colors.text,
+  },
+  milestoneMsg: {
+    fontSize: 12,
+    color: Colors.textMuted,
+    marginTop: 2,
+  },
+  statsRow: {
+    flexDirection: 'row' as const,
+    gap: 10,
+    marginBottom: 20,
+  },
+  statCard: {
+    flex: 1,
+    backgroundColor: Colors.cardBackground,
+    borderRadius: 14,
+    padding: 14,
+    alignItems: 'center' as const,
+    borderWidth: 1,
+    borderColor: Colors.border,
+  },
+  statNumber: {
+    fontSize: 22,
+    fontWeight: '800' as const,
+    color: Colors.text,
+  },
+  statLabel: {
+    fontSize: 11,
+    fontWeight: '600' as const,
+    color: Colors.textMuted,
+    marginTop: 4,
+    textTransform: 'uppercase' as const,
+    letterSpacing: 0.5,
+  },
+  reinforcementCard: {
+    flexDirection: 'row' as const,
+    alignItems: 'flex-start' as const,
+    backgroundColor: Colors.primary + '0A',
+    borderRadius: 14,
+    padding: 14,
+    borderWidth: 1,
+    borderColor: Colors.primary + '20',
+    gap: 8,
+  },
+  reinforcementText: {
+    flex: 1,
+    fontSize: 13,
+    color: Colors.primary,
+    fontWeight: '600' as const,
+    lineHeight: 20,
   },
 });

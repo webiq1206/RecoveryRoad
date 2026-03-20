@@ -13,7 +13,7 @@ export const MOTIVATIONAL_PACKAGES_11_15: MotivationalPackage[] = [
       'You are here for a reason. Recovery reveals it.',
       'Purpose gives you the strength to resist temptation.',
       'When you know your why, you can endure any how.',
-      'You are not just surviving — you are building a meaningful life.',
+      'You are not just surviving - you are building a meaningful life.',
       'Every act of sobriety is an act of purpose.',
       'Your story will inspire someone else someday.',
       'Find what sets your soul on fire, and pursue it.',

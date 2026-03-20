@@ -125,11 +125,11 @@ const EXERCISE_TYPE_ICONS: Record<string, React.ReactNode> = {
 };
 
 const IDENTITY_AFFIRMATIONS = [
-  "You're building someone new — stronger, freer.",
+  "You're building someone new - stronger, freer.",
   "Every small choice rewires who you are.",
-  "Structure isn't restriction — it's freedom.",
+  "Structure isn't restriction - it's freedom.",
   "The person you're becoming already exists inside you.",
-  "Replacement isn't avoidance — it's evolution.",
+  "Replacement isn't avoidance - it's evolution.",
   "You don't need to be perfect, just intentional.",
   "Each routine is a vote for your new identity.",
   "Progress is built one honest moment at a time.",

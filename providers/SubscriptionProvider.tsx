@@ -315,7 +315,7 @@ export const [SubscriptionProvider, useSubscription] = createContextHook(() => {
       const updatedInfo = await fetchSubscriberInfo(rcUserId);
       const { isActive, expiresDate } = checkEntitlementActive(updatedInfo);
       if (!isActive) {
-        console.log('Purchase completed but entitlement not active — verifying...');
+        console.log('Purchase completed but entitlement not active - verifying...');
         throw new Error('Purchase could not be verified. Please try restoring your purchase.');
       }
       const newState: SubscriptionState = {
@@ -387,7 +387,7 @@ export const [SubscriptionProvider, useSubscription] = createContextHook(() => {
   const upgradeToPremium = useCallback(() => {
     console.log('[Subscription] upgradeToPremium called');
     if (!rcUserId) {
-      console.log('[Subscription] No RC user ID — activating locally');
+      console.log('[Subscription] No RC user ID - activating locally');
       activatePremiumMutation.mutate();
       return;
     }
@@ -396,7 +396,7 @@ export const [SubscriptionProvider, useSubscription] = createContextHook(() => {
       const defaultProduct = currentOfferings[0].packages[0].product.identifier;
       purchaseMutation.mutate(defaultProduct);
     } else {
-      console.log('[Subscription] No offerings available — activating locally');
+      console.log('[Subscription] No offerings available - activating locally');
       activatePremiumMutation.mutate();
     }
   }, [rcUserId, offeringsQuery.data]);

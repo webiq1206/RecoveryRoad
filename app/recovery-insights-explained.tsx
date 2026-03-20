@@ -61,7 +61,7 @@ export default function RecoveryInsightsExplainedScreen() {
       <View style={styles.introCard}>
         <Info size={20} color={Colors.primary} />
         <Text style={styles.introText}>
-          Recovery Insights track the emotional and behavioral patterns that keep you engaged in your recovery. They measure how actively you're building positive reinforcement loops — the habits and actions that naturally motivate you to keep going.
+          Recovery Insights track the emotional and behavioral patterns that keep you engaged in your recovery. They measure how actively you're building positive reinforcement loops - the habits and actions that naturally motivate you to keep going.
         </Text>
       </View>
 
@@ -116,7 +116,7 @@ export default function RecoveryInsightsExplainedScreen() {
           <Text style={styles.loopTaglineText}>Finding calm when things feel heavy</Text>
         </View>
         <Text style={styles.bodyText}>
-          The Relief Loop activates when you use a recovery tool during a difficult moment — and experience a shift toward calm. It reinforces the pattern of reaching for healthy coping strategies instead of old habits.
+          The Relief Loop activates when you use a recovery tool during a difficult moment - and experience a shift toward calm. It reinforces the pattern of reaching for healthy coping strategies instead of old habits.
         </Text>
         <View style={styles.spacer} />
         <Text style={styles.subHeading}>What activates it</Text>
@@ -135,11 +135,11 @@ export default function RecoveryInsightsExplainedScreen() {
         <View style={styles.spacer} />
         <Text style={styles.subHeading}>How the score grows</Text>
         <Text style={styles.bodyText}>
-          Each activation increases the Relief Loop score. More frequent activations build a stronger score. If you go several days without needing relief tools (which is a good sign!), the score may naturally settle — that's healthy and expected.
+          Each activation increases the Relief Loop score. More frequent activations build a stronger score. If you go several days without needing relief tools (which is a good sign!), the score may naturally settle - that's healthy and expected.
         </Text>
         <View style={styles.spacer} />
         <Text style={styles.tipText}>
-          A lower Relief score doesn't mean you're failing. It may mean you're in a stable period with fewer crises — which is progress.
+          A lower Relief score doesn't mean you're failing. It may mean you're in a stable period with fewer crises - which is progress.
         </Text>
       </ExplainerCard>
 
@@ -175,11 +175,11 @@ export default function RecoveryInsightsExplainedScreen() {
         <View style={styles.spacer} />
         <Text style={styles.subHeading}>How the score grows</Text>
         <Text style={styles.bodyText}>
-          The Growth Loop rewards depth and consistency. Writing regularly, completing exercises, and working toward goals all contribute. The score reflects cumulative effort — even small actions add up over time.
+          The Growth Loop rewards depth and consistency. Writing regularly, completing exercises, and working toward goals all contribute. The score reflects cumulative effort - even small actions add up over time.
         </Text>
         <View style={styles.spacer} />
         <Text style={styles.tipText}>
-          Growth isn't always visible day-to-day. Trust the process — every journal entry and completed exercise is building something lasting.
+          Growth isn't always visible day-to-day. Trust the process - every journal entry and completed exercise is building something lasting.
         </Text>
       </ExplainerCard>
 
@@ -202,7 +202,7 @@ export default function RecoveryInsightsExplainedScreen() {
         />
         <TriggerRow
           label="Completing routines"
-          description="Following through on your daily recovery routine — check-ins, reflections, exercises — shows discipline."
+          description="Following through on your daily recovery routine - check-ins, reflections, exercises - shows discipline."
         />
         <TriggerRow
           label="Managing triggers"
@@ -219,7 +219,7 @@ export default function RecoveryInsightsExplainedScreen() {
         </Text>
         <View style={styles.spacer} />
         <Text style={styles.tipText}>
-          Control isn't about perfection — it's about intention. Even one intentional choice per day feeds this loop.
+          Control isn't about perfection - it's about intention. Even one intentional choice per day feeds this loop.
         </Text>
       </ExplainerCard>
 
@@ -232,13 +232,13 @@ export default function RecoveryInsightsExplainedScreen() {
           <Text style={styles.loopTaglineText}>Knowing you are not alone in this</Text>
         </View>
         <Text style={styles.bodyText}>
-          The Belonging Loop activates when you connect with others in your recovery community. Isolation is one of the biggest risks in recovery — this loop tracks how actively you're building and maintaining supportive connections.
+          The Belonging Loop activates when you connect with others in your recovery community. Isolation is one of the biggest risks in recovery - this loop tracks how actively you're building and maintaining supportive connections.
         </Text>
         <View style={styles.spacer} />
         <Text style={styles.subHeading}>What activates it</Text>
         <TriggerRow
           label="Community engagement"
-          description="Interacting with community posts — reading, reacting, or commenting — counts as meaningful connection."
+          description="Interacting with community posts - reading, reacting, or commenting - counts as meaningful connection."
         />
         <TriggerRow
           label="Joining recovery rooms"
@@ -255,18 +255,18 @@ export default function RecoveryInsightsExplainedScreen() {
         <View style={styles.spacer} />
         <Text style={styles.subHeading}>How the score grows</Text>
         <Text style={styles.bodyText}>
-          The Belonging Loop rewards any form of genuine connection. You don't need to be social every day — even reading a community post or sending a brief message activates it. Regular, small interactions build a stronger score than occasional large ones.
+          The Belonging Loop rewards any form of genuine connection. You don't need to be social every day - even reading a community post or sending a brief message activates it. Regular, small interactions build a stronger score than occasional large ones.
         </Text>
         <View style={styles.spacer} />
         <Text style={styles.tipText}>
-          Recovery is stronger together. Even small acts of connection — reading a post, sending encouragement — contribute meaningfully to this loop.
+          Recovery is stronger together. Even small acts of connection - reading a post, sending encouragement - contribute meaningfully to this loop.
         </Text>
       </ExplainerCard>
 
       <View style={styles.footerCard}>
         <Zap size={16} color={Colors.accentWarm} />
         <Text style={styles.footerText}>
-          Your reinforcement loops update automatically as you use the app. There's no "right" balance between the four loops — what matters is that you're actively engaging with the aspects of recovery that resonate with you. Over time, strong loops make recovery feel less like effort and more like who you are.
+          Your reinforcement loops update automatically as you use the app. There's no "right" balance between the four loops - what matters is that you're actively engaging with the aspects of recovery that resonate with you. Over time, strong loops make recovery feel less like effort and more like who you are.
         </Text>
       </View>
 

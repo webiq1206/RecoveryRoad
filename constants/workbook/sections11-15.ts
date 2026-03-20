@@ -101,7 +101,7 @@ export const WORKBOOK_SECTIONS_11_15: WorkbookSection[] = [
       { id: 's14q8', type: 'reflection', question: 'How do you handle it when someone violates your boundaries?' },
       { id: 's14q9', type: 'journaling', question: 'Describe the difference between walls and boundaries. Which do you tend to build?' },
       { id: 's14q10', type: 'reflection', question: 'What boundaries do you need with social media and technology for your recovery?' },
-      { id: 's14q11', type: 'assignment', question: 'Create a list of your non-negotiable boundaries — things you will never compromise on in recovery.' },
+      { id: 's14q11', type: 'assignment', question: 'Create a list of your non-negotiable boundaries - things you will never compromise on in recovery.' },
       { id: 's14q12', type: 'reflection', question: 'How does people-pleasing undermine your boundaries and recovery?' },
       { id: 's14q13', type: 'exercise', question: 'Notice every time you override your own boundaries today. Write about each instance.' },
       { id: 's14q14', type: 'journaling', question: 'Write about a relationship where boundaries are particularly difficult. What makes it hard?' },

@@ -90,7 +90,7 @@ export const BEHAVIORAL_TEMPLATES: BehavioralNotificationTemplate[] = [
       "This is usually a challenging time for you. Your tools are ready.",
       "You've navigated moments like this before. Remember what worked.",
       "Right now might feel heavy. Take one slow breath before anything else.",
-      "This time of day can be tricky. You know what helps — trust yourself.",
+      "This time of day can be tricky. You know what helps - trust yourself.",
     ],
     priority: 'high',
     categoryId: 'risk',
@@ -111,7 +111,7 @@ export const BEHAVIORAL_TEMPLATES: BehavioralNotificationTemplate[] = [
     trigger: 'missed_checkin',
     title: 'No Pressure',
     messages: [
-      "We missed you today. No judgment — just here when you're ready.",
+      "We missed you today. No judgment - just here when you're ready.",
       "Missing a day doesn't undo anything. Come back whenever feels right.",
       "A quick check-in can be grounding. But only if it serves you.",
       "Your recovery doesn't require perfection. Just honest return.",
@@ -158,7 +158,7 @@ export const BEHAVIORAL_TEMPLATES: BehavioralNotificationTemplate[] = [
     trigger: 'craving_spike',
     title: 'Stay Grounded',
     messages: [
-      "Cravings have been elevated. This is temporary — ride the wave.",
+      "Cravings have been elevated. This is temporary - ride the wave.",
       "Your brain is signaling, but you get to choose. Pause before you act.",
       "High cravings don't mean you're back to zero. They mean your body is still healing.",
       "This urge will peak and pass. You've proven you can outlast it.",

@@ -12,7 +12,7 @@ export const MOTIVATIONAL_PACKAGES_6_10: MotivationalPackage[] = [
       'You are worthy of love, especially from yourself.',
       'Be gentle with yourself. You are doing the best you can.',
       'Forgive yourself. You were doing the best you knew how.',
-      'Self-compassion is not weakness — it is wisdom.',
+      'Self-compassion is not weakness - it is wisdom.',
       'You deserve the same kindness you give to others.',
       'It is okay to not be okay. What matters is that you keep going.',
       'Treat yourself like someone you are responsible for helping.',
@@ -59,7 +59,7 @@ export const MOTIVATIONAL_PACKAGES_6_10: MotivationalPackage[] = [
     statements: [
       'You are not your addiction. You are so much more.',
       'Every day you write a new chapter of your story.',
-      'The person you are becoming will cost you friendships, relationships, and comfort zones — and it is worth it.',
+      'The person you are becoming will cost you friendships, relationships, and comfort zones - and it is worth it.',
       'You are shedding an old skin and growing a new one.',
       'Identity is not fixed. You are evolving.',
       'Choose who you want to be, then prove it with your actions.',

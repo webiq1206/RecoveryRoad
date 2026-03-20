@@ -80,7 +80,7 @@ export function CrisisStateActions({
           <View style={crisisStyles.stateActionTextWrap}>
             <Text style={crisisStyles.stateActionTitle}>2-minute timer</Text>
             <Text style={crisisStyles.stateActionSubtitle}>
-              Stay with the wave — urges crest and fall.
+              Stay with the wave - urges crest and fall.
             </Text>
           </View>
         </Pressable>

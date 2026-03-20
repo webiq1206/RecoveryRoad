@@ -237,7 +237,7 @@ function SleepCard({ score, trend }: { score: number; trend: 'improving' | 'decl
               ? 'Your sleep patterns are supporting your recovery well. Good rest builds resilience.'
               : score <= 60
               ? 'Sleep quality has room for improvement. Better rest can strengthen your defenses.'
-              : 'Sleep disruption is elevated. Poor sleep increases vulnerability — prioritize rest tonight.'}
+              : 'Sleep disruption is elevated. Poor sleep increases vulnerability - prioritize rest tonight.'}
           </Text>
         </View>
       </View>
@@ -503,7 +503,7 @@ export default function RelapseDetectionScreen() {
                 </View>
                 <View>
                   <Text style={styles.crisisTitle}>Your safety tools are ready</Text>
-                  <Text style={styles.crisisSubtitle}>Breathing, grounding, and connection — whenever you need them</Text>
+                  <Text style={styles.crisisSubtitle}>Breathing, grounding, and connection - whenever you need them</Text>
                 </View>
               </View>
               <ChevronRight size={18} color="#EF5350" />
@@ -607,7 +607,7 @@ export default function RelapseDetectionScreen() {
             <Info size={13} color={Colors.textMuted} />
             <Text style={styles.footerText}>
               This system learns from your check-ins to spot patterns early. It's here to support you, not to define you. 
-              Trust yourself — and reach out whenever you need a hand.
+              Trust yourself - and reach out whenever you need a hand.
             </Text>
           </View>
 

@@ -599,7 +599,7 @@ export default function MilestonesScreen() {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     Alert.alert(
       'Protect Your Streak',
-      'This gives you a 36-hour grace period if you miss a day. You won\'t lose your streak.\n\nThis isn\'t about pressure — it\'s a safety net for days when life gets in the way.',
+      'This gives you a 36-hour grace period if you miss a day. You won\'t lose your streak.\n\nThis isn\'t about pressure - it\'s a safety net for days when life gets in the way.',
       [
         { text: 'Not Now', style: 'cancel' },
         {

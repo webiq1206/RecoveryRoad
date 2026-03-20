@@ -56,7 +56,7 @@ const baseUseRecoveryProfileStore = create<RecoveryProfileState>()(
         loadStorageItem<RelapsePlan | null>(STORAGE_KEYS.RELAPSE_PLAN, null),
       ]);
 
-      const profile = storedProfile ? migrateProfile(storedProfile as Record<string, unknown>) : DEFAULT_PROFILE;
+      const profile = storedProfile ? migrateProfile(storedProfile as unknown as Record<string, unknown>) : DEFAULT_PROFILE;
 
       set({ profile, timelineEvents, relapsePlan, isLoading: false, hasHydrated: true });
     },

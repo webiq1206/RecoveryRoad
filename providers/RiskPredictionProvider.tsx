@@ -82,7 +82,7 @@ function getTimeOfDayRisk(checkIns: DailyCheckIn[]): { riskByPeriod: Record<stri
 
 function getSleepDisruptionScore(checkIns: DailyCheckIn[]): { score: number; trend: 'improving' | 'declining' | 'stable' } {
   const recent = checkIns.slice(0, 7);
-  if (recent.length === 0) return { score: 50, trend: 'stable' };
+  if (recent.length === 0) return { score: 0, trend: 'stable' };
   const avgSleep = recent.reduce((s, c) => s + c.sleepQuality, 0) / recent.length;
   const disruption = Math.round(100 - avgSleep);
 
@@ -97,18 +97,32 @@ function getSleepDisruptionScore(checkIns: DailyCheckIn[]): { score: number; tre
 }
 
 function getMissedEngagementScore(checkIns: DailyCheckIn[]): number {
-  if (checkIns.length === 0) return 50;
+  if (checkIns.length === 0) return 0;
+
   const today = new Date();
   today.setHours(0, 0, 0, 0);
+
+  const earliest = checkIns.reduce((min, c) => {
+    const d = new Date(c.date);
+    return d < min ? d : min;
+  }, new Date());
+  earliest.setHours(0, 0, 0, 0);
+
+  const daysSinceFirst =
+    Math.floor((today.getTime() - earliest.getTime()) / (1000 * 60 * 60 * 24)) + 1;
+  const windowSize = Math.min(daysSinceFirst, 7);
+
+  if (windowSize <= 1) return 0;
+
   let missed = 0;
-  for (let i = 0; i < 7; i++) {
+  for (let i = 0; i < windowSize; i++) {
     const d = new Date(today);
     d.setDate(d.getDate() - i);
     const dateStr = d.toISOString().split('T')[0];
     const found = checkIns.find(c => c.date.startsWith(dateStr));
     if (!found) missed++;
   }
-  return Math.round((missed / 7) * 100);
+  return Math.round((missed / windowSize) * 100);
 }
 
 function calculateIsolationRisk(checkIns: DailyCheckIn[]): number {
@@ -449,7 +463,7 @@ function generateAlerts(
       id: `emotional_${today}`,
       severity: prediction.emotionalRisk >= 80 ? 'critical' : 'warning',
       title: 'Your emotional world needs some care',
-      message: "It looks like things have felt heavier lately. That's okay — recovery isn't a straight line, and tough moments are part of the journey.",
+      message: "It looks like things have felt heavier lately. That's okay - recovery isn't a straight line, and tough moments are part of the journey.",
       suggestion: 'Writing down what you feel, even a few words, can lighten the weight. You could also talk to someone who gets it.',
       interventionType: prediction.emotionalRisk >= 80 ? 'crisis' : 'journaling',
       route: prediction.emotionalRisk >= 80 ? '/crisis-mode' : '/new-journal',
@@ -479,7 +493,7 @@ function generateAlerts(
       id: `trigger_${today}`,
       severity: prediction.triggerRisk >= 85 ? 'critical' : 'caution',
       title: 'Your environment may need some attention',
-      message: "You've been in situations that tend to make things harder. Noticing this is a sign of strength — awareness is your first line of defense.",
+      message: "You've been in situations that tend to make things harder. Noticing this is a sign of strength - awareness is your first line of defense.",
       suggestion: 'Take a look at your trigger map. Having a plan for safer alternatives can make all the difference.',
       interventionType: 'connection',
       route: '/triggers',
@@ -493,9 +507,9 @@ function generateAlerts(
     newAlerts.push({
       id: `isolation_${today}`,
       severity: prediction.isolationRisk >= 80 ? 'warning' : 'caution',
-      title: "It's been quiet — we're here for you",
+      title: "It's been quiet - we're here for you",
       message: "When we pull back from the world, it can feel safer, but isolation often makes things harder over time. You don't have to do this alone.",
-      suggestion: 'Even a small connection helps. Check in here, or reach out to someone you trust — it doesn\'t have to be a big conversation.',
+      suggestion: 'Even a small connection helps. Check in here, or reach out to someone you trust - it doesn\'t have to be a big conversation.',
       interventionType: 'isolation_outreach',
       route: '/companion-chat',
       createdAt: new Date().toISOString(),
@@ -510,7 +524,7 @@ function generateAlerts(
       id: `missed_${today}`,
       severity: missedDays >= 4 ? 'warning' : 'caution',
       title: `We haven't heard from you in ${missedDays} days`,
-      message: "No pressure — life gets busy. But even a quick check-in helps us stay in tune with how you're doing so we can be here when it matters.",
+      message: "No pressure - life gets busy. But even a quick check-in helps us stay in tune with how you're doing so we can be here when it matters.",
       suggestion: 'A 20-second check-in is all it takes. Just let us know how today is going.',
       interventionType: 'checkin',
       route: '/daily-checkin',
@@ -525,7 +539,7 @@ function generateAlerts(
       id: `rising_${today}`,
       severity: 'critical',
       title: 'Multiple signals are rising together',
-      message: "Several parts of your wellbeing are showing strain right now. This doesn't define your journey — it means now is the moment to lean on your tools and your people.",
+      message: "Several parts of your wellbeing are showing strain right now. This doesn't define your journey - it means now is the moment to lean on your tools and your people.",
       suggestion: 'Your recovery companion understands where you are. Let them help you think through what you need right now.',
       interventionType: 'companion',
       route: '/companion-chat',
@@ -787,13 +801,13 @@ export const [RiskPredictionProvider, useRiskPrediction] = createContextHook(() 
     if (!currentPrediction) return 'Complete a check-in to start your personalized early warning system.';
     switch (riskCategory) {
       case 'high':
-        return "You're carrying a lot right now, and that takes real courage. Your tools and your people are right here — lean on them.";
+        return "You're carrying a lot right now, and that takes real courage. Your tools and your people are right here - lean on them.";
       case 'elevated':
-        return "Some things are asking for your attention. That's not a setback — it's awareness. Small, steady steps keep you moving forward.";
+        return "Some things are asking for your attention. That's not a setback - it's awareness. Small, steady steps keep you moving forward.";
       case 'guarded':
         return "You're navigating things well. A few signals are worth keeping an eye on, and your daily habits are making a real difference.";
       case 'low':
-        return "Your patterns reflect real strength and dedication. Keep nourishing what's working — you've earned this stability.";
+        return "Your patterns reflect real strength and dedication. Keep nourishing what's working - you've earned this stability.";
     }
   }, [currentPrediction, riskCategory]);
 

@@ -2,15 +2,30 @@ import { Tabs } from "expo-router";
 import { View } from "react-native";
 import {
   Home,
-  Activity,
+  TrendingUp,
   Hammer,
   Users,
   User,
 } from "lucide-react-native";
 import React, { useCallback } from "react";
 import Colors from "@/constants/colors";
+import { useAppMeta } from "@/core/domains/useAppMeta";
 
 type IconType = typeof Home;
+
+const STABILITY_DOT_COLORS: Record<string, string> = {
+  green: '#22C55E',
+  yellow: '#EAB308',
+  orange: '#F97316',
+  red: '#EF4444',
+};
+
+function getStabilityDotColor(score: number): string {
+  if (score >= 70) return STABILITY_DOT_COLORS.green;
+  if (score >= 50) return STABILITY_DOT_COLORS.yellow;
+  if (score >= 30) return STABILITY_DOT_COLORS.orange;
+  return STABILITY_DOT_COLORS.red;
+}
 
 const TabIcon = React.memo(
   ({
@@ -24,38 +39,64 @@ const TabIcon = React.memo(
   }) => <IconComponent color={color} size={size} />,
 );
 
+const HomeTabIcon = React.memo(
+  ({ color, size, dotColor }: { color: string; size: number; dotColor: string }) => (
+    <View style={{ width: size + 6, height: size + 2, alignItems: 'center', justifyContent: 'center' }}>
+      <Home color={color} size={size} />
+      <View
+        style={{
+          position: 'absolute',
+          top: -1,
+          right: 0,
+          width: 7,
+          height: 7,
+          borderRadius: 3.5,
+          backgroundColor: dotColor,
+          borderWidth: 1,
+          borderColor: Colors.tabBar,
+        }}
+      />
+    </View>
+  ),
+);
+
 export default function TabLayout() {
+  const { stabilityScore } = useAppMeta();
+  const dotColor = getStabilityDotColor(stabilityScore);
+
+  const ICON_SIZE = 20;
+
   const renderHomeIcon = useCallback(
-    ({ color, size }: { color: string; size: number }) => (
-      <TabIcon IconComponent={Home} color={color} size={size} />
+    ({ color }: { color: string }) => (
+      <HomeTabIcon color={color} size={ICON_SIZE} dotColor={dotColor} />
     ),
-    [],
+    [dotColor],
   );
 
-  const renderCheckInsIcon = useCallback(
-    ({ color, size }: { color: string; size: number }) => (
-      <TabIcon IconComponent={Activity} color={color} size={size} />
+  const renderProgressIcon = useCallback(
+    ({ color }: { color: string }) => (
+      <TabIcon IconComponent={TrendingUp} color={color} size={ICON_SIZE} />
     ),
     [],
   );
 
   const renderRebuildIcon = useCallback(
-    ({ color, size }: { color: string; size: number }) => (
-      <TabIcon IconComponent={Hammer} color={color} size={size} />
+    ({ color }: { color: string }) => (
+      <TabIcon IconComponent={Hammer} color={color} size={ICON_SIZE} />
     ),
     [],
   );
 
   const renderConnectionIcon = useCallback(
-    ({ color, size }: { color: string; size: number }) => (
-      <TabIcon IconComponent={Users} color={color} size={size} />
+    ({ color }: { color: string }) => (
+      <TabIcon IconComponent={Users} color={color} size={ICON_SIZE} />
     ),
     [],
   );
 
   const renderProfileIcon = useCallback(
-    ({ color, size }: { color: string; size: number }) => (
-      <TabIcon IconComponent={User} color={color} size={size} />
+    ({ color }: { color: string }) => (
+      <TabIcon IconComponent={User} color={color} size={ICON_SIZE} />
     ),
     [],
   );
@@ -67,6 +108,7 @@ export default function TabLayout() {
           headerShown: false,
           tabBarActiveTintColor: Colors.primary,
           tabBarInactiveTintColor: Colors.textMuted,
+          tabBarShowLabel: true,
           tabBarStyle: {
             backgroundColor: Colors.tabBar,
             borderTopColor: Colors.border,
@@ -87,10 +129,10 @@ export default function TabLayout() {
           }}
         />
         <Tabs.Screen
-          name="check-ins/index"
+          name="progress"
           options={{
-            title: "Check-Ins",
-            tabBarIcon: renderCheckInsIcon,
+            title: "Progress",
+            tabBarIcon: renderProgressIcon,
           }}
         />
         <Tabs.Screen
@@ -103,7 +145,7 @@ export default function TabLayout() {
         <Tabs.Screen
           name="connection"
           options={{
-            title: "Connection",
+            title: "Connect",
             tabBarIcon: renderConnectionIcon,
           }}
         />
@@ -127,7 +169,7 @@ export default function TabLayout() {
           }}
         />
         <Tabs.Screen
-          name="progress"
+          name="check-ins/index"
           options={{
             href: null,
           }}

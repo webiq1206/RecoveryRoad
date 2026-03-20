@@ -132,7 +132,7 @@ export default function EnterpriseReports() {
                   <View style={styles.reportInfo}>
                     <Text style={styles.reportTitle}>{report.title}</Text>
                     <Text style={styles.reportMeta}>
-                      {formatDate(report.periodStart)} — {formatDate(report.periodEnd)}
+                      {formatDate(report.periodStart)} - {formatDate(report.periodEnd)}
                     </Text>
                   </View>
                   <View style={styles.reportStatus}>

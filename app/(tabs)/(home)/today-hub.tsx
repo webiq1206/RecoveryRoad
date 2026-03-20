@@ -1,26 +1,71 @@
-import React from 'react';
-import { View, Text, StyleSheet, ScrollView, Pressable } from 'react-native';
+import React, { useEffect, useRef } from 'react';
+import {
+  View,
+  Text,
+  StyleSheet,
+  ScrollView,
+  Pressable,
+  Animated as RNAnimated,
+} from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter, Redirect, usePathname } from 'expo-router';
-import { ArrowRight, AlertTriangle, Activity, Sparkles, BarChart3, Check } from 'lucide-react-native';
+import {
+  ArrowRight,
+  AlertTriangle,
+  Activity,
+  Sparkles,
+  BarChart3,
+  Check,
+  CheckCircle2,
+  ChevronRight,
+  Info,
+} from 'lucide-react-native';
 import * as Haptics from 'expo-haptics';
 import Colors from '@/constants/colors';
 import { MOOD_EMOJIS, MOOD_LABELS } from '@/constants/milestones';
 import { useUser } from '@/core/domains/useUser';
 import { useCheckin } from '@/core/domains/useCheckin';
 import { useAppStore } from '@/stores/useAppStore';
-import { useTodayHub, type UiTodayPlanAction } from '@/features/home/hooks/useTodayHub';
+import { useTodayHub } from '@/features/home/hooks/useTodayHub';
+import { useWizardEngineHook } from '@/hooks/useWizardEngine';
 import { HomeLoadingSkeleton } from '@/components/LoadingSkeleton';
 import { RecoveryStabilityPanel } from '@/components/RecoveryStabilityPanel';
-import { usePersonalization } from '@/features/home/hooks/usePersonalization';
 import { getStrictRedirectTarget, resolveCanonicalRoute } from '@/utils/legacyRoutes';
 import type { CheckInTimeOfDay } from '@/types';
+import type { WizardAction } from '@/utils/wizardEngine';
 
 const CHECK_IN_PERIODS: { period: CheckInTimeOfDay; title: string }[] = [
   { period: 'morning', title: 'Morning\nCheck-In' },
   { period: 'afternoon', title: 'Afternoon\nCheck-In' },
   { period: 'evening', title: 'Evening\nCheck-In' },
 ];
+
+function ActionToast({ title, onDone }: { title: string; onDone: () => void }) {
+  const opacity = useRef(new RNAnimated.Value(0)).current;
+  useEffect(() => {
+    RNAnimated.sequence([
+      RNAnimated.timing(opacity, {
+        toValue: 1,
+        duration: 250,
+        useNativeDriver: true,
+      }),
+      RNAnimated.delay(2500),
+      RNAnimated.timing(opacity, {
+        toValue: 0,
+        duration: 400,
+        useNativeDriver: true,
+      }),
+    ]).start(() => onDone());
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+  }, []);
+
+  return (
+    <RNAnimated.View style={[styles.toastCard, { opacity }]}>
+      <CheckCircle2 size={18} color={Colors.primary} />
+      <Text style={styles.toastText}>{title} done</Text>
+    </RNAnimated.View>
+  );
+}
 
 export default function TodayHubScreen() {
   const insets = useSafeAreaInsets();
@@ -30,7 +75,8 @@ export default function TodayHubScreen() {
   const { profile } = useUser();
   const centralProfile = useAppStore((s) => s.userProfile);
   const { todayCheckIn, todayCheckIns } = useCheckin();
-  const personalization = usePersonalization();
+  const { plan: wizardPlan, recentCompletion, clearRecentCompletion } =
+    useWizardEngineHook();
 
   const displayProfile = centralProfile ?? profile;
 
@@ -38,8 +84,7 @@ export default function TodayHubScreen() {
     const hour = new Date().getHours();
     const base =
       hour < 12 ? 'Good morning' : hour < 18 ? 'Good afternoon' : 'Good evening';
-    const firstName =
-      displayProfile?.name?.split?.(' ')?.[0] || 'there';
+    const firstName = displayProfile?.name?.split?.(' ')?.[0] || 'there';
     return `${base}, ${firstName}`;
   })();
 
@@ -75,19 +120,16 @@ export default function TodayHubScreen() {
     return <Redirect href={'/onboarding' as any} />;
   }
 
-  const { stability, relapseRisk, todayPlan, primaryAction, showRelapsePlanCta } = vm;
+  const { stability, relapseRisk, showRelapsePlanCta } = vm;
+  const { setupProgress, dailyGuidance } = wizardPlan;
 
   const isPeriodComplete = (period: CheckInTimeOfDay) =>
     todayCheckIns.some((c) => c.timeOfDay === period);
-  const filteredPriorityActions = todayPlan.priorityActions.filter(
-    (action) => action.id !== primaryAction?.id
-  );
-  const filteredOptionalActions = todayPlan.optionalActions.filter(
-    (action) => action.id !== primaryAction?.id
-  );
-  const quickActionRoutes = new Set(['/daily-checkin', '/tools', '/progress']);
-  const shouldHidePrimaryAction =
-    !!primaryAction && quickActionRoutes.has(resolveCanonicalRoute(primaryAction.route));
+
+  const handleActionPress = (action: WizardAction) => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    router.push(resolveCanonicalRoute(action.route) as any);
+  };
 
   return (
     <View style={[styles.wrapper, { paddingTop: insets.top }]}>
@@ -99,54 +141,68 @@ export default function TodayHubScreen() {
         ]}
         showsVerticalScrollIndicator={false}
       >
+        {/* Greeting */}
         <View style={styles.header}>
           <Text style={styles.greetingLabel}>{greetingLabel}</Text>
           <Text style={styles.greetingSubtitle}>
-            A quick snapshot of how you&apos;re doing and what to do next.
+            {dailyGuidance.isReentryMode
+              ? 'Welcome back. Let\u2019s ease into today.'
+              : 'A quick snapshot of how you\u2019re doing and what to do next.'}
           </Text>
         </View>
 
-        {(personalization.highUrgeCrisisHint.shouldHighlightCrisisTools ||
-          personalization.nightRiskWarning.shouldWarn ||
-          personalization.lowMoodSuggestions.shouldSuggest) && (
-          <View style={styles.personalizationCard}>
-            {personalization.highUrgeCrisisHint.shouldHighlightCrisisTools &&
-              personalization.highUrgeCrisisHint.message && (
-                <View style={styles.personalizationRow}>
-                  <View style={styles.personalizationIconWrap}>
-                    <AlertTriangle size={16} color={Colors.danger} />
-                  </View>
-                  <Text style={styles.personalizationText}>
-                    {personalization.highUrgeCrisisHint.message}
-                  </Text>
-                </View>
-              )}
+        {/* Setup progress banner for new/incomplete users */}
+        {setupProgress && setupProgress.nextStep && (
+          <Pressable
+            style={({ pressed }) => [
+              styles.setupBanner,
+              pressed && styles.pressed,
+            ]}
+            onPress={() => {
+              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+              router.push(resolveCanonicalRoute(setupProgress.nextStep!.route) as any);
+            }}
+            testID="todayhub-setup-banner"
+          >
+            <View style={styles.setupProgressBar}>
+              <View
+                style={[
+                  styles.setupProgressFill,
+                  {
+                    width: `${(setupProgress.completedSteps / setupProgress.totalSteps) * 100}%`,
+                  },
+                ]}
+              />
+            </View>
+            <View style={styles.setupTextWrap}>
+              <Text style={styles.setupTitle}>
+                {setupProgress.completedSteps} of {setupProgress.totalSteps} setup
+                steps done
+              </Text>
+              <Text style={styles.setupNext}>
+                Next: {setupProgress.nextStep.title}
+              </Text>
+            </View>
+            <ChevronRight size={18} color={Colors.primary} />
+          </Pressable>
+        )}
 
-            {personalization.nightRiskWarning.shouldWarn &&
-              personalization.nightRiskWarning.message && (
-                <View style={styles.personalizationRow}>
-                  <View style={styles.personalizationIconWrap}>
-                    <Activity size={16} color={Colors.accent} />
-                  </View>
-                  <Text style={styles.personalizationText}>
-                    {personalization.nightRiskWarning.message}
-                  </Text>
-                </View>
-              )}
+        {/* Context hint (replaces PersonalizationCard) */}
+        {dailyGuidance.contextHint && (
+          <View style={styles.contextHintCard}>
+            <Info size={16} color={Colors.accent} />
+            <Text style={styles.contextHintText}>
+              {dailyGuidance.contextHint}
+            </Text>
+          </View>
+        )}
 
-            {personalization.lowMoodSuggestions.shouldSuggest &&
-              personalization.lowMoodSuggestions.suggestions.length > 0 && (
-                <View style={styles.personalizationLowMood}>
-                  <Text style={styles.personalizationLowMoodTitle}>
-                    Try one small thing:
-                  </Text>
-                  {personalization.lowMoodSuggestions.suggestions.map((suggestion) => (
-                    <Text key={suggestion} style={styles.personalizationLowMoodItem}>
-                      • {suggestion}
-                    </Text>
-                  ))}
-                </View>
-              )}
+        {/* Encouragement message */}
+        {dailyGuidance.encouragement && (
+          <View style={styles.encouragementCard}>
+            <Text style={styles.encouragementText}>
+              {dailyGuidance.encouragement}
+            </Text>
           </View>
         )}
 
@@ -224,21 +280,64 @@ export default function TodayHubScreen() {
                 >
                   {title}
                 </Text>
-                <Text style={styles.checkInChipSub}>
-                  {done ? 'Done' : 'Tap'}
-                </Text>
+                <Text style={styles.checkInChipSub}>{done ? 'Done' : 'Tap'}</Text>
               </Pressable>
             );
           })}
         </View>
 
-        {/* Quick actions */}
+        {/* Completion card */}
+        {dailyGuidance.isComplete && dailyGuidance.completionMessage && (
+          <View style={styles.completionCard}>
+            <CheckCircle2 size={22} color={Colors.primary} />
+            <View style={styles.completionTextWrap}>
+              <Text style={styles.completionMessage}>
+                {dailyGuidance.completionMessage}
+              </Text>
+              <Pressable
+                onPress={() => {
+                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                  router.push('/progress' as any);
+                }}
+              >
+                <Text style={styles.completionLink}>See your progress</Text>
+              </Pressable>
+            </View>
+          </View>
+        )}
+
+        {/* Primary action card (from wizard) */}
+        {!dailyGuidance.isComplete && dailyGuidance.primaryAction && (
+          <>
+            <Text style={styles.sectionLabel}>Your next step</Text>
+            <Pressable
+              style={({ pressed }) => [
+                styles.primaryActionCard,
+                pressed && styles.pressed,
+              ]}
+              onPress={() => handleActionPress(dailyGuidance.primaryAction!)}
+              testID="todayhub-primary-action"
+            >
+              <View style={styles.primaryIconWrap}>
+                <ArrowRight size={24} color={Colors.primary} />
+              </View>
+              <View style={styles.primaryTextWrap}>
+                <Text style={styles.primaryTitle}>
+                  {dailyGuidance.primaryAction.title}
+                </Text>
+                <Text style={styles.primarySubtitle}>
+                  {dailyGuidance.primaryAction.subtitle}
+                </Text>
+              </View>
+              <ArrowRight size={20} color={Colors.primary} />
+            </Pressable>
+          </>
+        )}
+
+        {/* Quick actions (kept as persistent shortcuts) */}
         <View style={styles.quickRow}>
           <Pressable
-            style={({ pressed }) => [
-              styles.quickCard,
-              pressed && styles.pressed,
-            ]}
+            style={({ pressed }) => [styles.quickCard, pressed && styles.pressed]}
             onPress={() => {
               Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
               router.push('/tools' as any);
@@ -250,12 +349,8 @@ export default function TodayHubScreen() {
             </View>
             <Text style={styles.quickLabel}>Tools</Text>
           </Pressable>
-
           <Pressable
-            style={({ pressed }) => [
-              styles.quickCard,
-              pressed && styles.pressed,
-            ]}
+            style={({ pressed }) => [styles.quickCard, pressed && styles.pressed]}
             onPress={() => {
               Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
               router.push('/progress' as any);
@@ -296,102 +391,87 @@ export default function TodayHubScreen() {
             <View style={styles.relapsePlanTextWrap}>
               <Text style={styles.relapsePlanTitle}>Open your Relapse Plan</Text>
               <Text style={styles.relapsePlanSubtitle}>
-                Review warning signs, triggers, and coping strategies while risk is high.
+                Review warning signs, triggers, and coping strategies while risk is
+                high.
               </Text>
             </View>
             <ArrowRight size={20} color={Colors.danger} />
           </Pressable>
         )}
 
-        {!shouldHidePrimaryAction && (
+        {/* Post-action feedback toast */}
+        {recentCompletion &&
+          Date.now() - recentCompletion.timestamp < 4000 && (
+            <ActionToast
+              title={recentCompletion.actionTitle}
+              onDone={clearRecentCompletion}
+            />
+          )}
+
+        {/* Daily actions list (from wizard engine) */}
+        {dailyGuidance.actions.length > 0 && (
           <>
-            {/* Immediate next action */}
-            <Text style={styles.sectionLabel}>Immediate next action</Text>
-            {primaryAction ? (
-              <Pressable
-                style={({ pressed }) => [
-                  styles.primaryActionCard,
-                  pressed && styles.pressed,
-                ]}
-                onPress={() => {
-                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
-                  router.push(resolveCanonicalRoute(primaryAction.route) as any);
-                }}
-                testID="todayhub-primary-action"
-              >
-                <View style={styles.primaryIconWrap}>
-                  <primaryAction.icon size={24} color={Colors.primary} />
-                </View>
-                <View style={styles.primaryTextWrap}>
-                  <Text style={styles.primaryTitle}>{primaryAction.title}</Text>
-                  <Text style={styles.primarySubtitle}>{primaryAction.subtitle}</Text>
-                </View>
-                <ArrowRight size={20} color={Colors.primary} />
-              </Pressable>
-            ) : (
-              <View style={styles.emptyStateCard}>
-                <Text style={styles.emptyStateText}>
-                  We&apos;ll suggest your next steps once you&apos;ve completed a few check-ins.
-                </Text>
-              </View>
-            )}
+            <Text style={styles.planTitle}>
+              {dailyGuidance.isReentryMode ? 'Start here' : "Today's guidance"}
+            </Text>
+            <View style={styles.planCard}>
+              {dailyGuidance.actions.map((action) => (
+                <Pressable
+                  key={action.id}
+                  style={({ pressed }) => [
+                    styles.planRow,
+                    action.completed && styles.planRowDone,
+                    pressed && !action.completed && styles.pressed,
+                  ]}
+                  onPress={() => {
+                    if (!action.completed) handleActionPress(action);
+                  }}
+                  disabled={action.completed}
+                  testID={`todayhub-action-${action.id}`}
+                >
+                  <View
+                    style={[
+                      styles.planStepBadge,
+                      action.completed && styles.planStepBadgeDone,
+                    ]}
+                  >
+                    {action.completed ? (
+                      <Check size={14} color="#FFF" />
+                    ) : (
+                      <ArrowRight size={14} color={Colors.primary} />
+                    )}
+                  </View>
+                  <View style={styles.planTextWrap}>
+                    <Text
+                      style={[
+                        styles.planRowTitle,
+                        action.completed && styles.planRowTitleDone,
+                      ]}
+                    >
+                      {action.title}
+                    </Text>
+                    <Text
+                      style={[
+                        styles.planRowSubtitle,
+                        action.completed && styles.planRowSubtitleDone,
+                      ]}
+                    >
+                      {action.subtitle}
+                    </Text>
+                  </View>
+                  {!action.completed && (
+                    <ChevronRight size={18} color={Colors.textSecondary} />
+                  )}
+                </Pressable>
+              ))}
+            </View>
           </>
         )}
 
-        {/* Daily plan */}
-        <Text style={styles.planTitle}>Daily plan</Text>
-        <View style={styles.planCard}>
-          {filteredPriorityActions.map((action: UiTodayPlanAction) => (
-            <Pressable
-              key={action.id}
-              style={({ pressed }) => [
-                styles.planRow,
-                pressed && styles.pressed,
-              ]}
-              onPress={() => {
-                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                router.push(resolveCanonicalRoute(action.route) as any);
-              }}
-              testID={`todayhub-plan-priority-${action.id}`}
-            >
-              <View style={styles.planIconWrap}>
-                <action.icon size={20} color={Colors.primary} />
-              </View>
-              <View style={styles.planTextWrap}>
-                <Text style={styles.planRowTitle}>{action.title}</Text>
-                <Text style={styles.planRowSubtitle}>{action.subtitle}</Text>
-              </View>
-              <ArrowRight size={18} color={Colors.textSecondary} />
-            </Pressable>
-          ))}
-          {filteredOptionalActions.map((action: UiTodayPlanAction) => (
-            <Pressable
-              key={action.id}
-              style={({ pressed }) => [
-                styles.planRow,
-                pressed && styles.pressed,
-              ]}
-              onPress={() => {
-                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                router.push(resolveCanonicalRoute(action.route) as any);
-              }}
-              testID={`todayhub-plan-${action.id}`}
-            >
-              <View style={styles.planIconWrap}>
-                <action.icon size={20} color={Colors.primary} />
-              </View>
-              <View style={styles.planTextWrap}>
-                <Text style={styles.planRowTitle}>{action.title}</Text>
-                <Text style={styles.planRowSubtitle}>{action.subtitle}</Text>
-              </View>
-              <ArrowRight size={18} color={Colors.textSecondary} />
-            </Pressable>
-          ))}
-        </View>
-
-        {!!todayPlan.riskWarnings.length && (
+        {/* Risk warnings (from wizard engine) */}
+        {dailyGuidance.riskWarnings.length > 0 && (
           <View style={styles.warningCard}>
-            {todayPlan.riskWarnings.map((warning, index) => (
+            {dailyGuidance.riskWarnings.map((warning, index) => (
               <View key={index} style={styles.warningRow}>
                 <AlertTriangle size={16} color={Colors.danger} />
                 <Text style={styles.warningText}>{warning}</Text>
@@ -436,6 +516,80 @@ const styles = StyleSheet.create({
     letterSpacing: 1,
     marginBottom: 8,
     textTransform: 'uppercase',
+  },
+  setupBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: Colors.primary + '10',
+    borderRadius: 16,
+    padding: 14,
+    borderWidth: 1,
+    borderColor: Colors.primary + '30',
+    marginBottom: 14,
+    gap: 12,
+  },
+  setupProgressBar: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: Colors.primary + '20',
+    overflow: 'hidden',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  setupProgressFill: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    backgroundColor: Colors.primary,
+  },
+  setupTextWrap: {
+    flex: 1,
+  },
+  setupTitle: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: Colors.text,
+  },
+  setupNext: {
+    fontSize: 12,
+    color: Colors.primary,
+    fontWeight: '600',
+    marginTop: 2,
+  },
+  contextHintCard: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    backgroundColor: Colors.cardBackground,
+    borderRadius: 14,
+    paddingVertical: 10,
+    paddingHorizontal: 12,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    marginBottom: 14,
+    gap: 8,
+  },
+  contextHintText: {
+    flex: 1,
+    fontSize: 13,
+    color: Colors.textSecondary,
+    lineHeight: 20,
+  },
+  encouragementCard: {
+    backgroundColor: Colors.primary + '0A',
+    borderRadius: 14,
+    paddingVertical: 10,
+    paddingHorizontal: 14,
+    borderWidth: 1,
+    borderColor: Colors.primary + '20',
+    marginBottom: 14,
+  },
+  encouragementText: {
+    fontSize: 14,
+    color: Colors.primary,
+    fontWeight: '600',
+    lineHeight: 21,
   },
   stateCard: {
     backgroundColor: Colors.cardBackground,
@@ -555,49 +709,31 @@ const styles = StyleSheet.create({
     textTransform: 'uppercase',
     letterSpacing: 0.6,
   },
-  quickRow: {
+  completionCard: {
     flexDirection: 'row',
-    gap: 10,
-    marginBottom: 18,
-  },
-  quickCard: {
-    flex: 1,
-    backgroundColor: Colors.cardBackground,
-    borderRadius: 14,
-    paddingVertical: 10,
-    paddingHorizontal: 10,
-    borderWidth: 1,
-    borderColor: Colors.border,
     alignItems: 'flex-start',
-    justifyContent: 'center',
+    backgroundColor: Colors.primary + '0C',
+    borderRadius: 18,
+    padding: 16,
+    borderWidth: 1,
+    borderColor: Colors.primary + '30',
+    marginBottom: 14,
+    gap: 12,
+  },
+  completionTextWrap: {
+    flex: 1,
     gap: 6,
   },
-  quickIconWrap: {
-    width: 26,
-    height: 26,
-    borderRadius: 9,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: Colors.surface,
-  },
-  quickLabel: {
-    fontSize: 13,
+  completionMessage: {
+    fontSize: 15,
     fontWeight: '600',
     color: Colors.text,
+    lineHeight: 22,
   },
-  emptyStateCard: {
-    backgroundColor: Colors.cardBackground,
-    borderRadius: 18,
-    paddingVertical: 18,
-    paddingHorizontal: 16,
-    borderWidth: 1,
-    borderColor: Colors.border,
-    marginBottom: 18,
-  },
-  emptyStateText: {
-    fontSize: 14,
-    color: Colors.textSecondary,
-    textAlign: 'center',
+  completionLink: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: Colors.primary,
   },
   primaryActionCard: {
     flexDirection: 'row',
@@ -632,6 +768,36 @@ const styles = StyleSheet.create({
     color: Colors.textSecondary,
     marginTop: 2,
   },
+  quickRow: {
+    flexDirection: 'row',
+    gap: 10,
+    marginBottom: 18,
+  },
+  quickCard: {
+    flex: 1,
+    backgroundColor: Colors.cardBackground,
+    borderRadius: 14,
+    paddingVertical: 10,
+    paddingHorizontal: 10,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    alignItems: 'flex-start',
+    justifyContent: 'center',
+    gap: 6,
+  },
+  quickIconWrap: {
+    width: 26,
+    height: 26,
+    borderRadius: 9,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: Colors.surface,
+  },
+  quickLabel: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: Colors.text,
+  },
   planTitle: {
     fontSize: 16,
     fontWeight: '700',
@@ -645,6 +811,46 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: Colors.border,
     marginBottom: 24,
+  },
+  planRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 14,
+    paddingHorizontal: 14,
+    gap: 12,
+  },
+  planRowDone: {
+    opacity: 0.6,
+  },
+  planStepBadge: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    backgroundColor: Colors.primary + '20',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  planStepBadgeDone: {
+    backgroundColor: Colors.primary,
+  },
+  planTextWrap: {
+    flex: 1,
+  },
+  planRowTitle: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: Colors.text,
+  },
+  planRowTitleDone: {
+    color: Colors.textSecondary,
+  },
+  planRowSubtitle: {
+    fontSize: 13,
+    color: Colors.textSecondary,
+    marginTop: 2,
+  },
+  planRowSubtitleDone: {
+    color: Colors.textMuted,
   },
   warningCard: {
     backgroundColor: Colors.danger + '08',
@@ -664,37 +870,6 @@ const styles = StyleSheet.create({
     flex: 1,
     fontSize: 12,
     color: Colors.textSecondary,
-  },
-  planRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingVertical: 14,
-    paddingHorizontal: 14,
-    gap: 12,
-  },
-  planIconWrap: {
-    width: 40,
-    height: 40,
-    borderRadius: 12,
-    backgroundColor: Colors.surface,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  planTextWrap: {
-    flex: 1,
-  },
-  planRowTitle: {
-    fontSize: 15,
-    fontWeight: '600',
-    color: Colors.text,
-  },
-  planRowSubtitle: {
-    fontSize: 13,
-    color: Colors.textSecondary,
-    marginTop: 2,
-  },
-  pressed: {
-    opacity: 0.9,
   },
   relapsePlanCard: {
     flexDirection: 'row',
@@ -729,48 +904,25 @@ const styles = StyleSheet.create({
     color: Colors.textSecondary,
     marginTop: 2,
   },
-  personalizationCard: {
-    backgroundColor: Colors.cardBackground,
-    borderRadius: 16,
-    paddingVertical: 10,
-    paddingHorizontal: 12,
-    borderWidth: 1,
-    borderColor: Colors.border,
-    marginBottom: 14,
-    gap: 8,
-  },
-  personalizationRow: {
+  toastCard: {
     flexDirection: 'row',
-    alignItems: 'flex-start',
-    gap: 8,
-  },
-  personalizationIconWrap: {
-    width: 24,
-    height: 24,
-    borderRadius: 8,
     alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: Colors.surface,
+    backgroundColor: Colors.primary + '15',
+    borderRadius: 14,
+    paddingVertical: 10,
+    paddingHorizontal: 14,
+    gap: 8,
+    marginBottom: 14,
+    borderWidth: 1,
+    borderColor: Colors.primary + '30',
   },
-  personalizationText: {
+  toastText: {
     flex: 1,
-    fontSize: 13,
-    color: Colors.textSecondary,
-    lineHeight: 20,
-  },
-  personalizationLowMood: {
-    marginTop: 4,
-  },
-  personalizationLowMoodTitle: {
-    fontSize: 13,
+    fontSize: 14,
     fontWeight: '600',
-    color: Colors.text,
-    marginBottom: 2,
+    color: Colors.primary,
   },
-  personalizationLowMoodItem: {
-    fontSize: 13,
-    color: Colors.textSecondary,
-    lineHeight: 19,
+  pressed: {
+    opacity: 0.9,
   },
 });
-

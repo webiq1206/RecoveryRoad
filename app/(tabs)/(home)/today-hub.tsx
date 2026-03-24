@@ -162,7 +162,9 @@ export default function TodayHubScreen() {
         </View>
 
         {/* Setup progress banner for new/incomplete users */}
-        {setupProgress && setupProgress.nextStep && (
+        {setupProgress &&
+          setupProgress.completedSteps < setupProgress.totalSteps &&
+          setupProgress.nextStep && (
           <Pressable
             style={({ pressed }) => [
               styles.setupBanner,
@@ -170,7 +172,11 @@ export default function TodayHubScreen() {
             ]}
             onPress={() => {
               Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-              router.push(resolveCanonicalRoute(setupProgress.nextStep!.route) as any);
+              const step =
+                setupProgress.nextStep ?? setupProgress.remainingSteps[0];
+              if (step) {
+                router.push(resolveCanonicalRoute(step.route) as any);
+              }
             }}
             testID="todayhub-setup-banner"
           >

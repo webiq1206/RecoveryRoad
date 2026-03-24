@@ -2,7 +2,17 @@ import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { ScreenScrollView } from '@/components/ScreenScrollView';
 import { Stack } from 'expo-router';
-import { RefreshCw, Leaf, TrendingUp, Shield, Users, Info, Zap, ArrowRight } from 'lucide-react-native';
+import {
+  RefreshCw,
+  Leaf,
+  TrendingUp,
+  Shield,
+  Users,
+  Info,
+  Zap,
+  ArrowRight,
+  BarChart3,
+} from 'lucide-react-native';
 import Colors from '@/constants/colors';
 
 interface ExplainerCardProps {
@@ -65,6 +75,37 @@ export default function RecoveryInsightsExplainedScreen() {
           Recovery Insights track the emotional and behavioral patterns that keep you engaged in your recovery. They measure how actively you're building positive reinforcement loops - the habits and actions that naturally motivate you to keep going.
         </Text>
       </View>
+
+      <Text style={styles.sectionTitle}>UNDERSTANDING THE SUMMARY</Text>
+
+      <ExplainerCard
+        icon={<BarChart3 size={18} color={Colors.primary} />}
+        title="The metrics at the top of Recovery Insights"
+        accentColor={Colors.primary}
+      >
+        <Text style={styles.bodyText}>
+          The card at the top of Recovery Insights gives you a quick read on momentum, emotional
+          steadiness, confidence, and how many reinforcement loops are active. Here is what each
+          number represents.
+        </Text>
+        <View style={styles.spacer} />
+        <TriggerRow
+          label="Recovery Momentum (overall strength)"
+          description="A 0–100 score that blends how strong your four reinforcement loops are with how far you are along your micro-progress dimensions. It uses 40% the average of your loop scores and 60% the average of your micro-progress completion (current value vs. target for each area). Higher means you are engaging both habit loops and steady growth signals."
+        />
+        <TriggerRow
+          label="Stable days"
+          description="Your current streak of days where recent daily check-ins show emotionally steady mood patterns (lower day-to-day volatility). It tracks the Emotional Regulation dimension. If moods swing widely again, the streak can reset until patterns settle."
+        />
+        <TriggerRow
+          label="Confidence"
+          description="A 0–100 confidence-in-recovery score built from sober time, check-in consistency, navigating high-craving days, journaling, pledge streaks, and light community connection. It summarizes how much evidence you are building that you can stay on your path."
+        />
+        <TriggerRow
+          label="Active loops"
+          description="How many of the four reinforcement loops—Relief, Growth, Control, and Belonging—currently have a score above zero (meaning each has been activated at least once). It is a count of which loops are “on,” not how strong they are."
+        />
+      </ExplainerCard>
 
       <Text style={styles.sectionTitle}>WHAT ARE REINFORCEMENT LOOPS?</Text>
 

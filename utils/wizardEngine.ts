@@ -291,25 +291,6 @@ function scoreAction(
 // ── Setup progress ───────────────────────────────────────────────────────
 
 function buildSetupProgress(input: WizardEngineInput): WizardPlan['setupProgress'] {
-  if (input.hasCompletedOnboarding) {
-    const completedIds = new Set<string>();
-    if (input.hasTriggers) completedIds.add('protection-profile');
-    if (input.hasEmergencyContacts) completedIds.add('emergency-contacts');
-    if (input.hasRebuildConfigured) completedIds.add('rebuild-plan');
-    if (input.hasAccountabilityConfigured) completedIds.add('accountability');
-
-    completedIds.add('core-profile');
-    const remaining = SETUP_STEPS.filter((s) => !completedIds.has(s.id));
-    if (remaining.length === 0) return null;
-
-    return {
-      completedSteps: SETUP_STEPS.length - remaining.length,
-      totalSteps: SETUP_STEPS.length,
-      nextStep: remaining[0],
-      remainingSteps: remaining,
-    };
-  }
-
   const onboardingCompleted = getCompletedOnboardingSteps(
     input.profile,
     input.emergencyContacts,
@@ -317,9 +298,11 @@ function buildSetupProgress(input: WizardEngineInput): WizardPlan['setupProgress
   );
   const onboardingDone = onboardingCompleted.size === ONBOARDING_STEP_IDS.length;
 
-  if (onboardingDone) return null;
+  // Core profile counts once onboarding flow is finished OR the persisted flag is set.
+  // Do not hide setup progress when onboarding UI is done but optional steps remain
+  // (previously `if (onboardingDone) return null` caused "4 of 5" to vanish on the home screen).
+  const coreProfileDone = input.hasCompletedOnboarding || onboardingDone;
 
-  const coreProfileDone = onboardingDone || input.hasCompletedOnboarding;
   const completedIds = new Set<string>();
   if (coreProfileDone) completedIds.add('core-profile');
   if (input.hasTriggers) completedIds.add('protection-profile');

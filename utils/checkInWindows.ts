@@ -1,6 +1,12 @@
 import type { CheckInTimeOfDay } from '@/types';
 
 /**
+ * When true, all check-in periods are tappable from the home screen regardless of
+ * time-of-day windows. Set to `false` before release (restore normal morning/afternoon/evening windows).
+ */
+export const BYPASS_CHECK_IN_TIME_WINDOWS = true;
+
+/**
  * Local-time windows for which period's check-in can be opened from the home screen.
  * Morning: 5:00 AM – 11:59 AM
  * Afternoon: 12:00 PM – 5:59 PM
@@ -11,6 +17,7 @@ export function minutesSinceMidnightLocal(d: Date): number {
 }
 
 export function isCheckInPeriodInWindow(period: CheckInTimeOfDay, now: Date = new Date()): boolean {
+  if (BYPASS_CHECK_IN_TIME_WINDOWS) return true;
   const m = minutesSinceMidnightLocal(now);
   switch (period) {
     case 'morning':

@@ -36,6 +36,11 @@ import {
   type WizardAction,
   type WizardEngineInput,
 } from '@/utils/wizardEngine';
+import type { DailyCheckIn, UserProfile } from '@/types';
+import {
+  mergeRecoveryProfiles,
+  mergeTodayCheckInsFromSources,
+} from '@/utils/mergeProfile';
 
 const EMPTY_PLAN: WizardPlan = {
   setupProgress: null,
@@ -118,6 +123,7 @@ export function useWizardEngineHook(): WizardEngineResult {
   const stabilityScore = appMetaHook?.stabilityScore ?? 50;
 
   const centralProfile = useAppStore((s) => s.userProfile);
+  const centralDailyCheckIns = useAppStore((s) => s.dailyCheckIns);
 
   const stageHook = useStageDetection();
   const currentStage = stageHook?.currentStage;
@@ -270,13 +276,41 @@ export function useWizardEngineHook(): WizardEngineResult {
     return 'stable';
   }, [trendLabel]);
 
-  const safeProfile = profile ?? {} as any;
+  /** Prefer persisted app-store profile so setup progress matches after AsyncStorage hydrate. */
+  const mergedProfile = useMemo((): UserProfile | Record<string, never> => {
+    if (!profile && !centralProfile) return {} as Record<string, never>;
+    if (!centralProfile) return profile as UserProfile;
+    if (!profile) return centralProfile;
+    const mergedRp = mergeRecoveryProfiles(
+      centralProfile.recoveryProfile,
+      profile.recoveryProfile,
+    );
+    return {
+      ...profile,
+      ...centralProfile,
+      hasCompletedOnboarding:
+        centralProfile.hasCompletedOnboarding ?? profile.hasCompletedOnboarding,
+      recoveryProfile:
+        mergedRp ?? profile.recoveryProfile ?? centralProfile.recoveryProfile,
+    };
+  }, [profile, centralProfile]);
+
+  const safeProfile = mergedProfile as UserProfile & Record<string, unknown>;
+
+  /** Merge today's rows from check-ins slice + persisted app store (per-period field merge). */
+  const mergedTodayCheckIns = useMemo((): DailyCheckIn[] => {
+    const todayStr = getToday();
+    return mergeTodayCheckInsFromSources(
+      todayCheckIns ?? [],
+      centralDailyCheckIns,
+      todayStr,
+    );
+  }, [todayCheckIns, centralDailyCheckIns]);
 
   const input: WizardEngineInput = useMemo(
     () => ({
-      hasCompletedOnboarding:
-        centralProfile?.hasCompletedOnboarding ?? safeProfile.hasCompletedOnboarding ?? false,
-      profile: safeProfile,
+      hasCompletedOnboarding: !!safeProfile.hasCompletedOnboarding,
+      profile: safeProfile as UserProfile,
       daysSober,
       hasEmergencyContacts: emergencyContactsCombined.length > 0,
       hasRebuildConfigured:
@@ -289,7 +323,7 @@ export function useWizardEngineHook(): WizardEngineResult {
       hasTriggers: (safeProfile.recoveryProfile?.triggers?.length ?? 0) > 0,
       emergencyContacts: emergencyContactsCombined,
       accountabilityData: accountabilityData ?? null,
-      todayCheckIns: todayCheckIns ?? [],
+      todayCheckIns: mergedTodayCheckIns,
       currentPeriod,
       stabilityScore: stabilityScore ?? 50,
       stabilityTrend,
@@ -318,13 +352,12 @@ export function useWizardEngineHook(): WizardEngineResult {
       daysSinceLastSession,
     }),
     [
-      centralProfile?.hasCompletedOnboarding,
       safeProfile,
       daysSober,
       emergencyContactsCombined,
       rebuildData,
       accountabilityData,
-      todayCheckIns,
+      mergedTodayCheckIns,
       currentPeriod,
       stabilityScore,
       stabilityTrend,

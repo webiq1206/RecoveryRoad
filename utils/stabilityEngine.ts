@@ -30,6 +30,63 @@ export type StabilityInput = {
   relapseLogged?: boolean;
 };
 
+/** Slider snapshot for a period check-in (0–100 each, except sleep band handled below). */
+export type DailyCheckInMetricsForStability = {
+  mood: number;
+  cravingLevel: number;
+  stress: number;
+  sleepQuality: number;
+  environment: number;
+  emotionalState: number;
+};
+
+/**
+ * Stability for one time-of-day check-in. Uses mood, emotions, cravings, stress, and
+ * environment together for intensity (not only mood + emotions), so morning / afternoon /
+ * evening can differ when those sliders differ.
+ */
+function normalizeSlider(v: unknown, fallback = 50): number {
+  const n = typeof v === 'number' ? v : Number(v);
+  return Number.isFinite(n) ? n : fallback;
+}
+
+export function computeDailyCheckInStabilityScore(
+  values: DailyCheckInMetricsForStability,
+  recoveryProfile?: { triggers?: string[]; supportAvailability?: string } | null,
+): number {
+  const mood = normalizeSlider(values.mood);
+  const emotional = normalizeSlider(values.emotionalState);
+  const craving = normalizeSlider(values.cravingLevel);
+  const stress = normalizeSlider(values.stress);
+  const environment = normalizeSlider(values.environment);
+  const distress =
+    ((100 - mood) + (100 - emotional) + craving + stress + (100 - environment)) / 5;
+  const intensity = Math.min(5, Math.max(1, Math.round(1 + (distress / 100) * 4)));
+
+  const sleepNum = normalizeSlider(values.sleepQuality);
+  const sleepQuality: 'poor' | 'okay' | 'good' =
+    sleepNum <= 33 ? 'poor' : sleepNum <= 66 ? 'okay' : 'good';
+
+  const rawSupport = recoveryProfile?.supportAvailability;
+  const supportLevel: StabilityInput['supportLevel'] =
+    rawSupport === 'none' ||
+    rawSupport === 'limited' ||
+    rawSupport === 'moderate' ||
+    rawSupport === 'strong'
+      ? rawSupport
+      : 'limited';
+
+  const input: StabilityInput = {
+    intensity,
+    sleepQuality,
+    triggers: recoveryProfile?.triggers ?? [],
+    supportLevel,
+    dailyActionsCompleted: 1,
+    relapseLogged: false,
+  };
+  return calculateStability(input).score;
+}
+
 export type StabilityResult = {
   score: number; // 0–100
   status: StabilityStatus;

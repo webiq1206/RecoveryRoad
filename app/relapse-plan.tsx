@@ -1,7 +1,7 @@
 import React, { useMemo, useState } from 'react';
 import { View, Text, StyleSheet, Pressable, TextInput } from 'react-native';
 import { ScreenScrollView } from '@/components/ScreenScrollView';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter, Stack } from 'expo-router';
 import { AlertTriangle, BookOpenCheck, ChevronRight, Shield, Users } from 'lucide-react-native';
 import * as Haptics from 'expo-haptics';
@@ -103,12 +103,7 @@ export default function RelapsePlanScreen() {
   const progress = currentStep / 5;
 
   return (
-    <View
-      style={[
-        styles.container,
-        { paddingTop: insets.top + 8, paddingBottom: insets.bottom + 12 },
-      ]}
-    >
+    <View style={styles.container}>
       <Stack.Screen
         options={{
           title: 'Relapse Plan',
@@ -162,7 +157,10 @@ export default function RelapsePlanScreen() {
 
       <ScreenScrollView
         style={styles.scroll}
-        contentContainerStyle={styles.scrollContent}
+        contentContainerStyle={[
+          styles.scrollContent,
+          { paddingBottom: 100 + insets.bottom },
+        ]}
         showsVerticalScrollIndicator={false}
       >
         <View style={styles.stepHeader}>
@@ -296,7 +294,7 @@ export default function RelapsePlanScreen() {
         )}
       </ScreenScrollView>
 
-      <View style={styles.footer}>
+      <SafeAreaView style={styles.footer} edges={['bottom']}>
         <Pressable
           style={({ pressed }) => [
             styles.primaryButton,
@@ -310,7 +308,7 @@ export default function RelapsePlanScreen() {
           </Text>
           <ChevronRight size={18} color="#FFFFFF" />
         </Pressable>
-      </View>
+      </SafeAreaView>
     </View>
   );
 }
@@ -390,7 +388,6 @@ const styles = StyleSheet.create({
   scrollContent: {
     paddingHorizontal: 20,
     paddingTop: 4,
-    paddingBottom: 90,
   },
   stepHeader: {
     marginBottom: 10,
@@ -495,7 +492,7 @@ const styles = StyleSheet.create({
     right: 0,
     bottom: 0,
     paddingHorizontal: 20,
-    paddingVertical: 10,
+    paddingTop: 10,
     backgroundColor: Colors.background,
     borderTopWidth: 1,
     borderTopColor: Colors.border,

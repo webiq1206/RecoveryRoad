@@ -8,7 +8,7 @@ import * as Haptics from 'expo-haptics';
 import { useRetention } from '@/providers/RetentionProvider';
 import { useUser } from '@/core/domains/useUser';
 import { useCheckin } from '@/core/domains/useCheckin';
-import { calculateStability } from '@/utils/stabilityEngine';
+import { computeDailyCheckInStabilityScore } from '@/utils/stabilityEngine';
 import {
   getEmotionalReflection,
   getScoreColor,
@@ -23,6 +23,10 @@ import {
 import type { DailyCheckIn, EmotionalTag } from '@/types';
 import { useAppStore } from '@/stores/useAppStore';
 import { selectCurrentCheckInPeriod } from '@/core/contracts/checkin';
+import {
+  mergeRecoveryProfiles,
+  mergeTodayCheckInsFromSources,
+} from '@/utils/mergeProfile';
 
 export interface PeriodConfig {
   label: string;
@@ -42,13 +46,32 @@ const DEFAULT_VALUES: Record<string, number> = {
 
 export function useDailyCheckInFlow(options?: { period?: CheckInTimeOfDay }) {
   const { profile, daysSober } = useUser();
+  const centralProfile = useAppStore((s) => s.userProfile);
+  const centralDailyCheckIns = useAppStore((s) => s.dailyCheckIns);
+  const recoveryProfileForStability = useMemo(
+    () =>
+      mergeRecoveryProfiles(
+        centralProfile?.recoveryProfile,
+        profile?.recoveryProfile,
+      ) ?? null,
+    [centralProfile?.recoveryProfile, profile?.recoveryProfile],
+  );
   const {
     addCheckIn,
     todayCheckIns,
-    morningCheckIn,
     checkIns,
     logNearMiss,
   } = useCheckin();
+
+  const mergedTodayCheckIns = useMemo(() => {
+    const todayStr = new Date().toISOString().split('T')[0];
+    return mergeTodayCheckInsFromSources(todayCheckIns, centralDailyCheckIns, todayStr);
+  }, [todayCheckIns, centralDailyCheckIns]);
+
+  const morningCheckIn = useMemo(
+    () => mergedTodayCheckIns.find((c) => c.timeOfDay === 'morning') ?? null,
+    [mergedTodayCheckIns],
+  );
   const addCheckInToCentralStore = useAppStore.use.addCheckIn();
   const { triggerLoop, generateSupportiveNotification } = useRetention();
 
@@ -56,8 +79,8 @@ export function useDailyCheckInFlow(options?: { period?: CheckInTimeOfDay }) {
     options?.period ?? selectCurrentCheckInPeriod(new Date());
 
   const currentPeriodCheckIn = useMemo(
-    () => todayCheckIns.find((c) => c.timeOfDay === currentCheckInPeriod) ?? null,
-    [todayCheckIns, currentCheckInPeriod],
+    () => mergedTodayCheckIns.find((c) => c.timeOfDay === currentCheckInPeriod) ?? null,
+    [mergedTodayCheckIns, currentCheckInPeriod],
   );
 
   const isMorning = currentCheckInPeriod === 'morning';
@@ -97,26 +120,18 @@ export function useDailyCheckInFlow(options?: { period?: CheckInTimeOfDay }) {
   );
 
   const stabilityScore = useMemo(() => {
-    const rp = profile?.recoveryProfile;
-    const mood = values.mood;
-    const emotional = values.emotionalState;
-    const intensity = Math.min(
-      5,
-      Math.max(1, Math.round(1 + ((100 - (mood + emotional) / 2) / 100) * 4))
+    return computeDailyCheckInStabilityScore(
+      {
+        mood: values.mood,
+        cravingLevel: values.cravingLevel,
+        stress: values.stress,
+        sleepQuality: values.sleepQuality,
+        environment: values.environment,
+        emotionalState: values.emotionalState,
+      },
+      recoveryProfileForStability,
     );
-    const sleepNum = values.sleepQuality;
-    const sleepQuality: 'poor' | 'okay' | 'good' =
-      sleepNum <= 33 ? 'poor' : sleepNum <= 66 ? 'okay' : 'good';
-    const input = {
-      intensity,
-      sleepQuality,
-      triggers: rp?.triggers ?? [],
-      supportLevel: rp?.supportAvailability ?? 'limited',
-      dailyActionsCompleted: 1,
-      relapseLogged: false,
-    };
-    return calculateStability(input).score;
-  }, [values, profile?.recoveryProfile]);
+  }, [values, recoveryProfileForStability]);
 
   const periodConfig = useMemo((): PeriodConfig => {
     const data = PERIOD_CONFIG_DATA[currentCheckInPeriod];
@@ -241,9 +256,9 @@ export function useDailyCheckInFlow(options?: { period?: CheckInTimeOfDay }) {
 
   const getCheckInForPeriod = useCallback(
     (period: CheckInTimeOfDay) => {
-      return todayCheckIns.find((c) => c.timeOfDay === period) ?? null;
+      return mergedTodayCheckIns.find((c) => c.timeOfDay === period) ?? null;
     },
-    [todayCheckIns]
+    [mergedTodayCheckIns]
   );
 
   const resultScoreColor = getScoreColor(calculatedScore);
@@ -277,7 +292,7 @@ export function useDailyCheckInFlow(options?: { period?: CheckInTimeOfDay }) {
     allPeriodsComplete,
     currentCheckInPeriod,
     currentPeriodCheckIn,
-    todayCheckIns,
+    todayCheckIns: mergedTodayCheckIns,
 
     // Result display helpers
     resultScoreColor,

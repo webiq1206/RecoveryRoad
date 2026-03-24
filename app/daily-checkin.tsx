@@ -30,14 +30,19 @@ import {
 import * as Haptics from 'expo-haptics';
 import Colors from '@/constants/colors';
 import { useDailyCheckInFlow } from '@/features/checkin/hooks/useDailyCheckInFlow';
+import { useUser } from '@/core/domains/useUser';
+import { useAppStore } from '@/stores/useAppStore';
+import { mergeRecoveryProfiles } from '@/utils/mergeProfile';
 import { getScoreColor, getScoreLabel } from '@/lib/services/checkInAnalysis';
+import { computeDailyCheckInStabilityScore } from '@/utils/stabilityEngine';
 import type { DailyCheckIn } from '@/types';
 import type { CheckInTimeOfDay } from '@/features/checkin/constants/checkinMetrics';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const SLIDER_WIDTH = SCREEN_WIDTH - 80;
 const THUMB_SIZE = 28;
-const SLIDER_DAMPING = 0.4;
+/** Lower = thumb moves less per pixel of finger travel (finer control). */
+const SLIDER_DAMPING = 0.22;
 
 const METRIC_ICONS: Record<string, React.ComponentType<{ size?: number; color?: string }>> = {
   heart: Heart,
@@ -94,6 +99,9 @@ interface CustomSliderProps {
 function CustomSlider({ metric, value, onValueChange, readOnly = false, locked = false }: CustomSliderProps) {
   const panX = useRef(new Animated.Value((value / 100) * SLIDER_WIDTH)).current;
   const lastValue = useRef(value);
+  const isDragging = useRef(false);
+  const dragStartValue = useRef(value);
+  const lastHapticValue = useRef(value);
   const isDisabled = readOnly || locked;
 
   const panResponder = useRef(
@@ -101,25 +109,32 @@ function CustomSlider({ metric, value, onValueChange, readOnly = false, locked =
       onStartShouldSetPanResponder: () => true,
       onMoveShouldSetPanResponder: () => true,
       onPanResponderGrant: () => {
-        panX.setOffset(lastValue.current / 100 * SLIDER_WIDTH);
+        isDragging.current = true;
+        dragStartValue.current = lastValue.current;
+        lastHapticValue.current = lastValue.current;
+        panX.setOffset((dragStartValue.current / 100) * SLIDER_WIDTH);
         panX.setValue(0);
       },
       onPanResponderMove: (_, gestureState) => {
         const dampedDx = gestureState.dx * SLIDER_DAMPING;
-        const newX = Math.max(0, Math.min(SLIDER_WIDTH, (lastValue.current / 100 * SLIDER_WIDTH) + dampedDx));
+        const startX = (dragStartValue.current / 100) * SLIDER_WIDTH;
+        const newX = Math.max(0, Math.min(SLIDER_WIDTH, startX + dampedDx));
         panX.setOffset(0);
         panX.setValue(newX);
         const newVal = Math.round((newX / SLIDER_WIDTH) * 100);
-        if (newVal !== lastValue.current) {
+        if (newVal !== lastHapticValue.current) {
+          lastHapticValue.current = newVal;
           Haptics.selectionAsync();
         }
         onValueChange(newVal);
       },
       onPanResponderRelease: (_, gestureState) => {
         const dampedDx = gestureState.dx * SLIDER_DAMPING;
-        const finalX = Math.max(0, Math.min(SLIDER_WIDTH, (lastValue.current / 100 * SLIDER_WIDTH) + dampedDx));
+        const startX = (dragStartValue.current / 100) * SLIDER_WIDTH;
+        const finalX = Math.max(0, Math.min(SLIDER_WIDTH, startX + dampedDx));
         const finalVal = Math.round((finalX / SLIDER_WIDTH) * 100);
         lastValue.current = finalVal;
+        isDragging.current = false;
         panX.flattenOffset();
         onValueChange(finalVal);
       },
@@ -127,7 +142,9 @@ function CustomSlider({ metric, value, onValueChange, readOnly = false, locked =
   ).current;
 
   useEffect(() => {
+    if (isDragging.current) return;
     lastValue.current = value;
+    lastHapticValue.current = value;
     panX.setValue((value / 100) * SLIDER_WIDTH);
   }, [value]);
 
@@ -257,6 +274,16 @@ const sliderStyles = StyleSheet.create({
 export default function DailyCheckInScreen() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
+  const { profile } = useUser();
+  const centralProfile = useAppStore((s) => s.userProfile);
+  const recoveryProfileForStability = useMemo(
+    () =>
+      mergeRecoveryProfiles(
+        centralProfile?.recoveryProfile,
+        profile?.recoveryProfile,
+      ) ?? null,
+    [centralProfile?.recoveryProfile, profile?.recoveryProfile],
+  );
   const { period: periodParam } = useLocalSearchParams<{ period?: string }>();
   const periodOverride =
     periodParam === 'morning' || periodParam === 'afternoon' || periodParam === 'evening'
@@ -482,8 +509,19 @@ export default function DailyCheckInScreen() {
             const periodCheckIn = getCheckInForPeriod(period);
             if (!periodCheckIn) return null;
             const pConfig = PERIOD_CONFIG_WITH_ICONS[period];
-            const scoreColor = getScoreColor(periodCheckIn.stabilityScore);
-            const scoreLabel = getScoreLabel(periodCheckIn.stabilityScore);
+            const displayStabilityScore = computeDailyCheckInStabilityScore(
+              {
+                mood: periodCheckIn.mood,
+                cravingLevel: periodCheckIn.cravingLevel,
+                stress: periodCheckIn.stress,
+                sleepQuality: periodCheckIn.sleepQuality,
+                environment: periodCheckIn.environment,
+                emotionalState: periodCheckIn.emotionalState,
+              },
+              recoveryProfileForStability,
+            );
+            const scoreColor = getScoreColor(displayStabilityScore);
+            const scoreLabel = getScoreLabel(displayStabilityScore);
 
             return (
               <View key={period} style={styles.periodSection}>
@@ -492,7 +530,7 @@ export default function DailyCheckInScreen() {
                   <Text style={styles.periodSectionTitle}>{pConfig.label}</Text>
                   <View style={[styles.periodScoreBadge, { backgroundColor: `${scoreColor}18` }]}>
                     <Text style={[styles.periodScoreBadgeText, { color: scoreColor }]}>
-                      {periodCheckIn.stabilityScore} {scoreLabel}
+                      {displayStabilityScore} {scoreLabel}
                     </Text>
                   </View>
                 </View>

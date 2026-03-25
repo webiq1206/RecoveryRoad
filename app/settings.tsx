@@ -179,36 +179,20 @@ export default function SettingsScreen() {
       >
         {/* Subscription */}
         <Text style={styles.sectionLabel}>SUBSCRIPTION</Text>
-        <View style={styles.groupCard}>
-          <View style={styles.groupRow}>
-            <View style={styles.groupRowLeft}>
-              <View
-                style={[
-                  styles.settingIcon,
-                  { backgroundColor: isPremium ? 'rgba(212,165,116,0.15)' : 'rgba(46,196,182,0.12)' },
-                ]}
-              >
-                {isPremium ? (
-                  <Crown size={17} color="#D4A574" />
-                ) : (
-                  <Sparkles size={17} color={Colors.primary} />
-                )}
-              </View>
+        {isPremium ? (
+          <View style={styles.premiumActiveCard} testID="settings-premium-active">
+            <View style={styles.premiumActiveRow}>
+              <Crown size={20} color="#D4A574" />
               <View style={{ flex: 1 }}>
-                <Text style={styles.settingLabel}>
-                  {isPremium ? 'Premium' : 'Freemium (Free)'}
-                </Text>
-                <Text style={styles.settingValue}>
-                  {isPremium
-                    ? 'Full access to AI, programs, rooms & more'
-                    : 'Core tools free — upgrade for premium features'}
+                <Text style={styles.premiumActiveTitle}>Premium active</Text>
+                <Text style={styles.premiumActiveSubtitle}>
+                  Full access to AI, programs, rooms & more
                 </Text>
               </View>
             </View>
           </View>
-
-          <View style={styles.groupSeparator} />
-
+        ) : null}
+        <View style={styles.groupCard}>
           <Pressable
             style={({ pressed }) => [styles.settingRow, pressed && { opacity: 0.85 }]}
             onPress={() => {
@@ -225,7 +209,13 @@ export default function SettingsScreen() {
                 </Text>
               </View>
             </View>
-            <ChevronRight size={16} color={Colors.textMuted} />
+            {isPremium ? (
+              <View style={styles.plansBenefitsPlansPill} testID="settings-premium-plans-link">
+                <Text style={styles.plansBenefitsPlansPillText}>Plans</Text>
+              </View>
+            ) : (
+              <ChevronRight size={16} color={Colors.textMuted} />
+            )}
           </Pressable>
 
           {!isPremium ? (
@@ -428,6 +418,38 @@ export default function SettingsScreen() {
             />
           </View>
         </View>
+
+        {/* Security */}
+        <Text style={[styles.sectionLabel, { marginTop: 28 }]}>SECURITY</Text>
+        <Pressable
+          style={({ pressed }) => [
+            styles.settingRow,
+            pressed && { opacity: 0.85 },
+          ]}
+          onPress={() => {
+            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+            router.push('/security-settings' as any);
+          }}
+          testID="security-settings-link"
+        >
+          <View style={styles.settingLeft}>
+            <View
+              style={[
+                styles.settingIcon,
+                { backgroundColor: 'rgba(46,196,182,0.12)' },
+              ]}
+            >
+              <Lock size={17} color={Colors.primary} />
+            </View>
+            <View>
+              <Text style={styles.settingLabel}>Security & Privacy</Text>
+              <Text style={styles.settingValue}>
+                PIN, biometrics, encryption, audit log
+              </Text>
+            </View>
+          </View>
+          <ChevronRight size={16} color={Colors.textMuted} />
+        </Pressable>
 
         {/* Notifications */}
         <Text style={[styles.sectionLabel, { marginTop: 28 }]}>
@@ -681,9 +703,9 @@ export default function SettingsScreen() {
           </>
         )}
 
-        {/* Provider Mode */}
+        {/* Professional Mode */}
         <Text style={[styles.sectionLabel, { marginTop: 28 }]}>
-          PROVIDER MODE
+          PROFESSIONAL MODE
         </Text>
         <View style={styles.settingRow}>
           <View style={styles.settingLeft}>
@@ -696,7 +718,7 @@ export default function SettingsScreen() {
               <Building2 size={17} color={Colors.textSecondary} />
             </View>
             <View>
-              <Text style={styles.settingLabel}>Provider Mode</Text>
+              <Text style={styles.settingLabel}>Professional Mode</Text>
               <Text style={styles.settingValue}>
                 Show provider portal, compliance & enterprise screens
               </Text>
@@ -719,74 +741,10 @@ export default function SettingsScreen() {
           />
         </View>
 
-        {/* Security */}
-        <Text style={[styles.sectionLabel, { marginTop: 28 }]}>SECURITY</Text>
-        <Pressable
-          style={({ pressed }) => [
-            styles.settingRow,
-            pressed && { opacity: 0.85 },
-          ]}
-          onPress={() => {
-            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-            router.push('/security-settings' as any);
-          }}
-          testID="security-settings-link"
-        >
-          <View style={styles.settingLeft}>
-            <View
-              style={[
-                styles.settingIcon,
-                { backgroundColor: 'rgba(46,196,182,0.12)' },
-              ]}
-            >
-              <Lock size={17} color={Colors.primary} />
-            </View>
-            <View>
-              <Text style={styles.settingLabel}>Security & Privacy</Text>
-              <Text style={styles.settingValue}>
-                PIN, biometrics, encryption, audit log
-              </Text>
-            </View>
-          </View>
-          <ChevronRight size={16} color={Colors.textMuted} />
-        </Pressable>
-
-        {providerModeEnabled && (
-          <Pressable
-            style={({ pressed }) => [
-              styles.settingRow,
-              pressed && { opacity: 0.85 },
-            ]}
-            onPress={() => {
-              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-              router.push('/compliance-mode' as any);
-            }}
-            testID="compliance-mode-link"
-          >
-            <View style={styles.settingLeft}>
-              <View
-                style={[
-                  styles.settingIcon,
-                  { backgroundColor: 'rgba(90,106,122,0.12)' },
-                ]}
-              >
-                <Scale size={17} color={Colors.textSecondary} />
-              </View>
-              <View>
-                <Text style={styles.settingLabel}>Compliance Mode</Text>
-                <Text style={styles.settingValue}>
-                  Optional court-ordered tracking
-                </Text>
-              </View>
-            </View>
-            <ChevronRight size={16} color={Colors.textMuted} />
-          </Pressable>
-        )}
-
         {providerModeEnabled && (
           <>
             <Text style={[styles.sectionLabel, { marginTop: 28 }]}>
-              PROVIDER TOOLS
+              PROFESSIONAL TOOLS
             </Text>
             <Pressable
               style={({ pressed }) => [
@@ -811,6 +769,35 @@ export default function SettingsScreen() {
                   <Text style={styles.settingLabel}>Provider Portal</Text>
                   <Text style={styles.settingValue}>
                     Manage clients and treatment oversight
+                  </Text>
+                </View>
+              </View>
+              <ChevronRight size={16} color={Colors.textMuted} />
+            </Pressable>
+            <Pressable
+              style={({ pressed }) => [
+                styles.settingRow,
+                pressed && { opacity: 0.85 },
+              ]}
+              onPress={() => {
+                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                router.push('/compliance-mode' as any);
+              }}
+              testID="compliance-mode-link"
+            >
+              <View style={styles.settingLeft}>
+                <View
+                  style={[
+                    styles.settingIcon,
+                    { backgroundColor: 'rgba(90,106,122,0.12)' },
+                  ]}
+                >
+                  <Scale size={17} color={Colors.textSecondary} />
+                </View>
+                <View>
+                  <Text style={styles.settingLabel}>Compliance Mode</Text>
+                  <Text style={styles.settingValue}>
+                    Optional court-ordered tracking
                   </Text>
                 </View>
               </View>
@@ -1014,5 +1001,41 @@ const styles = StyleSheet.create({
   frequencyText: {
     fontSize: 12,
     color: Colors.textMuted,
+  },
+  premiumActiveCard: {
+    backgroundColor: Colors.cardBackground,
+    borderRadius: 14,
+    padding: 14,
+    marginBottom: 12,
+    borderWidth: 1,
+    borderColor: 'rgba(212,165,116,0.2)',
+  },
+  premiumActiveRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+  },
+  premiumActiveTitle: {
+    fontSize: 15,
+    fontWeight: '700',
+    color: Colors.text,
+  },
+  premiumActiveSubtitle: {
+    fontSize: 12,
+    color: Colors.textSecondary,
+    lineHeight: 16,
+  },
+  plansBenefitsPlansPill: {
+    paddingHorizontal: 14,
+    paddingVertical: 6,
+    borderRadius: 8,
+    backgroundColor: Colors.surface,
+    borderWidth: 0.5,
+    borderColor: Colors.border,
+  },
+  plansBenefitsPlansPillText: {
+    fontSize: 13,
+    fontWeight: '500',
+    color: Colors.textSecondary,
   },
 });

@@ -341,27 +341,7 @@ export default function ProfileScreen() {
             </Pressable>
           </View>
         </View>
-      ) : (
-        <View style={styles.subscriptionCard}>
-          <View style={{ flex: 1, flexDirection: 'row', alignItems: 'center', gap: 10 }}>
-            <Crown size={20} color="#D4A574" />
-            <View style={{ flex: 1 }}>
-              <Text style={styles.upgradeTitle}>Premium active</Text>
-              <Text style={styles.upgradeSubtitle}>Thank you for supporting your recovery.</Text>
-            </View>
-          </View>
-          <Pressable
-            style={({ pressed }) => [styles.manageSub, pressed && { opacity: 0.85 }]}
-            onPress={() => {
-              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-              router.push('/subscription-plans' as any);
-            }}
-            testID="profile-plans-link"
-          >
-            <Text style={styles.manageSubText}>Plans</Text>
-          </Pressable>
-        </View>
-      )}
+      ) : null}
 
       {/* Recovery Stage */}
       <View style={styles.stageCard}>
@@ -1319,30 +1299,6 @@ const styles = StyleSheet.create({
     height: 0.5,
     backgroundColor: Colors.border,
     marginHorizontal: 12,
-  },
-  subscriptionCard: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    backgroundColor: Colors.cardBackground,
-    borderRadius: 14,
-    padding: 14,
-    marginBottom: 8,
-    borderWidth: 1,
-    borderColor: 'rgba(212,165,116,0.2)',
-  },
-  manageSub: {
-    paddingHorizontal: 14,
-    paddingVertical: 6,
-    borderRadius: 8,
-    backgroundColor: Colors.surface,
-    borderWidth: 0.5,
-    borderColor: Colors.border,
-  },
-  manageSubText: {
-    fontSize: 13,
-    fontWeight: '500' as const,
-    color: Colors.textSecondary,
   },
   upgradeRow: {
     flexDirection: 'row',

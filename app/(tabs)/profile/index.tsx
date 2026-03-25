@@ -598,8 +598,24 @@ export default function ProfileScreen() {
         <ChevronRight size={16} color={Colors.textMuted} />
       </Pressable>
 
-      {/* Privacy, Notifications, Provider Mode, Security, Compliance, Danger Zone
-          have been moved to app/settings.tsx */}
+      <Text style={[styles.sectionLabel, { marginTop: 28 }]}>DANGER ZONE</Text>
+      <Pressable
+        style={({ pressed }) => [styles.dangerRow, pressed && { opacity: 0.92 }]}
+        onPress={handleClearData}
+        testID="profile-clear-all-data"
+      >
+        <View style={styles.settingLeft}>
+          <View style={[styles.settingIcon, { backgroundColor: 'rgba(239,83,80,0.12)' }]}>
+            <RotateCcw size={17} color={Colors.danger} />
+          </View>
+          <View style={{ flex: 1 }}>
+            <Text style={[styles.settingLabel, { color: Colors.danger }]}>Clear All Data</Text>
+            <Text style={styles.settingValue}>
+              Permanently remove recovery data stored on this device. This cannot be undone.
+            </Text>
+          </View>
+        </View>
+      </Pressable>
 
       {/* Recovery */}
       <Text style={[styles.sectionLabel, { marginTop: 28 }]}>RECOVERY</Text>

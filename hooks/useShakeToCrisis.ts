@@ -3,13 +3,18 @@ import { Platform } from 'react-native';
 import { useRouter } from 'expo-router';
 import * as Haptics from 'expo-haptics';
 import { useRelapse } from '@/core/domains/useRelapse';
+import { isExpoGo } from '@/utils/runtime';
 
-const SHAKE_THRESHOLD = 2.2;
+/** Higher threshold reduces accidental triggers (walking, commuting). */
+const SHAKE_THRESHOLD = 3.6;
 const SHAKE_COOLDOWN_MS = 2000;
 
 /**
  * Listens for device shake on native and opens crisis mode. No-op on web.
  * Mount once at app root (e.g. in _layout) so it works from anywhere.
+ *
+ * Disabled in Expo Go: that host already maps shake to the Expo developer menu, which cannot
+ * be turned off from JS; we avoid also navigating to crisis on the same gesture.
  */
 export function useShakeToCrisis() {
   const router = useRouter();
@@ -19,6 +24,7 @@ export function useShakeToCrisis() {
 
   useEffect(() => {
     if (Platform.OS === 'web') return;
+    if (isExpoGo()) return;
 
     let subscription: { remove: () => void } | null = null;
 

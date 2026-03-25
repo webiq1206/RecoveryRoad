@@ -9,6 +9,7 @@ import { useRiskPrediction } from '@/providers/RiskPredictionProvider';
 import { useUser } from '@/core/domains/useUser';
 import { useCheckin } from '@/core/domains/useCheckin';
 import { useAppStore } from '@/stores/useAppStore';
+import { mergeRecoveryProfiles } from '@/utils/mergeProfile';
 import { calculateStability } from '@/utils/stabilityEngine';
 import type { StabilityZoneId } from '@/components/RecoveryStabilityPanel';
 import type { StabilityTrend } from '@/utils/stabilityEngine';
@@ -48,7 +49,13 @@ export function useTodayHub(): TodayHubViewModel {
   } = useRiskPrediction();
 
   const stabilityResult = useMemo(() => {
-    const rp = (centralProfile ?? profile).recoveryProfile;
+    const rp =
+      mergeRecoveryProfiles(
+        centralProfile?.recoveryProfile,
+        profile.recoveryProfile,
+      ) ??
+      profile.recoveryProfile ??
+      centralProfile?.recoveryProfile;
     const sourceCheckIns = centralDailyCheckIns.length > 0 ? centralDailyCheckIns : checkIns;
     const sorted = [...sourceCheckIns].sort(
       (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()
@@ -58,21 +65,21 @@ export function useTodayHub(): TodayHubViewModel {
     const dailyActionsCompleted = sourceCheckIns.filter((c) => c.date === today).length;
 
     const sleepQuality: 'poor' | 'okay' | 'good' =
-      rp.sleepQuality === 'fair'
+      rp?.sleepQuality === 'fair'
         ? 'okay'
-        : rp.sleepQuality === 'excellent'
+        : rp?.sleepQuality === 'excellent'
           ? 'good'
-          : rp.sleepQuality === 'poor'
+          : rp?.sleepQuality === 'poor'
             ? 'poor'
             : 'good';
 
     const input = {
-      intensity: rp.struggleLevel,
+      intensity: rp?.struggleLevel ?? 3,
       sleepQuality,
-      triggers: rp.triggers ?? [],
-      supportLevel: rp.supportAvailability,
+      triggers: rp?.triggers ?? [],
+      supportLevel: rp?.supportAvailability ?? 'limited',
       dailyActionsCompleted,
-      relapseLogged: (rp.relapseCount ?? 0) > 0,
+      relapseLogged: (rp?.relapseCount ?? 0) > 0,
     };
 
     return calculateStability(input, previousScores);
@@ -81,7 +88,9 @@ export function useTodayHub(): TodayHubViewModel {
   return useMemo(
     () => ({
       isLoading,
-      shouldRedirectToOnboarding: !profile.hasCompletedOnboarding,
+      shouldRedirectToOnboarding: !(
+        centralProfile?.hasCompletedOnboarding ?? profile.hasCompletedOnboarding
+      ),
       stability: {
         score: stabilityResult.score,
         trend: stabilityResult.trend,
@@ -96,6 +105,7 @@ export function useTodayHub(): TodayHubViewModel {
     }),
     [
       isLoading,
+      centralProfile?.hasCompletedOnboarding,
       profile.hasCompletedOnboarding,
       stabilityResult.score,
       stabilityResult.trend,

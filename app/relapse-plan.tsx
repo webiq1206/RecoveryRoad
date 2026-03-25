@@ -8,6 +8,8 @@ import * as Haptics from 'expo-haptics';
 import Colors from '@/constants/colors';
 import { useRelapse } from '@/core/domains/useRelapse';
 import { useSupportContacts } from '@/core/domains/useSupportContacts';
+import { useConnection } from '@/providers/ConnectionProvider';
+import { mergeTrustedAndEmergencyContacts } from '@/utils/mergeEmergencyContacts';
 
 type WizardStep = 1 | 2 | 3 | 4 | 5;
 
@@ -15,7 +17,13 @@ export default function RelapsePlanScreen() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const { emergencyContacts } = useSupportContacts();
+  const { trustedContacts } = useConnection();
   const { relapsePlan, saveRelapsePlan } = useRelapse();
+
+  const contactsForPlan = useMemo(
+    () => mergeTrustedAndEmergencyContacts(trustedContacts ?? [], emergencyContacts ?? []),
+    [trustedContacts, emergencyContacts],
+  );
 
   const [currentStep, setCurrentStep] = useState<WizardStep>(1);
 
@@ -91,7 +99,7 @@ export default function RelapsePlanScreen() {
       warningSigns,
       triggers,
       copingStrategies,
-      emergencyContacts,
+      emergencyContacts: contactsForPlan,
       commitments: commitmentsText.trim(),
     };
 
@@ -241,19 +249,34 @@ export default function RelapsePlanScreen() {
               <Text style={styles.cardTitle}>Emergency contacts</Text>
             </View>
             <Text style={styles.cardHint}>
-              Your plan will automatically include the crisis contacts you have saved in your
-              profile. You can manage them in Crisis Mode.
+              These are the same people you add under Connection, Trusted Circle. Crisis Mode — the
+              in-the-moment flow when you tap &quot;I&apos;m struggling&quot; — uses these contacts so
+              you can call or text quickly; add or edit them in Connection, not inside Crisis Mode.
             </Text>
-            {emergencyContacts.length === 0 ? (
+            {contactsForPlan.length === 0 ? (
               <View style={styles.emptyContacts}>
                 <Text style={styles.emptyContactsText}>
-                  You have not added any emergency contacts yet. You can still continue, but consider
-                  adding 1–3 trusted people in Crisis Mode.
+                  You have not added any emergency contacts yet. You can still continue, or add 1–3
+                  trusted people from Connection (Trusted Circle).
                 </Text>
+                <Pressable
+                  style={({ pressed }) => [
+                    styles.connectionLinkBtn,
+                    pressed && styles.connectionLinkBtnPressed,
+                  ]}
+                  onPress={() => {
+                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                    router.push('/connection' as any);
+                  }}
+                  testID="relapse-plan-open-connection"
+                >
+                  <Text style={styles.connectionLinkText}>Open Connection</Text>
+                  <ChevronRight size={16} color={Colors.primary} />
+                </Pressable>
               </View>
             ) : (
               <View style={styles.contactList}>
-                {emergencyContacts.map(contact => (
+                {contactsForPlan.map(contact => (
                   <View key={contact.id} style={styles.contactRow}>
                     <View style={styles.contactAvatar}>
                       <Text style={styles.contactAvatarText}>
@@ -450,6 +473,27 @@ const styles = StyleSheet.create({
     fontSize: 13,
     color: Colors.textSecondary,
     lineHeight: 19,
+  },
+  connectionLinkBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 4,
+    marginTop: 12,
+    paddingVertical: 10,
+    paddingHorizontal: 14,
+    borderRadius: 10,
+    backgroundColor: Colors.primary + '14',
+    borderWidth: 1,
+    borderColor: Colors.primary + '35',
+  },
+  connectionLinkBtnPressed: {
+    opacity: 0.88,
+  },
+  connectionLinkText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: Colors.primary,
   },
   contactList: {
     marginTop: 4,

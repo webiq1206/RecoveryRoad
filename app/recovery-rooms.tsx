@@ -9,7 +9,7 @@ import { useRouter } from 'expo-router';
 import {
   Users, Shield, Clock, Radio, ChevronRight, Lock,
   Eye, EyeOff, Search, X, Calendar, Zap, Heart,
-  MessageSquare, Star, Filter,
+  MessageSquare, Star, Filter, LogOut,
 } from 'lucide-react-native';
 import * as Haptics from 'expo-haptics';
 import Colors from '@/constants/colors';
@@ -53,7 +53,7 @@ export default function RecoveryRoomsScreen() {
     rooms, joinedRooms, availableRooms, liveRooms,
     displayName, isAnonymousDefault,
     setRoomDisplayName, setAnonymousDefault,
-    joinRoom, getUpcomingSessions, topicLabels,
+    joinRoom, leaveRoom, getUpcomingSessions, topicLabels,
   } = useRecoveryRooms();
 
   const [viewMode, setViewMode] = useState<ViewMode>('rooms');
@@ -114,6 +114,27 @@ export default function RecoveryRoomsScreen() {
     }
     router.push({ pathname: '/room-session' as any, params: { roomId: room.id } });
   }, [handleJoinRoom, router]);
+
+  const handleLeaveRoomFromList = useCallback(
+    (room: RecoveryRoom) => {
+      Alert.alert(
+        'Leave room',
+        `Leave "${room.name}"? You can join again later.`,
+        [
+          { text: 'Cancel', style: 'cancel' },
+          {
+            text: 'Leave',
+            style: 'destructive',
+            onPress: () => {
+              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+              leaveRoom(room.id);
+            },
+          },
+        ],
+      );
+    },
+    [leaveRoom],
+  );
 
   const handleSetName = useCallback(() => {
     if (!nameInput.trim() && !isAnonymousDefault) {
@@ -255,8 +276,20 @@ export default function RecoveryRoomsScreen() {
             </View>
           </View>
           {item.isJoined ? (
-            <View style={styles.joinedTag}>
-              <Text style={styles.joinedTagText}>Joined</Text>
+            <View style={styles.joinedRow}>
+              <View style={styles.joinedTag}>
+                <Text style={styles.joinedTagText}>Joined</Text>
+              </View>
+              <Pressable
+                onPress={() => handleLeaveRoomFromList(item)}
+                hitSlop={10}
+                style={({ pressed }) => [styles.leaveRoomIconBtn, pressed && { opacity: 0.75 }]}
+                accessibilityRole="button"
+                accessibilityLabel={`Leave ${item.name}`}
+                testID={`leave-room-${item.id}`}
+              >
+                <LogOut size={16} color={Colors.danger} />
+              </Pressable>
             </View>
           ) : isFull ? (
             <View style={styles.fullTag}>
@@ -306,7 +339,7 @@ export default function RecoveryRoomsScreen() {
         )}
       </Pressable>
     );
-  }, [handleEnterRoom, topicLabels]);
+  }, [handleEnterRoom, handleLeaveRoomFromList, topicLabels]);
 
   const renderSessionCard = useCallback(({ item }: { item: ScheduledSession & { roomName: string } }) => {
     return (
@@ -753,6 +786,16 @@ const styles = StyleSheet.create({
     fontSize: 11,
     fontWeight: '700' as const,
     color: Colors.primary,
+  },
+  joinedRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  leaveRoomIconBtn: {
+    padding: 6,
+    borderRadius: 8,
+    backgroundColor: 'rgba(239, 83, 80, 0.1)',
   },
   fullTag: {
     flexDirection: 'row',

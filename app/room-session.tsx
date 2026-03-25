@@ -348,6 +348,19 @@ export default function RoomSessionScreen() {
           <Pressable
             onPress={() => {
               Haptics.selectionAsync();
+              handleLeaveRoom();
+            }}
+            hitSlop={10}
+            style={({ pressed }) => [styles.headerLeaveBtn, pressed && { opacity: 0.75 }]}
+            accessibilityRole="button"
+            accessibilityLabel="Leave room"
+            testID="header-leave-room-btn"
+          >
+            <LogOut size={18} color={Colors.danger} />
+          </Pressable>
+          <Pressable
+            onPress={() => {
+              Haptics.selectionAsync();
               setSessionView(sessionView === 'info' ? 'chat' : 'info');
             }}
             hitSlop={8}
@@ -596,7 +609,12 @@ const styles = StyleSheet.create({
   },
   headerRight: {
     flexDirection: 'row',
-    gap: 12,
+    alignItems: 'center',
+    gap: 10,
+  },
+  headerLeaveBtn: {
+    padding: 4,
+    borderRadius: 8,
   },
   viewTabs: {
     flexDirection: 'row',

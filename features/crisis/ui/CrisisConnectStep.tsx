@@ -57,7 +57,8 @@ export function CrisisConnectStep(props: {
         ) : (
           <View style={crisisStyles.noContactsCard}>
             <Text style={crisisStyles.noContactsText}>
-              Add personal contacts in Profile to quickly reach out during moments like this.
+              Add trusted people under Connection, Trusted Circle, so you can reach them quickly
+              during moments like this.
             </Text>
           </View>
         )}

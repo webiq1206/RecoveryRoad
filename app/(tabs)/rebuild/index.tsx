@@ -200,16 +200,30 @@ export default function RebuildScreen() {
   const stage = useMemo(() => getRecoveryStage(daysSober), [daysSober]);
   const riskLevel = useMemo(() => getRiskLevel(checkIns, daysSober), [checkIns, daysSober]);
 
-  const showEncouragement = useCallback((context: 'habit_complete' | 'routine_done' | 'goal_progress' | 'exercise_done' | 'milestone') => {
-    const msg = generateRebuildEncouragement(stage, riskLevel, context);
-    setEncouragementMessage(msg);
-    encouragementFade.setValue(0);
-    Animated.sequence([
-      Animated.timing(encouragementFade, { toValue: 1, duration: 300, useNativeDriver: true }),
-      Animated.delay(3500),
-      Animated.timing(encouragementFade, { toValue: 0, duration: 500, useNativeDriver: true }),
-    ]).start(() => setEncouragementMessage(''));
-  }, [stage, riskLevel, encouragementFade]);
+  const dismissEncouragement = useCallback(() => {
+    Animated.timing(encouragementFade, {
+      toValue: 0,
+      duration: 400,
+      useNativeDriver: true,
+    }).start(({ finished }) => {
+      if (finished) setEncouragementMessage('');
+    });
+  }, [encouragementFade]);
+
+  const showEncouragement = useCallback(
+    (context: 'habit_complete' | 'routine_done' | 'goal_progress' | 'exercise_done' | 'milestone') => {
+      const msg = generateRebuildEncouragement(stage, riskLevel, context);
+      encouragementFade.stopAnimation();
+      setEncouragementMessage(msg);
+      encouragementFade.setValue(0);
+      Animated.timing(encouragementFade, {
+        toValue: 1,
+        duration: 300,
+        useNativeDriver: true,
+      }).start();
+    },
+    [stage, riskLevel, encouragementFade],
+  );
 
   useEffect(() => {
     Animated.timing(headerAnim, {
@@ -836,7 +850,13 @@ export default function RebuildScreen() {
         <View style={{ height: 40 }} />
       </ScreenScrollView>
 
-      <RebuildEncouragementToast message={encouragementMessage} fade={encouragementFade} Colors={Colors} styles={styles} />
+      <RebuildEncouragementToast
+        message={encouragementMessage}
+        fade={encouragementFade}
+        onDismiss={dismissEncouragement}
+        Colors={Colors}
+        styles={styles}
+      />
 
       <RebuildExerciseModal
         visible={!!activeExercise}
@@ -2088,5 +2108,11 @@ const styles = StyleSheet.create({
     fontSize: 13,
     color: Colors.text,
     lineHeight: 19,
+  },
+  encouragementCloseBtn: {
+    padding: 4,
+    marginLeft: 4,
+    borderRadius: 8,
+    backgroundColor: Colors.surface,
   },
 });

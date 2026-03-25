@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import {
   View,
   Text,
@@ -15,6 +15,8 @@ import { X } from 'lucide-react-native';
 import * as Haptics from 'expo-haptics';
 import { useUser } from '@/core/domains/useUser';
 import { useSupportContacts } from '@/core/domains/useSupportContacts';
+import { useConnection } from '@/providers/ConnectionProvider';
+import { mergeTrustedAndEmergencyContacts } from '@/utils/mergeEmergencyContacts';
 import { useRelapse } from '@/core/domains/useRelapse';
 import { generateCrisisSupportMessage } from '@/constants/companion';
 import { getToolsForContext } from '@/features/tools/registry';
@@ -47,6 +49,11 @@ export default function CrisisModeScreen() {
   const router = useRouter();
   const { profile } = useUser();
   const { emergencyContacts } = useSupportContacts();
+  const { trustedContacts } = useConnection();
+  const contactsForCrisis = useMemo(
+    () => mergeTrustedAndEmergencyContacts(trustedContacts ?? [], emergencyContacts ?? []),
+    [trustedContacts, emergencyContacts],
+  );
   const { logCrisisActivation } = useRelapse();
   useHydrateToolUsageStore();
   const logToolUsage = useToolUsageStore.use.logToolUsage();
@@ -272,7 +279,7 @@ export default function CrisisModeScreen() {
               fadeAnim={fadeAnim}
               slideAnim={slideAnim}
               landingPulse={landingPulse}
-              emergencyContacts={emergencyContacts}
+              emergencyContacts={contactsForCrisis}
               onStart={goNext}
               onQuickCall={handleCallContact}
               onCall988={() => handleCallContact('988')}
@@ -331,7 +338,7 @@ export default function CrisisModeScreen() {
       case 'connect':
         return (
           <CrisisConnectStep
-            emergencyContacts={emergencyContacts}
+            emergencyContacts={contactsForCrisis}
             onCallContact={handleCallContact}
             onTextContact={handleSMSContact}
             onClose={handleClose}

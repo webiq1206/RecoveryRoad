@@ -409,6 +409,7 @@ export const [RecoveryRoomsProvider, useRecoveryRooms] = createContextHook(() =>
     });
     saveRoomsMutation.mutate(updated);
 
+    // Demo reply: still runs after release unless replaced with real-time/backend chat.
     setTimeout(() => {
       const randomAuthor = ANONYMOUS_NAMES[Math.floor(Math.random() * ANONYMOUS_NAMES.length)];
       const response: RecoveryRoomMessage = {

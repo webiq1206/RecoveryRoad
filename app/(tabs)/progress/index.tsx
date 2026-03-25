@@ -1,4 +1,4 @@
-import React, { useMemo, useRef, useEffect, useCallback, useState, Suspense, lazy } from 'react';
+import React, { useMemo, useRef, useEffect, useCallback, useState } from 'react';
 import {
   View,
   Text,
@@ -7,7 +7,6 @@ import {
   Dimensions,
   Pressable,
   TouchableOpacity,
-  ActivityIndicator,
 } from 'react-native';
 import { ScreenScrollView } from '@/components/ScreenScrollView';
 import {
@@ -58,14 +57,12 @@ import { getStabilityPhrase, getMoodPhrase, getCravingsPhrase } from '@/constant
 import { MILESTONE_DATA } from '@/constants/milestones';
 import {
   buildProgressStabilitySeries,
+  buildDailyAverageStabilitySeries,
+  computeDailyAverageScoreForDate,
   countNonNullScores,
   type StabilityWindowDays,
 } from '@/utils/progressStabilitySeries';
-
-/** Load SVG chart only when Progress mounts — avoids native RNSVG init on cold start / other tabs. */
-const StabilityRollingChartLazy = lazy(() =>
-  import('@/components/progress/StabilityRollingChart').then((mod) => ({ default: mod.StabilityRollingChart })),
-);
+import { StabilityRollingChart } from '@/components/progress/StabilityRollingChart';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const CHART_WIDTH = SCREEN_WIDTH - 72;
@@ -195,24 +192,51 @@ const ICON_MAP: Record<string, React.ComponentType<{ size: number; color: string
   sun: Sun,
 };
 
+function formatLocalDateYYYYMMDD(d: Date): string {
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${y}-${m}-${day}`;
+}
+
 function ProgressStabilityChartCard({
   windowDays,
   onChangeWindow,
+  title,
   dates,
   scores,
   pointCount,
   planCompletedSet,
+  currentScore,
+  lineColor,
+  trendLineColor,
+  emptyTimeLabel,
 }: {
   windowDays: StabilityWindowDays;
   onChangeWindow: (d: StabilityWindowDays) => void;
+  title: string;
   dates: string[];
   scores: (number | null)[];
   pointCount: number;
   planCompletedSet: Set<string>;
+  currentScore: number | null;
+  lineColor: string;
+  trendLineColor?: string;
+  emptyTimeLabel: string;
 }) {
   return (
-    <View style={styles.chartCard} testID="progress-stability-chart-card">
-      <Text style={styles.chartTitle}>Rolling stability</Text>
+    <View testID="progress-stability-chart-card">
+      <Text style={styles.chartBlockSectionLabel}>Rolling stability</Text>
+      <View style={styles.chartCard}>
+        <View style={styles.chartTitleRow}>
+          <Text style={styles.chartTitleMornings}>{title}</Text>
+          <Text style={styles.chartCurrentScoreLine}>
+            Current score{' '}
+            <Text style={styles.chartCurrentScoreValue}>
+              {currentScore != null && Number.isFinite(currentScore) ? String(Math.round(currentScore)) : '—'}
+            </Text>
+          </Text>
+        </View>
       <View style={styles.chartWindowRow}>
         {WINDOW_OPTIONS.map((d) => {
           const active = windowDays === d;
@@ -234,28 +258,24 @@ function ProgressStabilityChartCard({
         })}
       </View>
       {pointCount >= 2 && dates.length >= 2 ? (
-        <Suspense
-          fallback={
-            <View style={[styles.emptyChart, { height: CHART_HEIGHT + 36 }]}>
-              <ActivityIndicator color={Colors.primary} />
-            </View>
-          }
-        >
-          <StabilityRollingChartLazy
-            dates={dates}
-            scores={scores}
-            width={CHART_WIDTH}
-            height={CHART_HEIGHT}
-            color={Colors.primary}
-            planCompletedSet={planCompletedSet}
-            windowDays={windowDays}
-          />
-        </Suspense>
+        <StabilityRollingChart
+          dates={dates}
+          scores={scores}
+          width={CHART_WIDTH}
+          height={CHART_HEIGHT}
+          color={lineColor}
+          trendLineColor={trendLineColor}
+          planCompletedSet={planCompletedSet}
+          windowDays={windowDays}
+        />
       ) : (
         <View style={styles.emptyChart}>
-          <Text style={styles.emptyChartText}>Complete daily check-ins on at least two days to see stability over time.</Text>
+          <Text style={styles.emptyChartText}>
+            Complete {emptyTimeLabel} check-ins on at least two days to see stability over time.
+          </Text>
         </View>
       )}
+      </View>
     </View>
   );
 }
@@ -281,13 +301,79 @@ function StabilityTimelineScreen() {
   const [milestonesExpanded, setMilestonesExpanded] = useState<boolean>(false);
 
   const stabilitySeries = useMemo(
-    () => buildProgressStabilitySeries(sourceCheckIns, stabilityWindowDays),
+    () =>
+      buildProgressStabilitySeries(sourceCheckIns, stabilityWindowDays, { timeOfDay: 'morning' }),
+    [sourceCheckIns, stabilityWindowDays],
+  );
+  const afternoonStabilitySeries = useMemo(
+    () =>
+      buildProgressStabilitySeries(sourceCheckIns, stabilityWindowDays, { timeOfDay: 'afternoon' }),
+    [sourceCheckIns, stabilityWindowDays],
+  );
+  const eveningStabilitySeries = useMemo(
+    () =>
+      buildProgressStabilitySeries(sourceCheckIns, stabilityWindowDays, { timeOfDay: 'evening' }),
+    [sourceCheckIns, stabilityWindowDays],
+  );
+  const dailyAverageStabilitySeries = useMemo(
+    () => buildDailyAverageStabilitySeries(sourceCheckIns, stabilityWindowDays),
     [sourceCheckIns, stabilityWindowDays],
   );
 
   const stabilityPointCount = useMemo(
     () => countNonNullScores(stabilitySeries.scores),
     [stabilitySeries.scores],
+  );
+  const afternoonStabilityPointCount = useMemo(
+    () => countNonNullScores(afternoonStabilitySeries.scores),
+    [afternoonStabilitySeries.scores],
+  );
+  const eveningStabilityPointCount = useMemo(
+    () => countNonNullScores(eveningStabilitySeries.scores),
+    [eveningStabilitySeries.scores],
+  );
+  const dailyAveragePointCount = useMemo(
+    () => countNonNullScores(dailyAverageStabilitySeries.scores),
+    [dailyAverageStabilitySeries.scores],
+  );
+
+  const todayMorningScore = useMemo(() => {
+    const todayStr = formatLocalDateYYYYMMDD(new Date());
+    const todays = sourceCheckIns.filter(
+      (c) => c.date === todayStr && c.timeOfDay === 'morning',
+    );
+    if (todays.length === 0) return null;
+    const best = todays.reduce((a, b) => (a.completedAt >= b.completedAt ? a : b));
+    const raw = best.stabilityScore;
+    if (typeof raw !== 'number' || !Number.isFinite(raw)) return null;
+    return Math.min(100, Math.max(0, raw));
+  }, [sourceCheckIns]);
+  const todayAfternoonScore = useMemo(() => {
+    const todayStr = formatLocalDateYYYYMMDD(new Date());
+    const todays = sourceCheckIns.filter(
+      (c) => c.date === todayStr && c.timeOfDay === 'afternoon',
+    );
+    if (todays.length === 0) return null;
+    const best = todays.reduce((a, b) => (a.completedAt >= b.completedAt ? a : b));
+    const raw = best.stabilityScore;
+    if (typeof raw !== 'number' || !Number.isFinite(raw)) return null;
+    return Math.min(100, Math.max(0, raw));
+  }, [sourceCheckIns]);
+  const todayEveningScore = useMemo(() => {
+    const todayStr = formatLocalDateYYYYMMDD(new Date());
+    const todays = sourceCheckIns.filter(
+      (c) => c.date === todayStr && c.timeOfDay === 'evening',
+    );
+    if (todays.length === 0) return null;
+    const best = todays.reduce((a, b) => (a.completedAt >= b.completedAt ? a : b));
+    const raw = best.stabilityScore;
+    if (typeof raw !== 'number' || !Number.isFinite(raw)) return null;
+    return Math.min(100, Math.max(0, raw));
+  }, [sourceCheckIns]);
+  const todayDailyAverageScore = useMemo(
+    () =>
+      computeDailyAverageScoreForDate(sourceCheckIns, formatLocalDateYYYYMMDD(new Date())),
+    [sourceCheckIns],
   );
 
   const dailyPlansCompleted = useMemo(() => {
@@ -511,35 +597,59 @@ function StabilityTimelineScreen() {
           </Text>
         </View>
 
-        {/* Simple stats */}
-        <Text style={earlyStyles.sectionTitle}>Your progress so far</Text>
-        <View style={earlyStyles.statsRow}>
-          <View style={earlyStyles.statCard}>
-            <Text style={earlyStyles.statNumber}>{uniqueCheckInDays}</Text>
-            <Text style={earlyStyles.statLabel}>Check-ins</Text>
-          </View>
-          <View style={earlyStyles.statCard}>
-            <Text style={earlyStyles.statNumber}>{consistentCheckInDays}</Text>
-            <Text style={earlyStyles.statLabel}>Day streak</Text>
-          </View>
-          <View style={earlyStyles.statCard}>
-            <Text style={earlyStyles.statNumber}>
-              {latestScore}
-            </Text>
-            <Text style={earlyStyles.statLabel}>Stability</Text>
-          </View>
-        </View>
+        <Text style={earlyStyles.sectionTitle}>Your stability progress so far</Text>
 
-        {uniqueCheckInDays >= 2 ? (
-          <ProgressStabilityChartCard
-            windowDays={stabilityWindowDays}
-            onChangeWindow={setStabilityWindowDays}
-            dates={stabilitySeries.dates}
-            scores={stabilitySeries.scores}
-            pointCount={stabilityPointCount}
-            planCompletedSet={planCompletedSet}
-          />
-        ) : null}
+        <ProgressStabilityChartCard
+          windowDays={stabilityWindowDays}
+          onChangeWindow={setStabilityWindowDays}
+          title="Mornings"
+          dates={stabilitySeries.dates}
+          scores={stabilitySeries.scores}
+          pointCount={stabilityPointCount}
+          planCompletedSet={planCompletedSet}
+          currentScore={todayMorningScore}
+          lineColor={Colors.primary}
+          emptyTimeLabel="morning"
+        />
+        <ProgressStabilityChartCard
+          windowDays={stabilityWindowDays}
+          onChangeWindow={setStabilityWindowDays}
+          title="Afternoons"
+          dates={afternoonStabilitySeries.dates}
+          scores={afternoonStabilitySeries.scores}
+          pointCount={afternoonStabilityPointCount}
+          planCompletedSet={planCompletedSet}
+          currentScore={todayAfternoonScore}
+          lineColor="#FF9800"
+          trendLineColor="rgba(255, 152, 0, 0.55)"
+          emptyTimeLabel="afternoon"
+        />
+        <ProgressStabilityChartCard
+          windowDays={stabilityWindowDays}
+          onChangeWindow={setStabilityWindowDays}
+          title="Evenings"
+          dates={eveningStabilitySeries.dates}
+          scores={eveningStabilitySeries.scores}
+          pointCount={eveningStabilityPointCount}
+          planCompletedSet={planCompletedSet}
+          currentScore={todayEveningScore}
+          lineColor="#EF5350"
+          trendLineColor="rgba(239, 83, 80, 0.55)"
+          emptyTimeLabel="evening"
+        />
+        <ProgressStabilityChartCard
+          windowDays={stabilityWindowDays}
+          onChangeWindow={setStabilityWindowDays}
+          title="Daily Average"
+          dates={dailyAverageStabilitySeries.dates}
+          scores={dailyAverageStabilitySeries.scores}
+          pointCount={dailyAveragePointCount}
+          planCompletedSet={planCompletedSet}
+          currentScore={todayDailyAverageScore}
+          lineColor="#0D47A1"
+          trendLineColor="rgba(13, 71, 161, 0.55)"
+          emptyTimeLabel="Morning, afternoon, or evening"
+        />
 
         <View style={earlyStyles.reinforcementCard}>
           <Sparkles size={16} color={Colors.primary} />
@@ -651,10 +761,53 @@ function StabilityTimelineScreen() {
       <ProgressStabilityChartCard
         windowDays={stabilityWindowDays}
         onChangeWindow={setStabilityWindowDays}
+        title="Mornings"
         dates={stabilitySeries.dates}
         scores={stabilitySeries.scores}
         pointCount={stabilityPointCount}
         planCompletedSet={planCompletedSet}
+        currentScore={todayMorningScore}
+        lineColor={Colors.primary}
+        emptyTimeLabel="morning"
+      />
+      <ProgressStabilityChartCard
+        windowDays={stabilityWindowDays}
+        onChangeWindow={setStabilityWindowDays}
+        title="Afternoons"
+        dates={afternoonStabilitySeries.dates}
+        scores={afternoonStabilitySeries.scores}
+        pointCount={afternoonStabilityPointCount}
+        planCompletedSet={planCompletedSet}
+        currentScore={todayAfternoonScore}
+        lineColor="#FF9800"
+        trendLineColor="rgba(255, 152, 0, 0.55)"
+        emptyTimeLabel="afternoon"
+      />
+      <ProgressStabilityChartCard
+        windowDays={stabilityWindowDays}
+        onChangeWindow={setStabilityWindowDays}
+        title="Evenings"
+        dates={eveningStabilitySeries.dates}
+        scores={eveningStabilitySeries.scores}
+        pointCount={eveningStabilityPointCount}
+        planCompletedSet={planCompletedSet}
+        currentScore={todayEveningScore}
+        lineColor="#EF5350"
+        trendLineColor="rgba(239, 83, 80, 0.55)"
+        emptyTimeLabel="evening"
+      />
+      <ProgressStabilityChartCard
+        windowDays={stabilityWindowDays}
+        onChangeWindow={setStabilityWindowDays}
+        title="Daily Average"
+        dates={dailyAverageStabilitySeries.dates}
+        scores={dailyAverageStabilitySeries.scores}
+        pointCount={dailyAveragePointCount}
+        planCompletedSet={planCompletedSet}
+        currentScore={todayDailyAverageScore}
+        lineColor="#0D47A1"
+        trendLineColor="rgba(13, 71, 161, 0.55)"
+        emptyTimeLabel="Morning, afternoon, or evening"
       />
 
       <View style={styles.momentumCard}>
@@ -1029,6 +1182,37 @@ const styles = StyleSheet.create({
     fontSize: 15,
     fontWeight: '600' as const,
     color: Colors.text,
+  },
+  chartBlockSectionLabel: {
+    fontSize: 13,
+    fontWeight: '600' as const,
+    color: Colors.textSecondary,
+    marginBottom: 8,
+  },
+  chartTitleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 12,
+    marginBottom: 2,
+  },
+  chartTitleMornings: {
+    fontSize: 15,
+    fontWeight: '600' as const,
+    color: Colors.text,
+    flexShrink: 0,
+  },
+  chartCurrentScoreLine: {
+    fontSize: 13,
+    fontWeight: '500' as const,
+    color: Colors.textSecondary,
+    flex: 1,
+    textAlign: 'right',
+  },
+  chartCurrentScoreValue: {
+    fontSize: 13,
+    fontWeight: '700' as const,
+    color: Colors.primary,
   },
   chartWindowRow: {
     flexDirection: 'row',

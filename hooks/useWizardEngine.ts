@@ -41,6 +41,7 @@ import {
   mergeRecoveryProfiles,
   mergeTodayCheckInsFromSources,
 } from '@/utils/mergeProfile';
+import { mergeTrustedAndEmergencyContacts } from '@/utils/mergeEmergencyContacts';
 
 const EMPTY_PLAN: WizardPlan = {
   setupProgress: null,
@@ -101,12 +102,10 @@ export function useWizardEngineHook(): WizardEngineResult {
 
   const { peerChats, safeRooms, sponsorPairing, trustedContacts } = useConnection();
 
-  const emergencyContactsCombined = useMemo(() => {
-    if ((emergencyContacts?.length ?? 0) > 0) return emergencyContacts;
-    // Connection screen currently stores these as "trusted circle" contacts.
-    // Bridge them to emergency contacts for daily guidance until the stores are unified.
-    return (trustedContacts ?? []).map((c) => ({ id: c.id, name: c.name, phone: c.phone }));
-  }, [emergencyContacts, trustedContacts]);
+  const emergencyContactsCombined = useMemo(
+    () => mergeTrustedAndEmergencyContacts(trustedContacts ?? [], emergencyContacts ?? []),
+    [emergencyContacts, trustedContacts],
+  );
 
   const accountabilityHook = useAccountability();
   const accountabilityData = accountabilityHook?.accountabilityData;
@@ -263,8 +262,13 @@ export function useWizardEngineHook(): WizardEngineResult {
     return sentInSponsor;
   }, [peerChats, safeRooms, sponsorPairing, today, toolUsageEvents]);
 
+  /** True only when every active commitment has at least one check-in dated today. */
   const hasAccountabilityCheckInCompletedToday = useMemo(() => {
-    return (accountabilityData?.contracts ?? []).some((c) =>
+    const activeContracts = (accountabilityData?.contracts ?? []).filter(
+      (c) => (c as { isActive?: boolean }).isActive !== false,
+    );
+    if (activeContracts.length === 0) return false;
+    return activeContracts.every((c) =>
       (c.checkIns ?? []).some((ci) => getDateKey(ci.date) === today),
     );
   }, [accountabilityData, today]);

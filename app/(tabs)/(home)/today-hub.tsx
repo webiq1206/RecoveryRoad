@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import {
   View,
   Text,
@@ -18,6 +18,7 @@ import {
   CheckCircle2,
   ChevronRight,
   Info,
+  Sparkles,
 } from 'lucide-react-native';
 import * as Haptics from 'expo-haptics';
 import Colors from '@/constants/colors';
@@ -36,6 +37,7 @@ import {
 } from '@/utils/checkInWindows';
 import type { CheckInTimeOfDay } from '@/types';
 import type { WizardAction } from '@/utils/wizardEngine';
+import { mergeTodayCheckInsFromSources } from '@/utils/mergeProfile';
 
 const CHECK_IN_PERIODS: { period: CheckInTimeOfDay; title: string }[] = [
   { period: 'morning', title: 'Morning\nCheck-In' },
@@ -77,7 +79,21 @@ export default function TodayHubScreen() {
   const vm = useTodayHub();
   const { profile } = useUser();
   const centralProfile = useAppStore((s) => s.userProfile);
-  const { todayCheckIn, todayCheckIns } = useCheckin();
+  const centralDailyCheckIns = useAppStore((s) => s.dailyCheckIns);
+  const { todayCheckIn: sliceTodayCheckIn, todayCheckIns: sliceTodayCheckIns } = useCheckin();
+
+  const mergedTodayCheckIns = useMemo(() => {
+    const todayStr = new Date().toISOString().split('T')[0];
+    return mergeTodayCheckInsFromSources(sliceTodayCheckIns, centralDailyCheckIns, todayStr);
+  }, [sliceTodayCheckIns, centralDailyCheckIns]);
+
+  const todayCheckIns = mergedTodayCheckIns;
+  const todayCheckIn = useMemo(() => {
+    if (mergedTodayCheckIns.length === 0) return null;
+    return mergedTodayCheckIns.reduce((latest, c) =>
+      new Date(c.completedAt).getTime() > new Date(latest.completedAt).getTime() ? c : latest,
+    mergedTodayCheckIns[0]);
+  }, [mergedTodayCheckIns]);
   const { plan: wizardPlan, recentCompletion, clearRecentCompletion } =
     useWizardEngineHook();
 
@@ -466,6 +482,26 @@ export default function TodayHubScreen() {
             ))}
           </View>
         )}
+
+        {/* Short-term / QA: remove when no longer needed */}
+        <View style={styles.devOnboardingBlock}>
+          <Text style={styles.devOnboardingLabel}>Testing</Text>
+          <Pressable
+            style={({ pressed }) => [
+              styles.devOnboardingBtn,
+              pressed && styles.pressed,
+            ]}
+            onPress={() => {
+              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+              router.push('/onboarding' as any);
+            }}
+            testID="todayhub-dev-onboarding"
+          >
+            <Sparkles size={18} color={Colors.primary} />
+            <Text style={styles.devOnboardingBtnText}>Open onboarding</Text>
+            <ChevronRight size={18} color={Colors.textSecondary} />
+          </Pressable>
+        </View>
       </ScreenScrollView>
     </View>
   );
@@ -503,6 +539,33 @@ const styles = StyleSheet.create({
     letterSpacing: 1,
     marginBottom: 8,
     textTransform: 'uppercase',
+  },
+  devOnboardingBlock: {
+    marginTop: 28,
+    gap: 8,
+  },
+  devOnboardingLabel: {
+    fontSize: 11,
+    fontWeight: '600',
+    color: Colors.textMuted,
+    letterSpacing: 0.6,
+  },
+  devOnboardingBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    backgroundColor: Colors.surface,
+    borderRadius: 14,
+    paddingVertical: 14,
+    paddingHorizontal: 14,
+    borderWidth: 1,
+    borderColor: Colors.border,
+  },
+  devOnboardingBtnText: {
+    flex: 1,
+    fontSize: 15,
+    fontWeight: '600',
+    color: Colors.text,
   },
   setupBanner: {
     flexDirection: 'row',

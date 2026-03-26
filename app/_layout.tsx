@@ -94,7 +94,7 @@ function RootLayoutNav() {
         <Stack.Screen name="compliance-mode" options={{ title: 'Compliance Mode', animation: defaultAnimation }} />
         <Stack.Screen name="security-settings" options={{ title: 'Security & Privacy', animation: defaultAnimation }} />
         <Stack.Screen name="retention-insights" options={{ title: 'Recovery Insights', animation: defaultAnimation }} />
-        <Stack.Screen name="insights" options={{ title: 'Insights', animation: defaultAnimation }} />
+        <Stack.Screen name="insights" options={{ title: 'Insights Hub', animation: defaultAnimation }} />
         <Stack.Screen name="enterprise-layout" options={{ headerShown: false, animation: defaultAnimation }} />
         <Stack.Screen name="insights-explained" options={{ title: 'Insights Explained', animation: defaultAnimation }} />
         <Stack.Screen name="recovery-stages-explained" options={{ title: 'Recovery Stages', animation: defaultAnimation }} />

@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { View, Text, StyleSheet, Pressable } from 'react-native';
 import { ScreenScrollView } from '@/components/ScreenScrollView';
 import { Stack, useRouter } from 'expo-router';
@@ -13,9 +13,42 @@ import {
   Radio,
 } from 'lucide-react-native';
 import Colors from '@/constants/colors';
+import * as Haptics from 'expo-haptics';
+import { useUser } from '@/core/domains/useUser';
+import { useCheckin } from '@/core/domains/useCheckin';
+import { useEngagement } from '@/providers/EngagementProvider';
 
 export default function InsightsHubScreen() {
   const router = useRouter();
+  const { profile } = useUser();
+  const { checkIns } = useCheckin();
+  const { growthDimensions, overallGrowthScore } = useEngagement();
+
+  const goals = useMemo(() => profile.recoveryProfile?.goals ?? [], [profile.recoveryProfile?.goals]);
+  const insights = useMemo(() => {
+    const items: { label: string; value: string; color: string }[] = [];
+    const recentCheckins = checkIns.slice(0, 14);
+
+    if (recentCheckins.length >= 3) {
+      const avgMood = recentCheckins.reduce((s, c) => s + c.mood, 0) / recentCheckins.length;
+      const moodTrend = avgMood >= 60 ? 'Improving' : avgMood >= 40 ? 'Steady' : 'Needs attention';
+      const moodColor = avgMood >= 60 ? Colors.success : avgMood >= 40 ? Colors.accentWarm : Colors.danger;
+      items.push({ label: 'Mood Trend', value: moodTrend, color: moodColor });
+
+      const avgCraving = recentCheckins.reduce((s, c) => s + c.cravingLevel, 0) / recentCheckins.length;
+      const cravingTrend = avgCraving <= 30 ? 'Low' : avgCraving <= 60 ? 'Moderate' : 'High';
+      const cravingColor = avgCraving <= 30 ? Colors.success : avgCraving <= 60 ? Colors.accentWarm : Colors.danger;
+      items.push({ label: 'Craving Level', value: cravingTrend, color: cravingColor });
+    }
+
+    items.push({
+      label: 'Growth Score',
+      value: `${overallGrowthScore}/100`,
+      color: overallGrowthScore >= 50 ? Colors.primary : Colors.accentWarm,
+    });
+
+    return items;
+  }, [checkIns, overallGrowthScore]);
 
   return (
     <ScreenScrollView
@@ -24,7 +57,7 @@ export default function InsightsHubScreen() {
       showsVerticalScrollIndicator={false}
       testID="insights-hub-screen"
     >
-      <Stack.Screen options={{ title: 'Insights' }} />
+      <Stack.Screen options={{ title: 'Insights Hub' }} />
 
       <View style={styles.introCard}>
         <Info size={18} color={Colors.primary} />
@@ -36,37 +69,144 @@ export default function InsightsHubScreen() {
 
       <Text style={styles.sectionTitle}>ADVANCED ANALYTICS</Text>
 
-      <Pressable
-        style={({ pressed }) => [styles.card, pressed && styles.cardPressed]}
-        onPress={() => router.push('/retention-insights' as any)}
-        testID="insights-retention-link"
-      >
-        <View style={[styles.iconCircle, { backgroundColor: Colors.primary + '18' }]}>
-          <BarChart3 size={18} color={Colors.primary} />
-        </View>
-        <View style={styles.cardBody}>
-          <Text style={styles.cardTitle}>Recovery Insights</Text>
-          <Text style={styles.cardSubtitle}>
-            Momentum, stability, and micro-progress across your last 30 days.
-          </Text>
-        </View>
-      </Pressable>
+      <View style={styles.cardShell} testID="insights-recovery-insights-card">
+        <Pressable
+          style={({ pressed }) => [styles.card, pressed && styles.cardPressed]}
+          onPress={() => router.push('/retention-insights' as any)}
+          testID="insights-retention-link"
+        >
+          <View style={[styles.iconCircle, { backgroundColor: Colors.primary + '18' }]}>
+            <BarChart3 size={18} color={Colors.primary} />
+          </View>
+          <View style={styles.cardBody}>
+            <Text style={styles.cardTitle}>Recovery Insights</Text>
+            <Text style={styles.cardSubtitle}>
+              Momentum, stability, and micro-progress across your last 30 days.
+            </Text>
+          </View>
+        </Pressable>
+        <Pressable
+          style={({ pressed }) => [styles.explainedBtn, pressed && { opacity: 0.85 }]}
+          onPress={() => {
+            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+            router.push('/recovery-insights-explained' as any);
+          }}
+          testID="insights-recovery-insights-explained-link"
+        >
+          <Text style={styles.explainedBtnText}>Explained</Text>
+        </Pressable>
+      </View>
 
-      <Pressable
-        style={({ pressed }) => [styles.card, pressed && styles.cardPressed]}
-        onPress={() => router.push('/relapse-detection' as any)}
-        testID="insights-relapse-detection-link"
-      >
-        <View style={[styles.iconCircle, { backgroundColor: Colors.accent + '18' }]}>
-          <Activity size={18} color={Colors.accent} />
-        </View>
-        <View style={styles.cardBody}>
-          <Text style={styles.cardTitle}>Relapse Warning</Text>
-          <Text style={styles.cardSubtitle}>
-            Real-time risk scoring, trends, and early warning signals.
-          </Text>
-        </View>
-      </Pressable>
+      <View style={styles.cardShell} testID="insights-relapse-warning-card">
+        <Pressable
+          style={({ pressed }) => [styles.card, pressed && styles.cardPressed]}
+          onPress={() => router.push('/relapse-detection' as any)}
+          testID="insights-relapse-detection-link"
+        >
+          <View style={[styles.iconCircle, { backgroundColor: Colors.accent + '18' }]}>
+            <Activity size={18} color={Colors.accent} />
+          </View>
+          <View style={styles.cardBody}>
+            <Text style={styles.cardTitle}>Relapse Warning</Text>
+            <Text style={styles.cardSubtitle}>
+              Real-time risk scoring, trends, and early warning signals.
+            </Text>
+          </View>
+        </Pressable>
+        <Pressable
+          style={({ pressed }) => [styles.explainedBtn, pressed && { opacity: 0.85 }]}
+          onPress={() => {
+            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+            router.push('/early-warning-explained' as any);
+          }}
+          testID="insights-relapse-warning-explained-link"
+        >
+          <Text style={styles.explainedBtnText}>Explained</Text>
+        </Pressable>
+      </View>
+
+      {/* Growth Insights + Goals */}
+      {insights.length > 0 && (
+        <>
+          <Text style={styles.growthSectionLabel}>GROWTH INSIGHTS</Text>
+
+          <View style={styles.insightsGrid}>
+            {insights.map((item) => (
+              <View
+                key={item.label}
+                style={[
+                  styles.insightCard,
+                  item.label === 'Growth Score' && styles.insightCardWithButton,
+                ]}
+              >
+                <View
+                  style={[styles.insightDot, { backgroundColor: item.color }]}
+                />
+
+                {item.label === 'Growth Score' && (
+                  <Pressable
+                    style={({ pressed }) => [
+                      styles.growthScoreExplainedBtn,
+                      pressed && { opacity: 0.85 },
+                    ]}
+                    onPress={() => {
+                      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                      router.push('/insights-explained' as any);
+                    }}
+                    testID="growth-score-explained-link"
+                  >
+                    <Text style={styles.growthScoreExplainedBtnText}>
+                      Explained
+                    </Text>
+                  </Pressable>
+                )}
+
+                <Text style={styles.insightLabel}>{item.label}</Text>
+                <Text style={[styles.insightValue, { color: item.color }]}>
+                  {item.value}
+                </Text>
+              </View>
+            ))}
+          </View>
+
+          {growthDimensions.length > 0 && (
+            <View style={styles.growthCard}>
+              {growthDimensions.map((dim) => (
+                <View key={dim.id} style={styles.growthRow}>
+                  <Text style={styles.growthLabel}>{dim.label}</Text>
+                  <View style={styles.growthBarTrack}>
+                    <View
+                      style={[
+                        styles.growthBarFill,
+                        { width: `${dim.score}%`, backgroundColor: dim.color },
+                      ]}
+                    />
+                  </View>
+                  <Text style={[styles.growthScore, { color: dim.color }]}>
+                    {dim.score}
+                  </Text>
+                </View>
+              ))}
+            </View>
+          )}
+
+          {goals.length > 0 && (
+            <>
+              <Text style={styles.growthSectionLabel}>GOALS</Text>
+              <View style={styles.goalsCard}>
+                {goals.map((goal, idx) => (
+                  <View key={idx} style={styles.goalRow}>
+                    <View style={styles.goalBullet}>
+                      <BarChart3 size={14} color={Colors.primary} />
+                    </View>
+                    <Text style={styles.goalText}>{goal}</Text>
+                  </View>
+                ))}
+              </View>
+            </>
+          )}
+        </>
+      )}
 
       <Text style={[styles.sectionTitle, { marginTop: 24 }]}>EXPLAINERS</Text>
 
@@ -210,6 +350,25 @@ const styles = StyleSheet.create({
     opacity: 0.9,
     transform: [{ scale: 0.98 }],
   },
+  cardShell: {
+    position: 'relative',
+  },
+  explainedBtn: {
+    position: 'absolute',
+    top: 10,
+    right: 12,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 8,
+    backgroundColor: Colors.primary + '14',
+    borderWidth: 0.5,
+    borderColor: Colors.primary + '30',
+  },
+  explainedBtnText: {
+    fontSize: 11,
+    fontWeight: '700' as const,
+    color: Colors.primary,
+  },
   iconCircle: {
     width: 38,
     height: 38,
@@ -248,6 +407,125 @@ const styles = StyleSheet.create({
     fontSize: 13,
     color: Colors.textSecondary,
     lineHeight: 19,
+  },
+
+  growthSectionLabel: {
+    fontSize: 11,
+    fontWeight: '700' as const,
+    color: Colors.textMuted,
+    letterSpacing: 1.5,
+    marginTop: 18,
+    marginBottom: 12,
+  },
+  insightsGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+    marginBottom: 12,
+  },
+  insightCard: {
+    backgroundColor: Colors.cardBackground,
+    borderRadius: 14,
+    padding: 14,
+    width: '48%' as any,
+    flexGrow: 1,
+    borderWidth: 0.5,
+    borderColor: Colors.border,
+  },
+  insightCardWithButton: {
+    position: 'relative',
+  },
+  insightDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    marginBottom: 8,
+  },
+  insightLabel: {
+    fontSize: 11,
+    color: Colors.textSecondary,
+    fontWeight: '500' as const,
+    marginBottom: 4,
+  },
+  insightValue: {
+    fontSize: 16,
+    fontWeight: '700' as const,
+  },
+  growthScoreExplainedBtn: {
+    position: 'absolute',
+    top: 8,
+    right: 8,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 8,
+    backgroundColor: Colors.primary + '14',
+    borderWidth: 0.5,
+    borderColor: Colors.primary + '30',
+  },
+  growthScoreExplainedBtnText: {
+    fontSize: 11,
+    fontWeight: '700' as const,
+    color: Colors.primary,
+  },
+  growthCard: {
+    backgroundColor: Colors.cardBackground,
+    borderRadius: 14,
+    padding: 16,
+    marginBottom: 20,
+    borderWidth: 0.5,
+    borderColor: Colors.border,
+    gap: 14,
+  },
+  growthRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+  },
+  growthLabel: {
+    fontSize: 12,
+    color: Colors.textSecondary,
+    fontWeight: '500' as const,
+    width: 90,
+  },
+  growthBarTrack: {
+    flex: 1,
+    height: 6,
+    backgroundColor: Colors.surface,
+    borderRadius: 3,
+    overflow: 'hidden',
+  },
+  growthBarFill: {
+    height: '100%',
+    borderRadius: 3,
+  },
+  growthScore: {
+    fontSize: 12,
+    fontWeight: '700' as const,
+    width: 28,
+    textAlign: 'right' as const,
+  },
+  goalsCard: {
+    backgroundColor: Colors.cardBackground,
+    borderRadius: 14,
+    padding: 16,
+    marginBottom: 20,
+    borderWidth: 0.5,
+    borderColor: Colors.border,
+    gap: 12,
+  },
+  goalRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 10,
+  },
+  goalBullet: {
+    marginTop: 1,
+  },
+  goalText: {
+    fontSize: 14,
+    color: Colors.text,
+    flex: 1,
+    lineHeight: 20,
   },
 });
 

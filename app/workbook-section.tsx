@@ -1,8 +1,8 @@
 import React, { useState, useCallback, useMemo } from 'react';
 import { View, Text, StyleSheet, Pressable, TextInput, Alert, KeyboardAvoidingView, Platform } from 'react-native';
 import { ScreenFlatList } from '@/components/ScreenFlatList';
-import { useLocalSearchParams } from 'expo-router';
-import { Stack } from 'expo-router';
+import { Redirect, useLocalSearchParams, Stack } from 'expo-router';
+import { useSubscription } from '@/providers/SubscriptionProvider';
 import { CheckCircle, Circle, ChevronDown, ChevronUp, BookOpen, PenLine, Lightbulb, Dumbbell } from 'lucide-react-native';
 import * as Haptics from 'expo-haptics';
 import Colors from '@/constants/colors';
@@ -31,9 +31,18 @@ const TYPE_LABELS: Record<string, string> = {
   exercise: 'Exercise',
 };
 
+/** Exercises 1–3 (indices 0–2) are free; 4–25 require Paid Premium (`deep_exercises`). */
+const FREE_EXERCISE_COUNT = 3;
+
 export default function WorkbookSectionScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const section = WORKBOOK_SECTIONS.find(s => s.id === id);
+  const { hasFeature } = useSubscription();
+  const hasPremium = hasFeature('deep_exercises');
+  const sectionIndex = useMemo(
+    () => (id ? WORKBOOK_SECTIONS.findIndex(s => s.id === id) : -1),
+    [id]
+  );
   const { saveWorkbookAnswer, getWorkbookAnswer, getSectionProgress } = useWorkbook();
   const [expandedQuestion, setExpandedQuestion] = useState<string | null>(null);
   const [editingAnswer, setEditingAnswer] = useState<string>('');
@@ -75,6 +84,15 @@ export default function WorkbookSectionScreen() {
         <Stack.Screen options={{ title: 'Section Not Found' }} />
         <Text style={styles.errorText}>Section not found.</Text>
       </View>
+    );
+  }
+
+  if (sectionIndex >= FREE_EXERCISE_COUNT && !hasPremium) {
+    return (
+      <>
+        <Stack.Screen options={{ title: 'Premium' }} />
+        <Redirect href="/premium-upgrade" />
+      </>
     );
   }
 

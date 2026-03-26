@@ -15,6 +15,9 @@ import { MOOD_EMOJIS } from '@/constants/milestones';
 import { WORKBOOK_SECTIONS } from '@/constants/workbook';
 import { JournalEntry } from '@/types';
 
+/** Exercises 1–3 free for all plans; the rest require Paid Premium (`deep_exercises`). */
+const FREE_EXERCISE_COUNT = 3;
+
 type TabMode = 'journal' | 'workbook';
 
 export default function JournalWorkbookScreen() {
@@ -50,21 +53,24 @@ export default function JournalWorkbookScreen() {
 
   const hasPremium = hasFeature('deep_exercises');
 
-  const handleSectionPress = useCallback((sectionId: string, isUnlocked: boolean, unlockDays: number) => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    if (!hasPremium) {
-      router.push('/premium-upgrade' as any);
-      return;
-    }
-    if (isUnlocked) {
-      router.push({ pathname: '/workbook-section' as any, params: { id: sectionId } });
-    } else {
-      Alert.alert(
-        'Section Locked',
-        `Reach ${unlockDays} days sober to unlock this section. You need ${unlockDays - daysSober} more days!`
-      );
-    }
-  }, [router, daysSober, hasPremium]);
+  const handleSectionPress = useCallback(
+    (sectionId: string, sectionIndex: number, isUnlocked: boolean, unlockDays: number) => {
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+      if (sectionIndex >= FREE_EXERCISE_COUNT && !hasPremium) {
+        router.push('/premium-upgrade' as any);
+        return;
+      }
+      if (isUnlocked) {
+        router.push({ pathname: '/workbook-section' as any, params: { id: sectionId } });
+      } else {
+        Alert.alert(
+          'Section Locked',
+          `Reach ${unlockDays} days sober to unlock this section. You need ${unlockDays - daysSober} more days!`
+        );
+      }
+    },
+    [router, daysSober, hasPremium]
+  );
 
   const handleTabSwitch = useCallback((tab: TabMode) => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
@@ -122,14 +128,17 @@ export default function JournalWorkbookScreen() {
   ), []);
 
   const totalWorkbookProgress = useMemo(() => {
+    const sections = hasPremium
+      ? WORKBOOK_SECTIONS
+      : WORKBOOK_SECTIONS.slice(0, FREE_EXERCISE_COUNT);
     let total = 0;
     let completed = 0;
-    WORKBOOK_SECTIONS.forEach(section => {
+    sections.forEach(section => {
       total += section.questions.length;
       completed += Math.round(getSectionProgress(section.id, section.questions.length) * section.questions.length);
     });
     return total > 0 ? completed / total : 0;
-  }, [getSectionProgress]);
+  }, [getSectionProgress, hasPremium]);
 
   return (
     <View style={styles.container}>
@@ -170,7 +179,7 @@ export default function JournalWorkbookScreen() {
         </View>
       ) : (
         <ScreenScrollView style={styles.workbookContainer} contentContainerStyle={styles.workbookContent} showsVerticalScrollIndicator={false}>
-          {!hasPremium ? (
+          {!hasPremium && (
             <Pressable
               style={({ pressed }) => [styles.upgradeBanner, pressed && { opacity: 0.85 }]}
               onPress={() => {
@@ -184,34 +193,42 @@ export default function JournalWorkbookScreen() {
               </View>
               <View style={styles.upgradeBannerText}>
                 <Text style={styles.upgradeBannerTitle}>Recovery Exercises</Text>
-                <Text style={styles.upgradeBannerDesc}>Upgrade to Premium to unlock all 25 exercises</Text>
+                <Text style={styles.upgradeBannerDesc}>
+                  {`Exercises 1–${FREE_EXERCISE_COUNT} are free. Upgrade to Premium for all ${WORKBOOK_SECTIONS.length} exercises.`}
+                </Text>
               </View>
               <ChevronRight size={18} color="#D4A574" />
             </Pressable>
-          ) : (
-            <View style={styles.workbookHeader}>
-              <Text style={styles.workbookTitle}>Recovery Exercises</Text>
-              <Text style={styles.workbookSubtitle}>25 sections to guide your journey</Text>
-              <View style={styles.overallProgressRow}>
-                <View style={styles.overallProgressBg}>
-                  <View style={[styles.overallProgressFill, { width: `${totalWorkbookProgress * 100}%` }]} />
-                </View>
-                <Text style={styles.overallProgressText}>{Math.round(totalWorkbookProgress * 100)}%</Text>
-              </View>
-            </View>
           )}
 
+          <View style={styles.workbookHeader}>
+            <Text style={styles.workbookTitle}>Recovery Exercises</Text>
+            <Text style={styles.workbookSubtitle}>
+              {hasPremium
+                ? `${WORKBOOK_SECTIONS.length} sections to guide your journey`
+                : `${FREE_EXERCISE_COUNT} of ${WORKBOOK_SECTIONS.length} sections included — Premium unlocks the full library`}
+            </Text>
+            <View style={styles.overallProgressRow}>
+              <View style={styles.overallProgressBg}>
+                <View style={[styles.overallProgressFill, { width: `${totalWorkbookProgress * 100}%` }]} />
+              </View>
+              <Text style={styles.overallProgressText}>{Math.round(totalWorkbookProgress * 100)}%</Text>
+            </View>
+          </View>
+
           {WORKBOOK_SECTIONS.map((section, index) => {
+            const isPremiumTier = index >= FREE_EXERCISE_COUNT;
             const isMilestoneLocked = daysSober < section.unlockMilestoneDays;
-            const isLocked = !hasPremium || isMilestoneLocked;
-            const progress = hasPremium ? getSectionProgress(section.id, section.questions.length) : 0;
+            const isLocked = isMilestoneLocked || (isPremiumTier && !hasPremium);
+            const progress =
+              isPremiumTier && !hasPremium ? 0 : getSectionProgress(section.id, section.questions.length);
             const answeredCount = Math.round(progress * section.questions.length);
 
             return (
               <Pressable
                 key={section.id}
                 style={({ pressed }) => [styles.sectionCard, pressed && styles.entryPressed, isLocked && styles.sectionLocked]}
-                onPress={() => handleSectionPress(section.id, !isLocked, section.unlockMilestoneDays)}
+                onPress={() => handleSectionPress(section.id, index, !isLocked, section.unlockMilestoneDays)}
                 testID={`workbook-section-${section.id}`}
               >
                 <View style={styles.sectionLeft}>
@@ -232,7 +249,7 @@ export default function JournalWorkbookScreen() {
                     <Text style={[styles.sectionTitle, isLocked && styles.sectionTitleLocked]} numberOfLines={1}>
                       {section.title}
                     </Text>
-                    {!hasPremium ? (
+                    {!hasPremium && isPremiumTier ? (
                       <Crown size={14} color="#D4A574" />
                     ) : (
                       <ChevronRight size={16} color={!isLocked ? Colors.textSecondary : Colors.textMuted} />
@@ -248,7 +265,7 @@ export default function JournalWorkbookScreen() {
                       </View>
                       <Text style={styles.sectionProgressText}>{answeredCount}/{section.questions.length}</Text>
                     </View>
-                  ) : !hasPremium ? (
+                  ) : isPremiumTier && !hasPremium ? (
                     <Text style={styles.sectionPremiumText}>Premium</Text>
                   ) : (
                     <Text style={styles.sectionUnlockText}>

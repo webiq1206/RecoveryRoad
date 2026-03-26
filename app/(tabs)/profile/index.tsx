@@ -7,7 +7,6 @@ import Colors from '@/constants/colors';
 import { useRelapse } from '@/core/domains/useRelapse';
 import { useAppStore } from '@/stores/useAppStore';
 import { useUser } from '@/core/domains/useUser';
-import { useCheckin } from '@/core/domains/useCheckin';
 import { usePledges } from '@/core/domains/usePledges';
 import { useJournal } from '@/core/domains/useJournal';
 import { useAppMeta } from '@/core/domains/useAppMeta';
@@ -30,13 +29,12 @@ const STAGE_ORDER: RecoveryStage[] = ['crisis', 'stabilize', 'rebuild', 'maintai
 export default function ProfileScreen() {
   const { resetAllData } = useAppMeta();
   const { profile, updateProfile, daysSober } = useUser();
-  const { checkIns } = useCheckin();
   const { pledges, currentStreak } = usePledges();
   const { journal } = useJournal();
   const { logRelapse } = useRelapse();
   const centralProgress = useAppStore((s) => s.progress);
   const logRelapseToCentralStore = useAppStore.use.logRelapse();
-  const { growthDimensions, overallGrowthScore, notificationPreferences, updateNotificationPrefs, streak } = useEngagement();
+  const { notificationPreferences, updateNotificationPrefs, streak } = useEngagement();
   const { isPremium } = useSubscription();
   const {
     intensity,
@@ -90,35 +88,6 @@ export default function ProfileScreen() {
     const nouns = ['Phoenix', 'River', 'Mountain', 'Star', 'Oak', 'Wave', 'Light', 'Path'];
     return `${adjectives[hash % adjectives.length]} ${nouns[(hash * 7) % nouns.length]}`;
   }, [profile.privacyControls?.isAnonymous, profile.name, profile.soberDate]);
-
-  const insights = useMemo(() => {
-    const items: { label: string; value: string; color: string }[] = [];
-    const recentCheckins = checkIns.slice(0, 14);
-
-    if (recentCheckins.length >= 3) {
-      const avgMood = recentCheckins.reduce((s, c) => s + c.mood, 0) / recentCheckins.length;
-      const moodTrend = avgMood >= 60 ? 'Improving' : avgMood >= 40 ? 'Steady' : 'Needs attention';
-      const moodColor = avgMood >= 60 ? Colors.success : avgMood >= 40 ? Colors.accentWarm : Colors.danger;
-      items.push({ label: 'Mood Trend', value: moodTrend, color: moodColor });
-
-      const avgCraving = recentCheckins.reduce((s, c) => s + c.cravingLevel, 0) / recentCheckins.length;
-      const cravingTrend = avgCraving <= 30 ? 'Low' : avgCraving <= 60 ? 'Moderate' : 'High';
-      const cravingColor = avgCraving <= 30 ? Colors.success : avgCraving <= 60 ? Colors.accentWarm : Colors.danger;
-      items.push({ label: 'Craving Level', value: cravingTrend, color: cravingColor });
-    }
-
-    items.push({
-      label: 'Growth Score',
-      value: `${overallGrowthScore}/100`,
-      color: overallGrowthScore >= 50 ? Colors.primary : Colors.accentWarm,
-    });
-
-    return items;
-  }, [checkIns, overallGrowthScore]);
-
-  const goals = useMemo(() => {
-    return profile.recoveryProfile?.goals ?? [];
-  }, [profile.recoveryProfile?.goals]);
 
   const handleTogglePrivacy = useCallback((key: keyof PrivacyControls) => {
     Haptics.selectionAsync();
@@ -363,65 +332,6 @@ export default function ProfileScreen() {
           })}
         </View>
       </View>
-
-      {/* Insights */}
-      {insights.length > 0 && (
-        <>
-          <Text style={styles.sectionLabel}>GROWTH INSIGHTS</Text>
-          <View style={styles.insightsGrid}>
-            {insights.map((item, idx) => (
-              <View key={idx} style={[styles.insightCard, item.label === 'Growth Score' && styles.insightCardWithButton]}>
-                <View style={[styles.insightDot, { backgroundColor: item.color }]} />
-                {item.label === 'Growth Score' && (
-                  <Pressable
-                    style={({ pressed }) => [styles.growthScoreExplainedBtn, pressed && { opacity: 0.85 }]}
-                    onPress={() => {
-                      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                      router.push('/insights-explained' as any);
-                    }}
-                    testID="growth-score-explained-link"
-                  >
-                    <Text style={styles.growthScoreExplainedBtnText}>Explained</Text>
-                  </Pressable>
-                )}
-                <Text style={styles.insightLabel}>{item.label}</Text>
-                <Text style={[styles.insightValue, { color: item.color }]}>{item.value}</Text>
-              </View>
-            ))}
-          </View>
-
-          {growthDimensions.length > 0 && (
-            <View style={styles.growthCard}>
-              {growthDimensions.map((dim) => (
-                <View key={dim.id} style={styles.growthRow}>
-                  <Text style={styles.growthLabel}>{dim.label}</Text>
-                  <View style={styles.growthBarTrack}>
-                    <View style={[styles.growthBarFill, { width: `${dim.score}%`, backgroundColor: dim.color }]} />
-                  </View>
-                  <Text style={[styles.growthScore, { color: dim.color }]}>{dim.score}</Text>
-                </View>
-              ))}
-            </View>
-          )}
-        </>
-      )}
-
-      {/* Goals */}
-      {goals.length > 0 && (
-        <>
-          <Text style={styles.sectionLabel}>GOALS</Text>
-          <View style={styles.goalsCard}>
-            {goals.map((goal, idx) => (
-              <View key={idx} style={styles.goalRow}>
-                <View style={styles.goalBullet}>
-                  <Target size={14} color={Colors.primary} />
-                </View>
-                <Text style={styles.goalText}>{goal}</Text>
-              </View>
-            ))}
-          </View>
-        </>
-      )}
 
       {/* Profile Details */}
       <Text style={styles.sectionLabel}>PROFILE DETAILS</Text>

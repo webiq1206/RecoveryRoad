@@ -33,6 +33,7 @@ import {
   Info,
   CheckCircle,
   ArrowRight,
+  Crown,
 } from 'lucide-react-native';
 import * as Haptics from 'expo-haptics';
 import Colors from '@/constants/colors';
@@ -40,6 +41,7 @@ import { useRiskPrediction } from '@/providers/RiskPredictionProvider';
 import { RiskAlert, RiskCategory } from '@/types';
 import { useUser } from '@/core/domains/useUser';
 import { useCheckin } from '@/core/domains/useCheckin';
+import { useSubscription } from '@/providers/SubscriptionProvider';
 import { resolveCanonicalRoute } from '@/utils/legacyRoutes';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
@@ -460,6 +462,8 @@ function IntensityIndicator({ level }: { level: string }) {
 
 export default function RelapseDetectionScreen() {
   const router = useRouter();
+  const { hasFeature } = useSubscription();
+  const hasRiskWarningAccess = hasFeature('predictive_engine');
   const {
     currentPrediction,
     predictions,
@@ -507,6 +511,49 @@ export default function RelapseDetectionScreen() {
   const overallScore = currentPrediction?.overallRisk ?? 0;
   const showCrisisPrompt = currentIntensity.showCrisisButton || overallScore >= 65;
   const isHighRisk = riskCategory === 'high';
+
+  if (!hasRiskWarningAccess) {
+    return (
+      <>
+        <Stack.Screen
+          options={{
+            title: 'Risk Warning',
+            headerStyle: { backgroundColor: Colors.background },
+            headerTintColor: Colors.text,
+          }}
+        />
+        <ScreenScrollView
+          style={styles.container}
+          contentContainerStyle={styles.content}
+          showsVerticalScrollIndicator={false}
+          testID="relapse-detection-screen-inactive"
+        >
+          <Animated.View style={{ opacity: fadeAnim }}>
+            <View style={styles.activateRow}>
+              <Text style={styles.activateWithText}>Activate with</Text>
+              <Pressable
+                style={({ pressed }) => [styles.premiumMemberPill, pressed && { opacity: 0.88 }]}
+                onPress={() => {
+                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                  router.push('/premium-upgrade' as never);
+                }}
+                accessibilityRole="button"
+                accessibilityLabel="Upgrade to Premium Member"
+                testID="relapse-detection-activate-premium"
+              >
+                <Crown size={15} color="#D4A574" />
+                <Text style={styles.premiumMemberPillText}>Premium Member</Text>
+              </Pressable>
+            </View>
+            <View style={styles.reassuranceCard}>
+              <Heart size={14} color={Colors.primary} />
+              <Text style={styles.reassuranceText}>{reassuringMessage}</Text>
+            </View>
+          </Animated.View>
+        </ScreenScrollView>
+      </>
+    );
+  }
 
   return (
     <>
@@ -1184,6 +1231,35 @@ const styles = StyleSheet.create({
   content: {
     padding: 20,
     paddingBottom: 100,
+  },
+  activateRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 10,
+    marginBottom: 14,
+  },
+  activateWithText: {
+    fontSize: 15,
+    fontWeight: '500' as const,
+    color: Colors.textSecondary,
+  },
+  premiumMemberPill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    borderRadius: 999,
+    backgroundColor: 'rgba(212,165,116,0.12)',
+    borderWidth: 1,
+    borderColor: 'rgba(212,165,116,0.35)',
+  },
+  premiumMemberPillText: {
+    fontSize: 13,
+    fontWeight: '700' as const,
+    color: '#D4A574',
   },
   reassuranceCard: {
     flexDirection: 'row',

@@ -352,7 +352,7 @@ export default function RetentionInsightsScreen() {
         >
           <View style={styles.inactiveGate}>
             <View style={styles.activateRow}>
-              <Text style={styles.activateWithText}>Activate page with</Text>
+              <Text style={styles.activateWithText}>Activate with</Text>
               <Pressable
                 style={({ pressed }) => [styles.premiumMemberPill, pressed && { opacity: 0.88 }]}
                 onPress={() => {
@@ -367,6 +367,31 @@ export default function RetentionInsightsScreen() {
                 <Text style={styles.premiumMemberPillText}>Premium Member</Text>
               </Pressable>
             </View>
+            <Animated.View style={[styles.heroCard, { transform: [{ scale: pulseAnim }] }]}>
+              <View style={styles.heroGlow} />
+              <View style={styles.heroInner}>
+                <Sparkles size={22} color="#FFD54F" />
+                <Text style={styles.heroLabel}>Recovery Momentum</Text>
+                <Text style={styles.heroScore}>{overallRetentionScore}</Text>
+                <Text style={styles.heroScoreLabel}>overall strength</Text>
+                <View style={styles.heroStatsRow}>
+                  <View style={styles.heroStat}>
+                    <Text style={styles.heroStatValue}>{emotionalRegulation.currentStreak}</Text>
+                    <Text style={styles.heroStatLabel}>Stable days</Text>
+                  </View>
+                  <View style={styles.heroStatDivider} />
+                  <View style={styles.heroStat}>
+                    <Text style={styles.heroStatValue}>{confidenceScore}</Text>
+                    <Text style={styles.heroStatLabel}>Confidence</Text>
+                  </View>
+                  <View style={styles.heroStatDivider} />
+                  <View style={styles.heroStat}>
+                    <Text style={styles.heroStatValue}>{activeLoops.length}</Text>
+                    <Text style={styles.heroStatLabel}>Active loops</Text>
+                  </View>
+                </View>
+              </View>
+            </Animated.View>
           </View>
         </ScreenScrollView>
       </>

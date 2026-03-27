@@ -1,6 +1,7 @@
 import React, { useMemo, useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { Activity, Minus, Shield, TrendingDown, TrendingUp } from 'lucide-react-native';
+import * as Haptics from 'expo-haptics';
 
 import Colors from '@/constants/colors';
 import type { StabilityTrend } from '@/utils/stabilityEngine';
@@ -16,6 +17,8 @@ type Props = {
   relapseRiskTrendLabel: string;
   relapseRiskWhySentence?: string;
   relapseRiskFactors?: { label: string; value: number }[];
+  /** Opens Insights Hub at the Comprehensive Stability Explained block. */
+  onExplainedPress?: () => void;
 };
 
 type StabilityZone = {
@@ -45,6 +48,7 @@ export function RecoveryStabilityPanel({
   relapseRiskTrendLabel,
   relapseRiskWhySentence,
   relapseRiskFactors,
+  onExplainedPress,
 }: Props) {
   const clampedScore = Number.isFinite(score) ? Math.max(0, Math.min(100, Math.round(score))) : 0;
   const zone = getStabilityZone(clampedScore);
@@ -65,7 +69,23 @@ export function RecoveryStabilityPanel({
   return (
     <View style={[styles.card, { borderColor: zone.color + '55' }]}>
       <View style={styles.headerRow}>
-        <Text style={styles.title}>Comprehensive Stability</Text>
+        <View style={styles.headerTitleCol}>
+          <Text style={styles.title}>Comprehensive Stability</Text>
+          {onExplainedPress ? (
+            <Pressable
+              onPress={() => {
+                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                onExplainedPress();
+              }}
+              style={({ pressed }) => [styles.explainedBtn, pressed && { opacity: 0.85 }]}
+              accessibilityRole="button"
+              accessibilityLabel="Comprehensive Stability Explained"
+              testID="todayhub-comprehensive-stability-explained-link"
+            >
+              <Text style={styles.explainedBtnText}>Explained</Text>
+            </Pressable>
+          ) : null}
+        </View>
         <View style={[styles.zonePill, { backgroundColor: zone.color + '22' }]}>
           <View style={[styles.zoneDot, { backgroundColor: zone.color }]} />
           <Text style={styles.zoneLabel}>{zone.label}</Text>
@@ -167,14 +187,33 @@ const styles = StyleSheet.create({
   },
   headerRow: {
     flexDirection: 'row',
-    alignItems: 'center',
+    alignItems: 'flex-start',
     justifyContent: 'space-between',
     marginBottom: 16,
+  },
+  headerTitleCol: {
+    flex: 1,
+    marginRight: 12,
+    gap: 8,
   },
   title: {
     fontSize: 16,
     fontWeight: '700',
     color: Colors.text,
+  },
+  explainedBtn: {
+    alignSelf: 'flex-start',
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 8,
+    backgroundColor: Colors.primary + '14',
+    borderWidth: 0.5,
+    borderColor: Colors.primary + '30',
+  },
+  explainedBtnText: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: Colors.primary,
   },
   zonePill: {
     flexDirection: 'row',

@@ -1,7 +1,7 @@
-import React, { useMemo } from 'react';
-import { View, Text, StyleSheet, Pressable } from 'react-native';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
+import { View, Text, StyleSheet, Pressable, type ScrollView } from 'react-native';
 import { ScreenScrollView } from '@/components/ScreenScrollView';
-import { Stack, useRouter } from 'expo-router';
+import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import {
   BarChart3,
   RefreshCw,
@@ -18,8 +18,21 @@ import { useUser } from '@/core/domains/useUser';
 import { useCheckin } from '@/core/domains/useCheckin';
 import { useEngagement } from '@/providers/EngagementProvider';
 
+/** Matches `params.focus` from deep links to the Comprehensive Stability Explained card. */
+export const INSIGHTS_FOCUS_COMPREHENSIVE_STABILITY = 'comprehensive-stability-explained';
+
+/** Matches `params.focus` for the Recovery Stages Explained card. */
+export const INSIGHTS_FOCUS_RECOVERY_STAGES = 'recovery-stages-explained';
+
 export default function InsightsHubScreen() {
   const router = useRouter();
+  const rawFocus = useLocalSearchParams<{ focus?: string | string[] }>().focus;
+  const focusParam = Array.isArray(rawFocus) ? rawFocus[0] : rawFocus;
+  const scrollRef = useRef<ScrollView>(null);
+  const [comprehensiveStabilitySectionY, setComprehensiveStabilitySectionY] = useState<number | null>(
+    null,
+  );
+  const [recoveryStagesSectionY, setRecoveryStagesSectionY] = useState<number | null>(null);
   const { profile } = useUser();
   const { checkIns } = useCheckin();
   const { growthDimensions, overallGrowthScore } = useEngagement();
@@ -50,8 +63,23 @@ export default function InsightsHubScreen() {
     return items;
   }, [checkIns, overallGrowthScore]);
 
+  useEffect(() => {
+    if (focusParam !== INSIGHTS_FOCUS_COMPREHENSIVE_STABILITY || comprehensiveStabilitySectionY == null) {
+      return;
+    }
+    const t = setTimeout(() => {
+      scrollRef.current?.scrollTo({
+        y: Math.max(0, comprehensiveStabilitySectionY - 44),
+        animated: true,
+      });
+    }, 80);
+    return () => clearTimeout(t);
+  }, [focusParam, comprehensiveStabilitySectionY]);
+
   return (
     <ScreenScrollView
+      ref={scrollRef}
+      scrollToTopOnFocus={!focusParam}
       style={styles.container}
       contentContainerStyle={styles.content}
       showsVerticalScrollIndicator={false}
@@ -210,21 +238,26 @@ export default function InsightsHubScreen() {
 
       <Text style={[styles.sectionTitle, { marginTop: 24 }]}>EXPLAINERS</Text>
 
-      <Pressable
-        style={({ pressed }) => [styles.card, pressed && styles.cardPressed]}
-        onPress={() => router.push('/comprehensive-stability-explained' as any)}
-        testID="insights-comprehensive-stability-explained-link"
+      <View
+        onLayout={(e) => setComprehensiveStabilitySectionY(e.nativeEvent.layout.y)}
+        testID="insights-comprehensive-stability-explained-block"
       >
-        <View style={[styles.iconCircle, { backgroundColor: Colors.primary + '18' }]}>
-          <Activity size={18} color={Colors.primary} />
-        </View>
-        <View style={styles.cardBody}>
-          <Text style={styles.cardTitle}>Comprehensive Stability Explained</Text>
-          <Text style={styles.cardSubtitle}>
-            How your daily check-ins roll up into the score you see on Home.
-          </Text>
-        </View>
-      </Pressable>
+        <Pressable
+          style={({ pressed }) => [styles.card, pressed && styles.cardPressed]}
+          onPress={() => router.push('/comprehensive-stability-explained' as any)}
+          testID="insights-comprehensive-stability-explained-link"
+        >
+          <View style={[styles.iconCircle, { backgroundColor: Colors.primary + '18' }]}>
+            <Activity size={18} color={Colors.primary} />
+          </View>
+          <View style={styles.cardBody}>
+            <Text style={styles.cardTitle}>Comprehensive Stability Explained</Text>
+            <Text style={styles.cardSubtitle}>
+              How your daily check-ins roll up into the score you see on Home.
+            </Text>
+          </View>
+        </Pressable>
+      </View>
 
       <Pressable
         style={({ pressed }) => [styles.card, pressed && styles.cardPressed]}
@@ -235,7 +268,7 @@ export default function InsightsHubScreen() {
           <RefreshCw size={18} color={Colors.accentWarm} />
         </View>
         <View style={styles.cardBody}>
-          <Text style={styles.cardTitle}>Insights Explained</Text>
+          <Text style={styles.cardTitle}>Growth Insights Explained</Text>
           <Text style={styles.cardSubtitle}>
             How Growth and related scores are calculated from your data.
           </Text>
@@ -258,21 +291,26 @@ export default function InsightsHubScreen() {
         </View>
       </Pressable>
 
-      <Pressable
-        style={({ pressed }) => [styles.card, pressed && styles.cardPressed]}
-        onPress={() => router.push('/recovery-stages-explained' as any)}
-        testID="recovery-stages-explained-link"
+      <View
+        onLayout={(e) => setRecoveryStagesSectionY(e.nativeEvent.layout.y)}
+        testID="insights-recovery-stages-explained-block"
       >
-        <View style={[styles.iconCircle, { backgroundColor: '#42A5F518' }]}>
-          <Layers size={18} color="#42A5F5" />
-        </View>
-        <View style={styles.cardBody}>
-          <Text style={styles.cardTitle}>Recovery Stages Explained</Text>
-          <Text style={styles.cardSubtitle}>
-            How the app detects your stage and adapts support over time.
-          </Text>
-        </View>
-      </Pressable>
+        <Pressable
+          style={({ pressed }) => [styles.card, pressed && styles.cardPressed]}
+          onPress={() => router.push('/recovery-stages-explained' as any)}
+          testID="recovery-stages-explained-link"
+        >
+          <View style={[styles.iconCircle, { backgroundColor: '#42A5F518' }]}>
+            <Layers size={18} color="#42A5F5" />
+          </View>
+          <View style={styles.cardBody}>
+            <Text style={styles.cardTitle}>Recovery Stages Explained</Text>
+            <Text style={styles.cardSubtitle}>
+              How the app detects your stage and adapts support over time.
+            </Text>
+          </View>
+        </Pressable>
+      </View>
 
       <Pressable
         style={({ pressed }) => [styles.card, pressed && styles.cardPressed]}

@@ -16,6 +16,7 @@ import { useNotifications } from '@/providers/NotificationProvider';
 import { RecoveryStage, PrivacyControls, NotificationIntensityLevel } from '@/types';
 import { ADDICTION_TYPES } from '@/constants/milestones';
 import { NOTIFICATION_INTENSITY_CONFIG, NotificationIntensity } from '@/constants/notifications';
+import { INSIGHTS_FOCUS_RECOVERY_STAGES } from '../../insights';
 
 const STAGE_CONFIG: Record<RecoveryStage, { label: string; color: string; icon: string; description: string }> = {
   crisis: { label: 'Crisis', color: '#EF5350', icon: 'alert', description: 'Navigating the hardest moments' },
@@ -306,12 +307,32 @@ export default function ProfileScreen() {
 
       {/* Recovery Stage */}
       <View style={styles.stageCard}>
-        <View style={styles.stageHeader}>
+        <View style={styles.stageHeaderBlock}>
           <View style={styles.stageLabelRow}>
             <View style={[styles.stageDot, { backgroundColor: stageConfig.color }]} />
             <Text style={styles.stageTitle}>Recovery Stage</Text>
           </View>
-          <View style={[styles.stageBadge, { backgroundColor: stageConfig.color + '20', borderColor: stageConfig.color + '40' }]}>
+          <Pressable
+            style={({ pressed }) => [styles.stageExplainedBtn, pressed && { opacity: 0.88 }]}
+            onPress={() => {
+              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+              router.push({
+                pathname: '/insights' as any,
+                params: { focus: INSIGHTS_FOCUS_RECOVERY_STAGES },
+              });
+            }}
+            accessibilityRole="button"
+            accessibilityLabel="Recovery Stages Explained"
+            testID="profile-recovery-stage-explained-link"
+          >
+            <Text style={styles.stageExplainedBtnText}>Explained</Text>
+          </Pressable>
+          <View
+            style={[
+              styles.stageBadge,
+              { backgroundColor: stageConfig.color + '20', borderColor: stageConfig.color + '40' },
+            ]}
+          >
             <Text style={[styles.stageBadgeText, { color: stageConfig.color }]}>{stageConfig.label}</Text>
           </View>
         </View>
@@ -545,7 +566,7 @@ export default function ProfileScreen() {
             <Lightbulb size={17} color={Colors.accentWarm} />
           </View>
           <View>
-            <Text style={styles.settingLabel}>Insights Explained</Text>
+            <Text style={styles.settingLabel}>Growth Insights Explained</Text>
             <Text style={styles.settingValue}>How your scores are calculated</Text>
           </View>
         </View>
@@ -878,11 +899,23 @@ const styles = StyleSheet.create({
     borderWidth: 0.5,
     borderColor: Colors.border,
   },
-  stageHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
+  stageHeaderBlock: {
     marginBottom: 6,
+    gap: 10,
+  },
+  stageExplainedBtn: {
+    alignSelf: 'flex-start',
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 8,
+    backgroundColor: Colors.primary + '14',
+    borderWidth: 0.5,
+    borderColor: Colors.primary + '30',
+  },
+  stageExplainedBtnText: {
+    fontSize: 11,
+    fontWeight: '700' as const,
+    color: Colors.primary,
   },
   stageLabelRow: {
     flexDirection: 'row',

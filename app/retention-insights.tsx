@@ -8,7 +8,7 @@ import {
   Dimensions,
 } from 'react-native';
 import { ScreenScrollView } from '@/components/ScreenScrollView';
-import { Stack } from 'expo-router';
+import { Stack, useRouter } from 'expo-router';
 import {
   Leaf,
   TrendingUp,
@@ -22,6 +22,7 @@ import {
   Sparkles,
   Bell,
   ChevronRight,
+  Crown,
   Minus,
   ArrowUpRight,
   ArrowDownRight,
@@ -34,6 +35,7 @@ import { useCheckin } from '@/core/domains/useCheckin';
 import { useJournal } from '@/core/domains/useJournal';
 import { usePledges } from '@/core/domains/usePledges';
 import { useEngagement } from '@/providers/EngagementProvider';
+import { useSubscription } from '@/providers/SubscriptionProvider';
 import { RETENTION_LOOPS, MICRO_PROGRESS_DEFINITIONS } from '@/constants/retention';
 import { RetentionLoop, MicroProgressMarker, TriggerReductionMilestone, SupportiveNotification, RetentionLoopType } from '@/types';
 
@@ -282,6 +284,9 @@ function EmptyState({ title, subtitle }: { title: string; subtitle: string }) {
 }
 
 export default function RetentionInsightsScreen() {
+  const router = useRouter();
+  const { hasFeature } = useSubscription();
+  const hasRecoveryInsightsAccess = hasFeature('advanced_analytics');
   const {
     loops,
     microProgress,
@@ -334,6 +339,39 @@ export default function RetentionInsightsScreen() {
   const confidenceTrend = latestConfidence
     ? (latestConfidence.score > latestConfidence.previousScore ? 'up' : latestConfidence.score < latestConfidence.previousScore ? 'down' : 'stable')
     : 'stable';
+
+  if (!hasRecoveryInsightsAccess) {
+    return (
+      <>
+        <Stack.Screen options={{ title: 'Recovery Insights' }} />
+        <ScreenScrollView
+          style={styles.container}
+          contentContainerStyle={styles.inactiveContent}
+          showsVerticalScrollIndicator={false}
+          testID="retention-insights-screen-inactive"
+        >
+          <View style={styles.inactiveGate}>
+            <View style={styles.activateRow}>
+              <Text style={styles.activateWithText}>Activate page with</Text>
+              <Pressable
+                style={({ pressed }) => [styles.premiumMemberPill, pressed && { opacity: 0.88 }]}
+                onPress={() => {
+                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                  router.push('/premium-upgrade' as never);
+                }}
+                accessibilityRole="button"
+                accessibilityLabel="Upgrade to Premium Member"
+                testID="retention-insights-activate-premium"
+              >
+                <Crown size={15} color="#D4A574" />
+                <Text style={styles.premiumMemberPillText}>Premium Member</Text>
+              </Pressable>
+            </View>
+          </View>
+        </ScreenScrollView>
+      </>
+    );
+  }
 
   return (
     <>
@@ -796,6 +834,46 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: Colors.background,
+  },
+  inactiveContent: {
+    flexGrow: 1,
+    padding: 24,
+    paddingBottom: 100,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  inactiveGate: {
+    width: '100%',
+    maxWidth: 400,
+    alignItems: 'center',
+  },
+  activateRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 10,
+  },
+  activateWithText: {
+    fontSize: 15,
+    fontWeight: '500',
+    color: Colors.textSecondary,
+  },
+  premiumMemberPill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    borderRadius: 999,
+    backgroundColor: 'rgba(212,165,116,0.12)',
+    borderWidth: 1,
+    borderColor: 'rgba(212,165,116,0.35)',
+  },
+  premiumMemberPillText: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: '#D4A574',
   },
   content: {
     padding: 20,

@@ -46,7 +46,7 @@ export default function InsightsExplainedScreen() {
       showsVerticalScrollIndicator={false}
       testID="insights-explained-screen"
     >
-      <Stack.Screen options={{ title: 'Insights Explained' }} />
+      <Stack.Screen options={{ title: 'Growth Insights Explained' }} />
 
       <View style={styles.introCard}>
         <Info size={20} color={Colors.primary} />

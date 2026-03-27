@@ -23,13 +23,15 @@ export function scrollToTop(node: ScrollView | FlatList | null) {
 
 export function useScrollToTopOnFocus(
   scrollRef: React.RefObject<ScrollView | FlatList | null>,
+  enabled: boolean = true,
 ) {
   useFocusEffect(
     useCallback(() => {
+      if (!enabled) return;
       const id = requestAnimationFrame(() => {
         scrollToTop(scrollRef.current);
       });
       return () => cancelAnimationFrame(id);
-    }, [scrollRef]),
+    }, [scrollRef, enabled]),
   );
 }

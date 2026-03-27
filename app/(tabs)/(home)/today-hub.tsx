@@ -40,6 +40,7 @@ import {
 import type { CheckInTimeOfDay } from '@/types';
 import type { WizardAction } from '@/utils/wizardEngine';
 import { mergeTodayCheckInsFromSources } from '@/utils/mergeProfile';
+import { INSIGHTS_FOCUS_COMPREHENSIVE_STABILITY } from '../../insights';
 
 const CHECK_IN_PERIODS: { period: CheckInTimeOfDay; title: string }[] = [
   { period: 'morning', title: 'Morning\nCheck-In' },
@@ -308,6 +309,12 @@ export default function TodayHubScreen() {
           relapseRiskTrendLabel={relapseRisk.trendLabel}
           relapseRiskWhySentence={relapseRisk.whySentence}
           relapseRiskFactors={relapseRisk.factors}
+          onExplainedPress={() => {
+            router.push({
+              pathname: '/insights' as any,
+              params: { focus: INSIGHTS_FOCUS_COMPREHENSIVE_STABILITY },
+            });
+          }}
         />
 
         {showRelapsePlanCta && (

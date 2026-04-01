@@ -11,7 +11,7 @@ import {
 import { ScreenScrollView } from '@/components/ScreenScrollView';
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { X } from 'lucide-react-native';
+import { ArrowRight, X } from 'lucide-react-native';
 import * as Haptics from 'expo-haptics';
 import { useUser } from '@/core/domains/useUser';
 import { useSupportContacts } from '@/core/domains/useSupportContacts';
@@ -293,29 +293,37 @@ export default function CrisisModeScreen() {
     switch (currentStep) {
       case 'landing':
         return (
-          <ScreenScrollView
-            style={{ flex: 1, width: '100%' }}
-            contentContainerStyle={{
-              paddingBottom: insets.bottom + 160,
-              paddingHorizontal: 20,
-            }}
-            showsVerticalScrollIndicator={false}
-            keyboardShouldPersistTaps="handled"
-          >
-            <CrisisLandingStep
-              fadeAnim={fadeAnim}
-              slideAnim={slideAnim}
-              landingPulse={landingPulse}
-              emergencyContacts={contactsForCrisis}
-              onStart={goNext}
-              onQuickCall={handleCallContact}
-              onCall988={() => handleCallContact('988')}
-            />
-            <CrisisStateActions
-              selectedState={currentState}
-              onSelectState={setCurrentState}
-            />
-          </ScreenScrollView>
+          <>
+            <ScreenScrollView
+              style={{ flex: 1, width: '100%' }}
+              contentContainerStyle={{
+                paddingBottom: insets.bottom + 24,
+                paddingHorizontal: 20,
+              }}
+              showsVerticalScrollIndicator={false}
+              keyboardShouldPersistTaps="handled"
+            >
+              <CrisisLandingStep
+                fadeAnim={fadeAnim}
+                landingPulse={landingPulse}
+                onCall988={() => handleCallContact('988')}
+              />
+              <CrisisStateActions
+                selectedState={currentState}
+                onSelectState={setCurrentState}
+              />
+            </ScreenScrollView>
+            <View style={crisisStyles.crisisLandingReadyWrap}>
+              <Pressable
+                style={({ pressed }) => [crisisStyles.bigButton, pressed && crisisStyles.bigButtonPressed]}
+                onPress={goNext}
+                testID="crisis-start"
+              >
+                <Text style={crisisStyles.bigButtonText}>I'm ready</Text>
+                <ArrowRight size={24} color="#FFFFFF" />
+              </Pressable>
+            </View>
+          </>
         );
       case 'breathing':
         return (

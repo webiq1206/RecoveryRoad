@@ -878,6 +878,13 @@ export const crisisStyles = StyleSheet.create({
     lineHeight: 20,
     fontWeight: '400' as const,
   },
+  /** Sits directly above relapse plan CTA on crisis landing */
+  crisisLandingReadyWrap: {
+    width: '100%',
+    alignItems: 'center',
+    paddingHorizontal: 20,
+    marginBottom: 8,
+  },
   relapsePlanBar: {
     flexDirection: 'row',
     alignItems: 'center',

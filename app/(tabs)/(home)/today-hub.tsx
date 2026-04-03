@@ -19,7 +19,6 @@ import {
   ChevronRight,
   Info,
   Sparkles,
-  Settings,
 } from 'lucide-react-native';
 import * as Haptics from 'expo-haptics';
 import Colors from '@/constants/colors';
@@ -41,6 +40,7 @@ import type { CheckInTimeOfDay } from '@/types';
 import type { WizardAction } from '@/utils/wizardEngine';
 import { mergeTodayCheckInsFromSources } from '@/utils/mergeProfile';
 import { getLocalDateKey } from '@/utils/checkInDate';
+import { TabHeaderActions } from '@/components/TabHeaderActions';
 // (kept import list clean)
 
 const CHECK_IN_PERIODS: { period: CheckInTimeOfDay; title: string }[] = [
@@ -166,22 +166,16 @@ export default function TodayHubScreen() {
     todayCheckIns.some((c) => c.timeOfDay === period);
 
   const handleActionPress = (action: WizardAction) => {
+    if (action.completed) return;
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     router.push(resolveCanonicalRoute(action.route) as any);
   };
 
   return (
     <View style={[styles.wrapper, { paddingTop: insets.top }]}>
-      <Pressable
-        style={[styles.topRightSettingsBtn, { top: insets.top + 8 }]}
-        onPress={() => {
-          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-          router.push('/settings' as any);
-        }}
-        testID="today-settings-link"
-      >
-        <Settings size={18} color={Colors.text} />
-      </Pressable>
+      <View style={[styles.topRightHeaderWrap, { top: insets.top + 8 }]} testID="today-header-actions">
+        <TabHeaderActions />
+      </View>
       <ScreenScrollView
         style={styles.scroll}
         contentContainerStyle={[
@@ -476,10 +470,12 @@ export default function TodayHubScreen() {
               {dailyGuidance.actions.map((action) => (
                 <Pressable
                   key={action.id}
+                  disabled={action.completed}
+                  accessibilityState={{ disabled: action.completed }}
                   style={({ pressed }) => [
                     styles.planRow,
                     action.completed && styles.planRowDone,
-                    pressed && styles.pressed,
+                    pressed && !action.completed && styles.pressed,
                   ]}
                   onPress={() => handleActionPress(action)}
                   testID={`todayhub-action-${action.id}`}
@@ -535,25 +531,30 @@ export default function TodayHubScreen() {
           </View>
         )}
 
-        {/* Short-term / QA: remove when no longer needed */}
-        <View style={styles.devOnboardingBlock}>
-          <Text style={styles.devOnboardingLabel}>Testing</Text>
-          <Pressable
-            style={({ pressed }) => [
-              styles.devOnboardingBtn,
-              pressed && styles.pressed,
-            ]}
-            onPress={() => {
-              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-              router.push('/onboarding' as any);
-            }}
-            testID="todayhub-dev-onboarding"
-          >
-            <Sparkles size={18} color={Colors.primary} />
-            <Text style={styles.devOnboardingBtnText}>Open onboarding</Text>
-            <ChevronRight size={18} color={Colors.textSecondary} />
-          </Pressable>
-        </View>
+        {/* Dev-only: full onboarding walkthrough from the hero screen */}
+        {__DEV__ ? (
+          <View style={styles.devOnboardingBlock}>
+            <Text style={styles.devOnboardingLabel}>Testing</Text>
+            <Pressable
+              style={({ pressed }) => [
+                styles.devOnboardingBtn,
+                pressed && styles.pressed,
+              ]}
+              onPress={() => {
+                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                router.push({
+                  pathname: '/onboarding',
+                  params: { devFullOnboarding: '1' },
+                } as any);
+              }}
+              testID="todayhub-dev-onboarding"
+            >
+              <Sparkles size={18} color={Colors.primary} />
+              <Text style={styles.devOnboardingBtnText}>Open onboarding</Text>
+              <ChevronRight size={18} color={Colors.textSecondary} />
+            </Pressable>
+          </View>
+        ) : null}
       </ScreenScrollView>
     </View>
   );
@@ -574,15 +575,15 @@ const styles = StyleSheet.create({
   header: {
     marginBottom: 18,
   },
-  topRightSettingsBtn: {
+  topRightHeaderWrap: {
     position: 'absolute',
-    right: 20,
+    right: 16,
     zIndex: 10,
-    width: 34,
-    height: 34,
-    borderRadius: 17,
+    flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
+    paddingVertical: 6,
+    paddingHorizontal: 10,
+    borderRadius: 14,
     backgroundColor: Colors.cardBackground,
     borderWidth: 0.5,
     borderColor: Colors.border,

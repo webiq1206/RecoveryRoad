@@ -1,7 +1,7 @@
 import React, { useState, useCallback, useMemo, useRef, useEffect } from 'react';
 import { View, Text, StyleSheet, ScrollView, Pressable, Switch, Alert, Animated, TextInput, Modal } from 'react-native';
 import { ScreenScrollView } from '@/components/ScreenScrollView';
-import { User, Shield, Eye, EyeOff, Target, TrendingUp, Bell, BellOff, Lock, Unlock, MessageCircle, BarChart3, ChevronRight, Sparkles, Clock, Heart, AlertTriangle, Sun, Moon as MoonIcon, ShieldAlert, Award, Crown, RotateCcw, Calendar, DollarSign, BookOpen, Check, X, Lightbulb, Layers, Radio, RefreshCw, Scale, Gauge, PauseCircle, PlayCircle, Activity } from 'lucide-react-native';
+import { User, Shield, Eye, EyeOff, Target, TrendingUp, Bell, BellOff, Lock, Unlock, MessageCircle, BarChart3, ChevronRight, Sparkles, Clock, Heart, AlertTriangle, Sun, Moon as MoonIcon, ShieldAlert, Award, Crown, RotateCcw, Calendar, DollarSign, BookOpen, Check, X, Scale, Gauge, PauseCircle, PlayCircle, Activity } from 'lucide-react-native';
 import * as Haptics from 'expo-haptics';
 import Colors from '@/constants/colors';
 import { useUser } from '@/core/domains/useUser';
@@ -601,88 +601,8 @@ export default function ProfileScreen() {
             <Sparkles size={17} color="#AB47BC" />
           </View>
           <View>
-            <Text style={styles.settingLabel}>Recovery Tools</Text>
+            <Text style={styles.settingLabel}>Quick Coping Tools</Text>
             <Text style={styles.settingValue}>Breathing, urge timer, and quick coping tools</Text>
-          </View>
-        </View>
-        <ChevronRight size={16} color={Colors.textMuted} />
-      </Pressable>
-
-      <Pressable
-        style={({ pressed }) => [styles.settingRow, pressed && { opacity: 0.85 }]}
-        onPress={() => {
-          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-          router.push('/insights-explained' as any);
-        }}
-        testID="insights-explained-link"
-      >
-        <View style={styles.settingLeft}>
-          <View style={[styles.settingIcon, { backgroundColor: 'rgba(255,179,71,0.12)' }]}>
-            <Lightbulb size={17} color={Colors.accentWarm} />
-          </View>
-          <View>
-            <Text style={styles.settingLabel}>Growth Insights Explained</Text>
-            <Text style={styles.settingValue}>How your scores are calculated</Text>
-          </View>
-        </View>
-        <ChevronRight size={16} color={Colors.textMuted} />
-      </Pressable>
-
-      <Pressable
-        style={({ pressed }) => [styles.settingRow, pressed && { opacity: 0.85 }]}
-        onPress={() => {
-          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-          router.push('/recovery-stages-explained' as any);
-        }}
-        testID="recovery-stages-explained-link"
-      >
-        <View style={styles.settingLeft}>
-          <View style={[styles.settingIcon, { backgroundColor: 'rgba(66,165,245,0.12)' }]}>
-            <Layers size={17} color="#42A5F5" />
-          </View>
-          <View>
-            <Text style={styles.settingLabel}>Recovery Stages Explained</Text>
-            <Text style={styles.settingValue}>How your stage is determined</Text>
-          </View>
-        </View>
-        <ChevronRight size={16} color={Colors.textMuted} />
-      </Pressable>
-
-      <Pressable
-        style={({ pressed }) => [styles.settingRow, pressed && { opacity: 0.85 }]}
-        onPress={() => {
-          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-          router.push('/recovery-insights-explained' as any);
-        }}
-        testID="recovery-insights-explained-link"
-      >
-        <View style={styles.settingLeft}>
-          <View style={[styles.settingIcon, { backgroundColor: 'rgba(171,71,188,0.12)' }]}>
-            <RefreshCw size={17} color="#AB47BC" />
-          </View>
-          <View>
-            <Text style={styles.settingLabel}>Recovery Insights Explained</Text>
-            <Text style={styles.settingValue}>Reinforcement loops & how they work</Text>
-          </View>
-        </View>
-        <ChevronRight size={16} color={Colors.textMuted} />
-      </Pressable>
-
-      <Pressable
-        style={({ pressed }) => [styles.settingRow, pressed && { opacity: 0.85 }]}
-        onPress={() => {
-          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-          router.push('/early-warning-explained' as any);
-        }}
-        testID="early-warning-explained-link"
-      >
-        <View style={styles.settingLeft}>
-          <View style={[styles.settingIcon, { backgroundColor: 'rgba(239,83,80,0.12)' }]}>
-            <Radio size={17} color={Colors.danger} />
-          </View>
-          <View>
-            <Text style={styles.settingLabel}>Early Warning Explained</Text>
-            <Text style={styles.settingValue}>How risk signals are detected</Text>
           </View>
         </View>
         <ChevronRight size={16} color={Colors.textMuted} />

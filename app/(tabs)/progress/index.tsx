@@ -109,6 +109,16 @@ function getReinforcementMessage(days: number): string {
   return REINFORCEMENT_MESSAGES[days % REINFORCEMENT_MESSAGES.length];
 }
 
+function formatCumulativeHours(hours: number): string {
+  const rounded = Math.round(Math.max(0, hours) * 100) / 100;
+  if (rounded === 0) return '0 hours';
+  const s = rounded.toLocaleString('en-US', {
+    maximumFractionDigits: 2,
+    minimumFractionDigits: 0,
+  });
+  return `${s} ${rounded === 1 ? 'hour' : 'hours'}`;
+}
+
 function computeTrend(values: number[]): 'up' | 'down' | 'stable' {
   if (values.length < 2) return 'stable';
   const recent = values.slice(0, Math.min(3, values.length));
@@ -441,6 +451,24 @@ function StabilityTimelineScreen() {
   const badge10Rebuild = rebuildActionsCount >= 10;
   const nextMilestone = useMemo(() => MILESTONE_DATA.find(m => m.days > daysSober), [daysSober]);
   const unlockedCount = useMemo(() => MILESTONE_DATA.filter(m => m.days <= daysSober).length, [daysSober]);
+
+  const savingsToDateLabels = useMemo(() => {
+    const d = Math.max(0, daysSober);
+    const hoursPerDay =
+      typeof profile.timeSpentDaily === 'number' && Number.isFinite(profile.timeSpentDaily)
+        ? Math.max(0, profile.timeSpentDaily)
+        : 0;
+    const moneyPerDay =
+      typeof profile.dailySavings === 'number' && Number.isFinite(profile.dailySavings)
+        ? Math.max(0, profile.dailySavings)
+        : 0;
+    const totalHours = Math.round(d * hoursPerDay * 100) / 100;
+    const totalMoney = Math.round(d * moneyPerDay * 100) / 100;
+    return {
+      time: formatCumulativeHours(totalHours),
+      money: `$${totalMoney.toFixed(2)}`,
+    };
+  }, [daysSober, profile.timeSpentDaily, profile.dailySavings]);
 
   const weeklyInsights = useMemo(() => {
     const today = new Date();
@@ -881,6 +909,53 @@ function StabilityTimelineScreen() {
           </Pressable>
         </View>
       </View>
+
+      <Pressable
+        style={styles.detectionLink}
+        onPress={() => { Haptics.selectionAsync(); router.push('/relapse-detection' as any); }}
+        testID="timeline-relapse-detection-link"
+      >
+        <View style={styles.detectionLinkLeft}>
+          <View style={styles.detectionLinkIcon}>
+            <Eye size={16} color={Colors.primary} />
+          </View>
+          <View>
+            <Text style={styles.detectionLinkTitle}>View Risk Warning</Text>
+            <Text style={styles.detectionLinkSub}>Patterns and early support</Text>
+          </View>
+        </View>
+        <ChevronRight size={16} color={Colors.textMuted} />
+      </Pressable>
+
+      <Pressable
+        style={styles.detectionLink}
+        onPress={() => { Haptics.selectionAsync(); router.push('/retention-insights' as any); }}
+        testID="timeline-retention-insights-link"
+      >
+        <View style={styles.detectionLinkLeft}>
+          <View style={styles.detectionLinkIcon}>
+            <TrendingUp size={16} color={Colors.primary} />
+          </View>
+          <View>
+            <Text style={styles.detectionLinkTitle}>View Recovery Insights</Text>
+            <Text style={styles.detectionLinkSub}>Engagement and long-term recovery signals</Text>
+          </View>
+        </View>
+        <ChevronRight size={16} color={Colors.textMuted} />
+      </Pressable>
+
+      <View style={styles.savingsToDateCard}>
+        <Text style={styles.savingsToDateHeading}>Savings to date</Text>
+        <View style={[styles.savingsToDateRow, styles.savingsToDateRowFirst]}>
+          <Text style={styles.savingsToDateFieldLabel}>Time</Text>
+          <Text style={styles.savingsToDateFieldValue}>{savingsToDateLabels.time}</Text>
+        </View>
+        <View style={[styles.savingsToDateRow, styles.savingsToDateRowDivider]}>
+          <Text style={styles.savingsToDateFieldLabel}>Money</Text>
+          <Text style={styles.savingsToDateFieldValue}>{savingsToDateLabels.money}</Text>
+        </View>
+      </View>
+
       <Modal
         visible={selectedMomentumMetric !== null}
         transparent
@@ -938,40 +1013,6 @@ function StabilityTimelineScreen() {
           {badge10Rebuild ? <Text style={styles.badgeDone}>Done</Text> : <Text style={styles.badgeCount}>{rebuildActionsCount}/10</Text>}
         </View>
       </View>
-
-      <Pressable
-        style={styles.detectionLink}
-        onPress={() => { Haptics.selectionAsync(); router.push('/relapse-detection' as any); }}
-        testID="timeline-relapse-detection-link"
-      >
-        <View style={styles.detectionLinkLeft}>
-          <View style={styles.detectionLinkIcon}>
-            <Eye size={16} color={Colors.primary} />
-          </View>
-          <View>
-            <Text style={styles.detectionLinkTitle}>View Risk Warning</Text>
-            <Text style={styles.detectionLinkSub}>Patterns and early support</Text>
-          </View>
-        </View>
-        <ChevronRight size={16} color={Colors.textMuted} />
-      </Pressable>
-
-      <Pressable
-        style={styles.detectionLink}
-        onPress={() => { Haptics.selectionAsync(); router.push('/retention-insights' as any); }}
-        testID="timeline-retention-insights-link"
-      >
-        <View style={styles.detectionLinkLeft}>
-          <View style={styles.detectionLinkIcon}>
-            <TrendingUp size={16} color={Colors.primary} />
-          </View>
-          <View>
-            <Text style={styles.detectionLinkTitle}>View Recovery Insights</Text>
-            <Text style={styles.detectionLinkSub}>Engagement and long-term recovery signals</Text>
-          </View>
-        </View>
-        <ChevronRight size={16} color={Colors.textMuted} />
-      </Pressable>
 
       <View style={styles.milestonesSection}>
         <View style={styles.milestonesDivider}>
@@ -1536,6 +1577,45 @@ const styles = StyleSheet.create({
     fontSize: 11,
     color: Colors.textSecondary,
     marginTop: 2,
+  },
+  savingsToDateCard: {
+    backgroundColor: Colors.cardBackground,
+    borderRadius: 14,
+    padding: 16,
+    marginBottom: 14,
+    borderWidth: 0.5,
+    borderColor: Colors.border,
+  },
+  savingsToDateHeading: {
+    fontSize: 13,
+    fontWeight: '700' as const,
+    color: Colors.text,
+    marginBottom: 14,
+  },
+  savingsToDateRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingVertical: 10,
+  },
+  savingsToDateRowFirst: {
+    paddingTop: 0,
+  },
+  savingsToDateRowDivider: {
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: Colors.border,
+    marginTop: 4,
+    paddingTop: 14,
+  },
+  savingsToDateFieldLabel: {
+    fontSize: 14,
+    fontWeight: '600' as const,
+    color: Colors.textSecondary,
+  },
+  savingsToDateFieldValue: {
+    fontSize: 15,
+    fontWeight: '600' as const,
+    color: Colors.text,
   },
   milestonesDivider: {
     flexDirection: 'row',

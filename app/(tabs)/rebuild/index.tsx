@@ -49,7 +49,6 @@ import {
   PenLine,
   Eye,
   Play,
-  Settings,
 } from 'lucide-react-native';
 import { useUser } from '@/core/domains/useUser';
 import { useCheckin } from '@/core/domains/useCheckin';
@@ -88,6 +87,7 @@ import { RebuildRoutineSection } from '@/features/rebuild/ui/sections/RebuildRou
 import { RebuildGoalsSection } from '@/features/rebuild/ui/sections/RebuildGoalsSection';
 import { RebuildConfidenceSection } from '@/features/rebuild/ui/sections/RebuildConfidenceSection';
 import { RebuildProgramWelcome } from '@/features/rebuild/ui/sections/RebuildProgramWelcome';
+import { TabHeaderActions } from '@/components/TabHeaderActions';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
@@ -792,11 +792,7 @@ export default function RebuildScreen() {
             title: 'Rebuild',
             headerShown: true,
             ...rebuildHeaderScreenOptions,
-            headerRight: () => (
-              <Pressable onPress={() => rebuildRouter.push('/settings' as never)} hitSlop={10}>
-                <Settings size={18} color={Colors.text} />
-              </Pressable>
-            ),
+            headerRight: () => <TabHeaderActions />,
           }}
         />
         <View style={styles.premiumOverlay}>
@@ -828,11 +824,7 @@ export default function RebuildScreen() {
           title: 'Rebuild',
           headerShown: true,
           ...rebuildHeaderScreenOptions,
-          headerRight: () => (
-            <Pressable onPress={() => rebuildRouter.push('/settings' as never)} hitSlop={10}>
-              <Settings size={18} color={Colors.text} />
-            </Pressable>
-          ),
+          headerRight: () => <TabHeaderActions />,
         }}
       />
 

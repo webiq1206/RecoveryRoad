@@ -12,8 +12,6 @@ import { useRouter } from 'expo-router';
 import { Stack } from 'expo-router';
 import {
   Sun,
-  Activity,
-  AlertTriangle,
   Hammer,
   Users,
   ShieldAlert,
@@ -26,8 +24,10 @@ import {
   Sparkles,
   CheckCircle,
   CircleDot,
-  Play,
   BookOpen,
+  TrendingUp,
+  Handshake,
+  User,
 } from 'lucide-react-native';
 import * as Haptics from 'expo-haptics';
 import Colors from '@/constants/colors';
@@ -89,15 +89,16 @@ interface StepCardProps {
   description: string;
   icon: React.ReactNode;
   color: string;
+  isLast?: boolean;
 }
 
-const StepCard = React.memo(({ number, title, description, icon, color }: StepCardProps) => (
+const StepCard = React.memo(({ number, title, description, icon, color, isLast }: StepCardProps) => (
   <View style={styles.stepCard}>
     <View style={styles.stepLeft}>
       <View style={[styles.stepNumberBg, { backgroundColor: color + '20' }]}>
         <Text style={[styles.stepNumber, { color }]}>{number}</Text>
       </View>
-      <View style={[styles.stepConnector, number === 7 && { opacity: 0 }]} />
+      <View style={[styles.stepConnector, isLast && { opacity: 0 }]} />
     </View>
     <View style={styles.stepRight}>
       <View style={styles.stepHeader}>
@@ -128,55 +129,62 @@ const StageItem = React.memo(({ label, description, color }: StageItemProps) => 
   </View>
 ));
 
-const DAILY_STEPS: StepCardProps[] = [
+const DAILY_STEPS: Omit<StepCardProps, 'isLast'>[] = [
   {
     number: 1,
-    title: 'Morning Check-In',
-    description: 'Open Check-In and log your mood, craving level, sleep quality, and stress. This updates your Comprehensive Stability and Relapse Risk Score.',
+    title: 'Start on Today',
+    description:
+      'Use the Today tab for morning, afternoon, and evening check-ins. Each one updates your stability picture. Review your recovery stability readout and follow any suggested next step—small actions add up.',
     icon: <Sun size={16} color="#FFB347" />,
     color: '#FFB347',
   },
   {
     number: 2,
-    title: 'Review Comprehensive Stability',
-    description: 'Return to Home. Review your Comprehensive Stability and the Today Focus suggestion. Follow the suggested micro-action to strengthen your day.',
-    icon: <Activity size={16} color={Colors.primary} />,
+    title: 'Check Progress',
+    description:
+      'Open the Progress tab for trends, scores, and how cravings, mood, and triggers show up over time. Use it to notice patterns—not to judge yourself.',
+    icon: <TrendingUp size={16} color={Colors.primary} />,
     color: Colors.primary,
   },
   {
     number: 3,
-    title: 'Trigger Awareness',
-    description: 'Open the Triggers tab. Review high-risk times or environments for today. Mentally prepare and plan your responses.',
-    icon: <AlertTriangle size={16} color="#FF9800" />,
-    color: '#FF9800',
+    title: 'Journal',
+    description:
+      'Visit the Journal tab for a short entry or reflection. Putting feelings into words can ease intensity and help you spot themes later.',
+    icon: <BookOpen size={16} color="#7C8CF8" />,
+    color: '#7C8CF8',
   },
   {
     number: 4,
-    title: 'Rebuild Action',
-    description: 'Open the Rebuild tab. Complete one habit replacement task or identity growth exercise. Small steps build new patterns.',
+    title: 'Rebuild action',
+    description:
+      'Open the Rebuild tab and complete one habit-replacement or identity exercise. Consistency matters more than size.',
     icon: <Hammer size={16} color="#42A5F5" />,
     color: '#42A5F5',
   },
   {
     number: 5,
-    title: 'Connection Touchpoint',
-    description: 'Open the Connection tab. Send a quick message, join a group, or check in with your trusted circle. You don\'t have to do this alone.',
+    title: 'Connect',
+    description:
+      'Use the Connect tab to send a message, join a peer space, or reach someone you trust. Connection buffers stress and isolation.',
     icon: <Users size={16} color="#AB47BC" />,
     color: '#AB47BC',
   },
   {
     number: 6,
-    title: 'Midday Risk Awareness',
-    description: 'If your stability drops or cravings rise, activate Crisis Mode early. Use grounding tools even if cravings feel moderate.',
-    icon: <ShieldAlert size={16} color={Colors.danger} />,
-    color: Colors.danger,
+    title: 'Accountability',
+    description:
+      'Open Accountability for commitments, partner check-ins, and gentle structure. Pairing intentions with another person can make follow-through easier.',
+    icon: <Handshake size={16} color="#2E7D32" />,
+    color: '#2E7D32',
   },
   {
     number: 7,
-    title: 'Evening Reflection',
-    description: 'Complete a short Check-In before bed. Reflect on today\'s wins, note any triggers, and reinforce the progress you\'ve made.',
-    icon: <Moon size={16} color="#7C8CF8" />,
-    color: '#7C8CF8',
+    title: 'Evening wrap-up and safety',
+    description:
+      'Finish an evening check-in on Today when you can. If stress or urges rise at any time, open Crisis Mode early or use Quick Coping Tools (from Profile under Help) for breathing, urge support, and grounding.',
+    icon: <Moon size={16} color="#5C6BC0" />,
+    color: '#5C6BC0',
   },
 ];
 
@@ -187,7 +195,7 @@ export default function HowToUseScreen() {
     <View style={styles.container}>
       <Stack.Screen
         options={{
-          title: 'How to Use',
+          title: 'How to Use Recovery Companion',
           headerStyle: { backgroundColor: Colors.background },
           headerTintColor: Colors.text,
         }}
@@ -203,11 +211,11 @@ export default function HowToUseScreen() {
           </View>
           <Text style={styles.heroTitle}>How to Use{'\n'}Recovery Companion</Text>
           <Text style={styles.heroSubtitle}>
-            This app works best when used daily, in a specific order.
-            It's a recovery protection system - not just a tracker.
+            Use it regularly and let Today be your home base. The bottom tabs support the rest of your week.
+            This is a recovery protection system—not just a tracker.
           </Text>
           <Text style={styles.heroNote}>
-            Each step builds on the last, creating a shield around your day.
+            The flow below is a rhythm you can adapt. Small, honest check-ins and actions build a shield around your day.
           </Text>
         </View>
 
@@ -230,12 +238,36 @@ export default function HowToUseScreen() {
           accentColor={Colors.primary}
         >
           <Text style={styles.sectionIntro}>
-            Follow these seven steps each day to build and maintain your recovery strength.
+            These seven beats line up with your tabs—from Today through Accountability. Skip or reorder when life
+            demands it; aim to touch each area across the week.
           </Text>
           <View style={styles.stepsContainer}>
-            {DAILY_STEPS.map((step) => (
-              <StepCard key={step.number} {...step} />
+            {DAILY_STEPS.map((step, index) => (
+              <StepCard
+                key={step.number}
+                {...step}
+                isLast={index === DAILY_STEPS.length - 1}
+              />
             ))}
+          </View>
+        </ExpandableSection>
+
+        <ExpandableSection
+          title="Profile & settings"
+          icon={<User size={18} color={Colors.primary} />}
+          accentColor={Colors.primary}
+        >
+          <Text style={styles.bodyText}>
+            Your profile and app settings live off the main tab bar. On Today and other main screens, use the icons
+            at the top right: open Profile for sobriety date, notifications, subscription, and Help—including this
+            guide, Insights Hub, and Quick Coping Tools. Use Settings for security, privacy, and app preferences.
+          </Text>
+          <View style={styles.infoCard}>
+            <Text style={styles.infoCardTitle}>Quick Coping Tools</Text>
+            <Text style={styles.infoCardText}>
+              From Profile, scroll to Help and tap Quick Coping Tools for short exercises sorted by calm, handling
+              urges, and emotional support.
+            </Text>
           </View>
         </ExpandableSection>
 
@@ -245,7 +277,7 @@ export default function HowToUseScreen() {
           accentColor={Colors.danger}
         >
           <Text style={styles.bodyText}>
-            Crisis Mode is your emergency support system. Activate it whenever you feel cravings intensifying, emotional overwhelm building, or urges becoming hard to manage.
+            Crisis Mode is your emergency support system. Activate it whenever you feel cravings intensifying, emotional overwhelm building, or urges becoming hard to manage. You can also open Quick Coping Tools from Profile first if you want a lighter entry point; both paths offer grounding and breathing support.
           </Text>
           <View style={styles.infoCard}>
             <Text style={styles.infoCardTitle}>When to activate</Text>
@@ -273,7 +305,7 @@ export default function HowToUseScreen() {
           accentColor="#42A5F5"
         >
           <Text style={styles.bodyText}>
-            Your scores are calculated from multiple signals working together to give you an honest picture of where you stand.
+            Your scores are calculated from multiple signals working together to give you an honest picture of where you stand. You will see the big picture on Today and more detail on Progress.
           </Text>
           <View style={styles.factorsList}>
             <View style={styles.factorItem}>
@@ -348,7 +380,7 @@ export default function HowToUseScreen() {
             <View style={styles.guidelineItem}>
               <CheckCircle size={16} color={Colors.success} />
               <Text style={styles.guidelineText}>
-                Use the app daily, even on good days. Consistency builds protection.
+                Use Today and check-ins regularly—even on good days. Consistency builds protection.
               </Text>
             </View>
             <View style={styles.guidelineItem}>
@@ -360,25 +392,31 @@ export default function HowToUseScreen() {
             <View style={styles.guidelineItem}>
               <CheckCircle size={16} color={Colors.success} />
               <Text style={styles.guidelineText}>
-                Activate Crisis Mode early. Don't wait until you're at the edge.
+                Activate Crisis Mode early, or use Quick Coping Tools from Profile when stress is climbing.
               </Text>
             </View>
             <View style={styles.guidelineItem}>
               <CheckCircle size={16} color={Colors.success} />
               <Text style={styles.guidelineText}>
-                Complete at least one Rebuild action each day. Small steps compound.
+                Journal when you can and complete Rebuild actions over the week. Small steps compound.
               </Text>
             </View>
             <View style={styles.guidelineItem}>
               <CheckCircle size={16} color={Colors.success} />
               <Text style={styles.guidelineText}>
-                Reach out through Connection. Isolation is recovery's biggest threat.
+                Reach out through Connect and use Accountability for structure. Isolation is recovery's biggest threat.
               </Text>
             </View>
             <View style={styles.guidelineItem}>
               <CheckCircle size={16} color={Colors.success} />
               <Text style={styles.guidelineText}>
-                Review your progress weekly. Seeing growth reinforces motivation.
+                Open Profile for Insights Hub when you want deeper analytics and explainers.
+              </Text>
+            </View>
+            <View style={styles.guidelineItem}>
+              <CheckCircle size={16} color={Colors.success} />
+              <Text style={styles.guidelineText}>
+                Review Progress weekly. Seeing growth reinforces motivation.
               </Text>
             </View>
           </View>

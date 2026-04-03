@@ -13,6 +13,7 @@ export type ToolContext =
 
 export type ToolId =
   | 'breathing'
+  | 'breathe-safe'
   | 'grounding'
   | 'urge-timer'
   | 'reset'
@@ -38,6 +39,11 @@ export interface ToolDefinition {
    */
   experienceCategory: ToolExperienceCategory;
   recommendedContexts: ToolContext[];
+  /**
+   * When true, never listed as a post-landing step in Crisis Mode, even if
+   * recommendedContexts includes crisis or any.
+   */
+  excludeFromCrisisStepFlow?: boolean;
   route?: ToolRoute;
   icon: {
     key: 'wind' | 'eye' | 'timer' | 'heart' | 'phone' | 'book';

@@ -87,7 +87,7 @@ function RootLayoutNav() {
             headerTintColor: Colors.text,
           }}
         />
-        <Stack.Screen name="how-to-use" options={{ title: 'How to Use', animation: modalAnimation }} />
+        <Stack.Screen name="how-to-use" options={{ title: 'How to Use Recovery Companion', animation: modalAnimation }} />
         <Stack.Screen name="relapse-recovery" options={{ title: 'Log a Setback', animation: defaultAnimation }} />
         <Stack.Screen name="relapse-detection" options={{ title: 'Risk Warning', animation: defaultAnimation }} />
         <Stack.Screen name="provider-portal" options={{ title: 'Provider Portal', animation: defaultAnimation }} />
@@ -106,6 +106,7 @@ function RootLayoutNav() {
         <Stack.Screen name="daily-guidance" options={{ title: 'Your Day', animation: defaultAnimation }} />
         <Stack.Screen name="wizard" options={{ title: 'Guided Wizard', animation: defaultAnimation }} />
         <Stack.Screen name="settings" options={{ title: 'Settings', animation: defaultAnimation }} />
+        <Stack.Screen name="tools" options={{ title: 'Quick Coping Tools', animation: defaultAnimation }} />
       </Stack>
     </>
   );

@@ -10,11 +10,9 @@ import {
   Brain,
   Shield,
   Layers,
-  Radio,
 } from 'lucide-react-native';
 import Colors from '@/constants/colors';
 import * as Haptics from 'expo-haptics';
-import { useUser } from '@/core/domains/useUser';
 import { useCheckin } from '@/core/domains/useCheckin';
 import { useEngagement } from '@/providers/EngagementProvider';
 
@@ -33,11 +31,9 @@ export default function InsightsHubScreen() {
     null,
   );
   const [recoveryStagesSectionY, setRecoveryStagesSectionY] = useState<number | null>(null);
-  const { profile } = useUser();
   const { checkIns } = useCheckin();
   const { growthDimensions, overallGrowthScore } = useEngagement();
 
-  const goals = useMemo(() => profile.recoveryProfile?.goals ?? [], [profile.recoveryProfile?.goals]);
   const insights = useMemo(() => {
     const items: { label: string; value: string; color: string }[] = [];
     const recentCheckins = checkIns.slice(0, 14);
@@ -153,7 +149,7 @@ export default function InsightsHubScreen() {
         </Pressable>
       </View>
 
-      {/* Growth Insights + Goals */}
+      {/* Growth Insights */}
       {insights.length > 0 && (
         <>
           <Text style={styles.growthSectionLabel}>GROWTH INSIGHTS</Text>
@@ -216,22 +212,6 @@ export default function InsightsHubScreen() {
                 </View>
               ))}
             </View>
-          )}
-
-          {goals.length > 0 && (
-            <>
-              <Text style={styles.growthSectionLabel}>GOALS</Text>
-              <View style={styles.goalsCard}>
-                {goals.map((goal, idx) => (
-                  <View key={idx} style={styles.goalRow}>
-                    <View style={styles.goalBullet}>
-                      <BarChart3 size={14} color={Colors.primary} />
-                    </View>
-                    <Text style={styles.goalText}>{goal}</Text>
-                  </View>
-                ))}
-              </View>
-            </>
           )}
         </>
       )}
@@ -311,22 +291,6 @@ export default function InsightsHubScreen() {
           </View>
         </Pressable>
       </View>
-
-      <Pressable
-        style={({ pressed }) => [styles.card, pressed && styles.cardPressed]}
-        onPress={() => router.push('/early-warning-explained' as any)}
-        testID="early-warning-explained-link"
-      >
-        <View style={[styles.iconCircle, { backgroundColor: Colors.danger + '12' }]}>
-          <Radio size={18} color={Colors.danger} />
-        </View>
-        <View style={styles.cardBody}>
-          <Text style={styles.cardTitle}>Risk Warning Explained</Text>
-          <Text style={styles.cardSubtitle}>
-            The four risk characteristics and how your overall risk level is computed.
-          </Text>
-        </View>
-      </Pressable>
 
       <View style={styles.footerCard}>
         <Shield size={16} color={Colors.primary} />
@@ -541,29 +505,6 @@ const styles = StyleSheet.create({
     fontWeight: '700' as const,
     width: 28,
     textAlign: 'right' as const,
-  },
-  goalsCard: {
-    backgroundColor: Colors.cardBackground,
-    borderRadius: 14,
-    padding: 16,
-    marginBottom: 20,
-    borderWidth: 0.5,
-    borderColor: Colors.border,
-    gap: 12,
-  },
-  goalRow: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    gap: 10,
-  },
-  goalBullet: {
-    marginTop: 1,
-  },
-  goalText: {
-    fontSize: 14,
-    color: Colors.text,
-    flex: 1,
-    lineHeight: 20,
   },
 });
 

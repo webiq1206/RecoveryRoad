@@ -2,6 +2,17 @@ import type { ToolContext, ToolDefinition, ToolId } from './types';
 
 export const TOOL_REGISTRY: ToolDefinition[] = [
   {
+    id: 'breathe-safe',
+    title: 'Breathe',
+    subtitle: 'Relax and focus on your breathing to calm yourself.',
+    category: 'breathing',
+    experienceCategory: 'calm',
+    recommendedContexts: ['daily_guidance'],
+    excludeFromCrisisStepFlow: true,
+    icon: { key: 'heart' },
+    route: { href: '/crisis-mode' },
+  },
+  {
     id: 'breathing',
     title: 'Breathing reset',
     subtitle: 'Slow your nervous system down (4–4–6).',
@@ -54,6 +65,7 @@ export const TOOL_REGISTRY: ToolDefinition[] = [
     category: 'journal',
     experienceCategory: 'emotional_support',
     recommendedContexts: ['relapse_risk', 'daily_guidance', 'any'],
+    excludeFromCrisisStepFlow: true,
     icon: { key: 'book' },
     route: { href: '/tools/quick-journal' },
   },

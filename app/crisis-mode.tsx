@@ -39,8 +39,8 @@ import { CRISIS_BREATH_MAX_CYCLES, GROUNDING_STEPS, RESET_PROMPTS } from '@/feat
 type CrisisStep = 'landing' | ToolId;
 
 const CRISIS_TOOL_IDS = getToolsForContext('crisis')
-  .map((t) => t.id)
-  .filter((id): id is Exclude<ToolId, 'journal-prompt'> => id !== 'journal-prompt');
+  .filter((t) => !t.excludeFromCrisisStepFlow)
+  .map((t) => t.id);
 
 const STEPS: CrisisStep[] = ['landing', ...CRISIS_TOOL_IDS];
 

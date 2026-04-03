@@ -2,7 +2,7 @@ import React, { useState, useRef, useCallback, useMemo, useEffect } from 'react'
 import { View, Text, StyleSheet, TextInput, Pressable, Animated, Dimensions, Switch, Image } from 'react-native';
 import { ScreenScrollView } from '@/components/ScreenScrollView';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useRouter } from 'expo-router';
+import { useRouter, useLocalSearchParams, useFocusEffect } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
 import { ShieldCheck, ChevronRight, ChevronLeft, Eye, EyeOff, Target, AlertTriangle, Heart, Zap, Shield, Lock } from 'lucide-react-native';
 import * as Haptics from 'expo-haptics';
@@ -16,6 +16,7 @@ import { ONBOARDING_COPY, BRAND } from '@/constants/branding';
 import { RecoveryStage, RecoveryProfile, PrivacyControls } from '@/types';
 import type { StruggleLevel, SleepQualityLevel, SupportAvailability } from '@/types';
 import {
+  getAllOnboardingStepDefs,
   getRemainingOnboardingSteps,
   type OnboardingStepId,
 } from '@/utils/wizardSteps';
@@ -101,6 +102,9 @@ const GOAL_OPTIONS = [
 export default function OnboardingScreen() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
+  const params = useLocalSearchParams<{ devFullOnboarding?: string }>();
+  /** Dev-only: replay every onboarding screen from the start (ignored in production). */
+  const devReplayFullOnboarding = __DEV__ && params.devFullOnboarding === '1';
   const { profile, updateProfile, isLoading } = useUser();
   const { emergencyContacts } = useSupportContacts();
   const { accountabilityData } = useAccountability();
@@ -130,13 +134,17 @@ export default function OnboardingScreen() {
     shareMood: false,
     allowCommunityMessages: true,
   });
+  /** Bumped on each dev full replay focus so profile fields re-hydrate from storage. */
+  const [devReplayHydrateTick, setDevReplayHydrateTick] = useState(0);
 
   const updateUserState = useAppStore.use.updateUserState();
 
-  const remainingSteps = useMemo(
-    () => getRemainingOnboardingSteps(profile, emergencyContacts, accountabilityData ?? null),
-    [profile, emergencyContacts, accountabilityData]
-  );
+  const remainingSteps = useMemo(() => {
+    if (devReplayFullOnboarding) {
+      return getAllOnboardingStepDefs();
+    }
+    return getRemainingOnboardingSteps(profile, emergencyContacts, accountabilityData ?? null);
+  }, [devReplayFullOnboarding, profile, emergencyContacts, accountabilityData]);
   const currentStepId: OnboardingStepId | null = remainingSteps[step]?.id ?? null;
   const totalStepsInWizard = remainingSteps.length;
 
@@ -157,15 +165,35 @@ export default function OnboardingScreen() {
       if (Array.isArray(rp.goals) && rp.goals.length > 0) setGoals(rp.goals);
     }
     if (profile.privacyControls) setPrivacyControls(profile.privacyControls);
-  }, [profile, isLoading]);
+  }, [profile, isLoading, devReplayHydrateTick]);
 
   useEffect(() => {
+    if (devReplayFullOnboarding) return;
     if (hasStarted && remainingSteps.length === 0) {
       updateProfile({ hasCompletedOnboarding: true });
       updateUserState({ hasCompletedOnboarding: true });
       router.replace('/protection-profile' as any);
     }
-  }, [hasStarted, remainingSteps.length, updateProfile, router]);
+  }, [
+    devReplayFullOnboarding,
+    hasStarted,
+    remainingSteps.length,
+    updateProfile,
+    updateUserState,
+    router,
+  ]);
+
+  useFocusEffect(
+    useCallback(() => {
+      if (!devReplayFullOnboarding) return;
+      hasInitializedFromProfile.current = false;
+      setDevReplayHydrateTick((n) => n + 1);
+      setStep(0);
+      setHasStarted(false);
+      progressAnim.setValue(0);
+      fadeAnim.setValue(1);
+    }, [devReplayFullOnboarding, progressAnim, fadeAnim]),
+  );
 
   const animateTransition = useCallback(
     (nextStep: number) => {

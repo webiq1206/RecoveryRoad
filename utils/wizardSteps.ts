@@ -76,6 +76,14 @@ export function getCompletedOnboardingSteps(
   return completed;
 }
 
+/** Full ordered list (for dev replay / QA — ignores completion). */
+export function getAllOnboardingStepDefs(): OnboardingStepDef[] {
+  return ONBOARDING_STEP_IDS.map((id) => ({
+    id,
+    fullIndex: ONBOARDING_STEP_IDS.indexOf(id),
+  }));
+}
+
 /** Get remaining onboarding steps in display order */
 export function getRemainingOnboardingSteps(
   profile: UserProfile,

@@ -1,6 +1,7 @@
 import { Redirect, Stack } from "expo-router";
 import React from "react";
 import Colors from "@/constants/colors";
+import { TabHeaderActions } from "@/components/TabHeaderActions";
 import { getStrictRedirectTarget } from "@/utils/legacyRoutes";
 
 export default function AccountabilityLayout() {
@@ -17,7 +18,13 @@ export default function AccountabilityLayout() {
         headerShadowVisible: false,
       }}
     >
-      <Stack.Screen name="index" options={{ title: 'Accountability' }} />
+      <Stack.Screen
+        name="index"
+        options={{
+          title: 'Accountability',
+          headerRight: () => <TabHeaderActions />,
+        }}
+      />
     </Stack>
   );
 }

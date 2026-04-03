@@ -5,8 +5,8 @@ import {
   TrendingUp,
   Hammer,
   Users,
-  User,
   BookOpen,
+  Handshake,
 } from "lucide-react-native";
 import React, { useCallback } from "react";
 import Colors from "@/constants/colors";
@@ -95,9 +95,9 @@ export default function TabLayout() {
     [],
   );
 
-  const renderProfileIcon = useCallback(
+  const renderAccountabilityIcon = useCallback(
     ({ color }: { color: string }) => (
-      <TabIcon IconComponent={User} color={color} size={ICON_SIZE} />
+      <TabIcon IconComponent={Handshake} color={color} size={ICON_SIZE} />
     ),
     [],
   );
@@ -165,10 +165,16 @@ export default function TabLayout() {
           }}
         />
         <Tabs.Screen
+          name="accountability"
+          options={{
+            title: "Accountability",
+            tabBarIcon: renderAccountabilityIcon,
+          }}
+        />
+        <Tabs.Screen
           name="profile"
           options={{
-            title: "Profile",
-            tabBarIcon: renderProfileIcon,
+            href: null,
           }}
         />
         <Tabs.Screen
@@ -191,12 +197,6 @@ export default function TabLayout() {
         />
         <Tabs.Screen
           name="support"
-          options={{
-            href: null,
-          }}
-        />
-        <Tabs.Screen
-          name="accountability"
           options={{
             href: null,
           }}

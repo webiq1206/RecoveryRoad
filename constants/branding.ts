@@ -42,6 +42,10 @@ export const ONBOARDING_COPY = {
       title: 'What are you\nprotecting against?',
       subtitle: 'Select all that apply. This shapes your safety net.',
     },
+    dailySpend: {
+      title: 'Daily spendings on\nyour addiction',
+      subtitle: 'Rough estimates are fine. You can change these anytime in your profile.',
+    },
     stage: {
       title: 'Where are you in\nyour recovery?',
       subtitle: 'This calibrates your protection level.',

@@ -10,6 +10,7 @@ import type { AccountabilityData } from '@/types';
 export const ONBOARDING_STEP_IDS = [
   'identity',
   'addiction',
+  'daily_spend',
   'stage',
   'calibration',
   'triggers',
@@ -41,6 +42,11 @@ export function getCompletedOnboardingSteps(
   // Addiction: at least one selected
   if (Array.isArray(profile.addictions) && profile.addictions.length > 0) {
     completed.add('addiction');
+  }
+
+  // Daily spend: only after full onboarding (not persisted mid-wizard)
+  if (profile.hasCompletedOnboarding) {
+    completed.add('daily_spend');
   }
 
   // Stage: has a valid stage

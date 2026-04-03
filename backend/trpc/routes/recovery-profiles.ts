@@ -20,6 +20,7 @@ export const recoveryProfilesRouter = createTRPCRouter({
       interventionIntensity: z.enum(["low", "moderate", "high", "critical"]),
       baselineStabilityScore: z.number().default(50),
       dailySavings: z.number().default(0),
+      timeSpentDaily: z.number().optional(),
       motivation: z.string().optional(),
     }))
     .mutation(async ({ input }) => {

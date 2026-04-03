@@ -34,6 +34,7 @@ export const RecoveryProfileSchema = z.object({
   interventionIntensity: z.enum(["low", "moderate", "high", "critical"]),
   baselineStabilityScore: z.number().default(50),
   dailySavings: z.number().default(0),
+  timeSpentDaily: z.number().optional(),
   motivation: z.string().optional(),
   createdAt: z.string(),
   updatedAt: z.string(),

@@ -112,6 +112,8 @@ export default function OnboardingScreen() {
   const [name, setName] = useState<string>('');
   const [isAnonymous, setIsAnonymous] = useState<boolean>(false);
   const [addictions, setAddictions] = useState<string[]>([]);
+  const [moneySpentDailyInput, setMoneySpentDailyInput] = useState<string>('');
+  const [timeSpentDailyInput, setTimeSpentDailyInput] = useState<string>('');
   const [recoveryStage, setRecoveryStage] = useState<RecoveryStage>('crisis');
   const [triggers, setTriggers] = useState<string[]>([]);
   const [goals, setGoals] = useState<string[]>([]);
@@ -244,11 +246,20 @@ export default function OnboardingScreen() {
       isAnonymous,
     };
 
+    const parsedMoney = parseFloat(moneySpentDailyInput.replace(/^\$/, '').trim());
+    const dailySavings =
+      Number.isFinite(parsedMoney) && parsedMoney >= 0 ? Math.round(parsedMoney * 100) / 100 : 0;
+
+    const parsedTime = parseFloat(timeSpentDailyInput.trim());
+    const timeSpentDaily =
+      Number.isFinite(parsedTime) && parsedTime >= 0 ? Math.round(parsedTime * 100) / 100 : 0;
+
     const completedProfile = {
       name: isAnonymous ? 'Anonymous' : (name.trim() || 'Friend'),
       addictions: addictions.length > 0 ? addictions : ['Addiction'],
       soberDate: new Date().toISOString(),
-      dailySavings: 0,
+      dailySavings,
+      timeSpentDaily,
       motivation: goals.join(', '),
       hasCompletedOnboarding: true,
       privacyControls: finalPrivacy,
@@ -274,6 +285,9 @@ export default function OnboardingScreen() {
     cravingBaseline,
     updateProfile,
     router,
+    moneySpentDailyInput,
+    timeSpentDailyInput,
+    updateUserState,
   ]);
 
   const canProceed = (): boolean => {
@@ -283,6 +297,8 @@ export default function OnboardingScreen() {
         return isAnonymous || name.trim().length > 0;
       case 'addiction':
         return addictions.length > 0;
+      case 'daily_spend':
+        return true;
       case 'stage':
       case 'calibration':
         return true;
@@ -374,6 +390,37 @@ export default function OnboardingScreen() {
               })}
             </ScreenScrollView>
           </View>
+        );
+
+      case 'daily_spend':
+        return (
+          <ScreenScrollView style={styles.stepContent} showsVerticalScrollIndicator={false} contentContainerStyle={styles.optionsListContent}>
+            <Text style={styles.stepLabel}>{stepLabel}</Text>
+            <Text style={styles.stepTitle}>{ONBOARDING_COPY.steps.dailySpend.title}</Text>
+            <Text style={styles.stepSubtitle}>{ONBOARDING_COPY.steps.dailySpend.subtitle}</Text>
+
+            <Text style={[styles.inputLabel, { marginTop: 20 }]}>TIME (UNITS PER DAY, E.G. HOURS)</Text>
+            <TextInput
+              style={styles.input}
+              placeholder="e.g. 2 or 1.5"
+              placeholderTextColor={Colors.textMuted}
+              value={timeSpentDailyInput}
+              onChangeText={setTimeSpentDailyInput}
+              keyboardType="decimal-pad"
+              testID="onboarding-time-spent-daily"
+            />
+
+            <Text style={[styles.inputLabel, { marginTop: 16 }]}>MONEY (PER DAY)</Text>
+            <TextInput
+              style={styles.input}
+              placeholder="e.g. 25 or 25.50"
+              placeholderTextColor={Colors.textMuted}
+              value={moneySpentDailyInput}
+              onChangeText={setMoneySpentDailyInput}
+              keyboardType="decimal-pad"
+              testID="onboarding-money-spent-daily"
+            />
+          </ScreenScrollView>
         );
 
       case 'stage':

@@ -52,7 +52,10 @@ export interface UserProfile {
   name: string;
   addictions: string[];
   soberDate: string;
+  /** Money spent on addiction per day (onboarding + profile "Money Spent Daily"). */
   dailySavings: number;
+  /** Time spent on addiction per day in hours (shown as “N hour(s)/day” on profile). */
+  timeSpentDaily: number;
   motivation: string;
   hasCompletedOnboarding: boolean;
   privacyControls: PrivacyControls;

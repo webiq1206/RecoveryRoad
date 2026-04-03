@@ -4,7 +4,6 @@ import { ScreenScrollView } from '@/components/ScreenScrollView';
 import { User, Shield, Eye, EyeOff, Target, TrendingUp, Bell, BellOff, Lock, Unlock, MessageCircle, BarChart3, ChevronRight, Sparkles, Clock, Heart, AlertTriangle, Sun, Moon as MoonIcon, ShieldAlert, Award, Crown, RotateCcw, Calendar, DollarSign, BookOpen, Check, X, Lightbulb, Layers, Radio, RefreshCw, Scale, Gauge, PauseCircle, PlayCircle, Activity } from 'lucide-react-native';
 import * as Haptics from 'expo-haptics';
 import Colors from '@/constants/colors';
-import { useAppStore } from '@/stores/useAppStore';
 import { useUser } from '@/core/domains/useUser';
 import { usePledges } from '@/core/domains/usePledges';
 import { useJournal } from '@/core/domains/useJournal';
@@ -31,8 +30,7 @@ export default function ProfileScreen() {
   const { profile, updateProfile, daysSober } = useUser();
   const { pledges, currentStreak } = usePledges();
   const { journal } = useJournal();
-  const centralProgress = useAppStore((s) => s.progress);
-  const { notificationPreferences, updateNotificationPrefs, streak } = useEngagement();
+  const { notificationPreferences, updateNotificationPrefs } = useEngagement();
   const { isPremium } = useSubscription();
   const {
     intensity,
@@ -107,9 +105,14 @@ export default function ProfileScreen() {
     if (editingField === 'name') {
       updateProfile({ name: tempValue.trim() });
     } else if (editingField === 'dailySavings') {
-      const val = parseFloat(tempValue);
+      const val = parseFloat(tempValue.replace(/^\$/, '').trim());
       if (!isNaN(val) && val >= 0) {
-        updateProfile({ dailySavings: val });
+        updateProfile({ dailySavings: Math.round(val * 100) / 100 });
+      }
+    } else if (editingField === 'timeSpentDaily') {
+      const val = parseFloat(tempValue.trim());
+      if (!isNaN(val) && val >= 0) {
+        updateProfile({ timeSpentDaily: Math.round(val * 100) / 100 });
       }
     } else if (editingField === 'motivation') {
       updateProfile({ motivation: tempValue.trim() });
@@ -240,18 +243,24 @@ export default function ProfileScreen() {
             <Text style={styles.soberSince}>Sober since {formattedSoberDate}</Text>
             <View style={styles.quickStats}>
               <View style={styles.quickStat}>
-                <Text style={styles.quickStatValue}>{centralProgress.daysSober ?? daysSober}</Text>
-                <Text style={styles.quickStatLabel}>days</Text>
+                <Text style={styles.quickStatValue}>{daysSober}</Text>
+                <Text style={styles.quickStatLabel} numberOfLines={2}>
+                  {'Days\nsober'}
+                </Text>
               </View>
               <View style={styles.statDivider} />
               <View style={styles.quickStat}>
                 <Text style={styles.quickStatValue}>{currentStreak}</Text>
-                <Text style={styles.quickStatLabel}>streak</Text>
+                <Text style={styles.quickStatLabel} numberOfLines={2}>
+                  {'Pledge\nstreak'}
+                </Text>
               </View>
               <View style={styles.statDivider} />
               <View style={styles.quickStat}>
                 <Text style={styles.quickStatValue}>{journal.length}</Text>
-                <Text style={styles.quickStatLabel}>entries</Text>
+                <Text style={styles.quickStatLabel} numberOfLines={2}>
+                  {'Journal\nentries'}
+                </Text>
               </View>
             </View>
           </View>
@@ -443,8 +452,58 @@ export default function ProfileScreen() {
               <DollarSign size={17} color={Colors.accentWarm} />
             </View>
             <View>
-              <Text style={styles.settingLabel}>Daily Savings</Text>
+              <Text style={styles.settingLabel}>Money Spent Daily</Text>
               <Text style={styles.settingValue}>${profile.dailySavings.toFixed(2)}/day</Text>
+            </View>
+          </View>
+          <ChevronRight size={16} color={Colors.textMuted} />
+        </Pressable>
+      )}
+
+      {editingField === 'timeSpentDaily' ? (
+        <View style={styles.editRow}>
+          <TextInput
+            style={styles.editInput}
+            value={tempValue}
+            onChangeText={setTempValue}
+            autoFocus
+            keyboardType="decimal-pad"
+            placeholder="e.g. 2"
+            placeholderTextColor={Colors.textMuted}
+          />
+          <View style={styles.editActions}>
+            <Pressable onPress={handleCancelEdit} style={styles.editCancel}>
+              <Text style={styles.cancelText}>Cancel</Text>
+            </Pressable>
+            <Pressable onPress={handleSaveEdit} style={styles.editSave}>
+              <Text style={styles.saveText}>Save</Text>
+            </Pressable>
+          </View>
+        </View>
+      ) : (
+        <Pressable
+          style={styles.settingRow}
+          onPress={() =>
+            handleStartEdit('timeSpentDaily', String(profile.timeSpentDaily ?? 0))
+          }
+        >
+          <View style={styles.settingLeft}>
+            <View style={[styles.settingIcon, { backgroundColor: 'rgba(46,196,182,0.12)' }]}>
+              <Clock size={17} color={Colors.primary} />
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text style={styles.settingLabel}>Time Spent Daily</Text>
+              <Text style={styles.settingValue} numberOfLines={1}>
+                {(() => {
+                  const n = Math.round(Math.max(0, profile.timeSpentDaily ?? 0) * 100) / 100;
+                  const s = n.toLocaleString('en-US', {
+                    maximumFractionDigits: 2,
+                    minimumFractionDigits: 0,
+                  });
+                  const unit = n === 1 ? 'hour' : 'hours';
+                  return `${s} ${unit}/day`;
+                })()}
+              </Text>
             </View>
           </View>
           <ChevronRight size={16} color={Colors.textMuted} />
@@ -865,10 +924,12 @@ const styles = StyleSheet.create({
     fontWeight: '500' as const,
     textTransform: 'uppercase' as const,
     letterSpacing: 0.5,
+    textAlign: 'center' as const,
+    lineHeight: 13,
   },
   statDivider: {
     width: 1,
-    height: 24,
+    height: 32,
     backgroundColor: Colors.border,
   },
   premiumStrip: {

@@ -11,7 +11,9 @@
     "start-web-dev": "DEBUG=expo* bunx rork start -p 161tt8zh34s3n4vgfty6c --web --tunnel",
     "lint": "expo lint",
     "test": "bun test utils/mergeProfile.test.ts",
-    "qa:ia-strict": "node scripts/qa-ia-strict.mjs"
+    "qa:ia-strict": "node scripts/qa-ia-strict.mjs",
+    "android": "expo run:android",
+    "ios": "expo run:ios"
   },
   "dependencies": {
     "@expo/vector-icons": "^15.0.3",

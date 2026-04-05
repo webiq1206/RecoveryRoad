@@ -205,6 +205,8 @@ export interface DailyCheckIn {
   stabilityScore: number;
   reflection: string;
   completedAt: string;
+  /** Present when this check-in is associated with logging a setback/relapse. */
+  relapseLogged?: boolean;
   emotionalTags?: EmotionalTag[];
 }
 

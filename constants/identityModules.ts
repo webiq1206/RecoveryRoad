@@ -1,4 +1,4 @@
-import { IdentityModule } from '@/types';
+import { IdentityModule } from '../types';
 
 export const IDENTITY_MODULES: IdentityModule[] = [
   {

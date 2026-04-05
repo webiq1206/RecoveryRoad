@@ -3,8 +3,8 @@
  * Daily guidance actions have been consolidated into utils/wizardEngine.ts.
  */
 
-import type { UserProfile, RecoveryProfile, EmergencyContact } from '@/types';
-import type { AccountabilityData } from '@/types';
+import type { UserProfile, RecoveryProfile, EmergencyContact } from '../types';
+import type { AccountabilityData } from '../types';
 
 // ---- Onboarding step IDs (match order used in onboarding.tsx) ----
 export const ONBOARDING_STEP_IDS = [

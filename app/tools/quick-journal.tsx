@@ -3,12 +3,12 @@ import { View, Text, StyleSheet, TextInput, Pressable, KeyboardAvoidingView, Pla
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter, Stack } from 'expo-router';
 import * as Haptics from 'expo-haptics';
-import Colors from '@/constants/colors';
-import { useJournal } from '@/core/domains/useJournal';
-import { useEngagement } from '@/providers/EngagementProvider';
-import { useRetention } from '@/providers/RetentionProvider';
-import type { JournalEntry } from '@/types';
-import { useToolUsageStore } from '@/features/tools/state/useToolUsageStore';
+import Colors from '../../constants/colors';
+import { useJournal } from '../../core/domains/useJournal';
+import { useEngagement } from '../../providers/EngagementProvider';
+import { useRetention } from '../../providers/RetentionProvider';
+import type { JournalEntry } from '../../types';
+import { useToolUsageStore } from '../../features/tools/state/useToolUsageStore';
 
 export default function QuickJournalToolScreen() {
   const insets = useSafeAreaInsets();

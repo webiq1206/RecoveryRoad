@@ -1,14 +1,14 @@
 import React, { useState, useMemo, useRef } from 'react';
 import { View, Text, StyleSheet, Pressable, ScrollView } from 'react-native';
-import { ScreenScrollView } from '@/components/ScreenScrollView';
+import { ScreenScrollView } from '../components/ScreenScrollView';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import * as Haptics from 'expo-haptics';
 import { HeartCrack, Target, Brain, Shield, Users, ArrowRight } from 'lucide-react-native';
 
-import Colors from '@/constants/colors';
-import { useRelapse } from '@/core/domains/useRelapse';
-import { useAppStore } from '@/stores/useAppStore';
+import Colors from '../constants/colors';
+import { useRelapse } from '../core/domains/useRelapse';
+import { useAppStore } from '../stores/useAppStore';
 
 type WhatHappenedId = 'alcohol' | 'drugs' | 'gambling' | 'food' | 'pornography' | 'other';
 type WhenId = 'morning' | 'afternoon' | 'evening' | 'night';

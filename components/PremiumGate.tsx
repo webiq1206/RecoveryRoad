@@ -3,9 +3,9 @@ import { View, Text, StyleSheet, Pressable, Animated } from 'react-native';
 import { Crown, ChevronRight } from 'lucide-react-native';
 import { useRouter } from 'expo-router';
 import * as Haptics from 'expo-haptics';
-import Colors from '@/constants/colors';
-import { useSubscription } from '@/providers/SubscriptionProvider';
-import { PremiumFeature } from '@/types';
+import Colors from '../constants/colors';
+import { useSubscription } from '../providers/SubscriptionProvider';
+import { PremiumFeature } from '../types';
 
 interface PremiumGateProps {
   feature: PremiumFeature;

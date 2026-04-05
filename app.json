@@ -36,9 +36,6 @@
       "typedRoutes": false
     },
     "extra": {
-      "router": {
-        "origin": "https://rork.com/"
-      },
       "eas": {
         "projectId": "38901d38-0795-42dc-8334-1e49110fecda"
       }

@@ -1,4 +1,4 @@
-import { RecoveryProfile, SleepQualityLevel, SupportAvailability } from '@/types';
+import { RecoveryProfile, SleepQualityLevel, SupportAvailability } from '../types';
 
 export type ProtectionStatus = 'Extra support' | 'Guarded' | 'Strengthening' | 'Stable';
 

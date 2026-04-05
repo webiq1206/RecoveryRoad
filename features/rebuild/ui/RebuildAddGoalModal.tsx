@@ -2,7 +2,7 @@ import React from 'react';
 import { Modal, ScrollView, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { Plus, X } from 'lucide-react-native';
 
-import type { PurposeGoal } from '@/types';
+import type { PurposeGoal } from '../../../types';
 
 export function RebuildAddGoalModal(props: {
   visible: boolean;

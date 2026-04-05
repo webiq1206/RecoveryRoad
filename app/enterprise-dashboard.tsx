@@ -10,7 +10,7 @@ import {
   Animated,
   Platform,
 } from 'react-native';
-import { ScreenScrollView } from '@/components/ScreenScrollView';
+import { ScreenScrollView } from '../components/ScreenScrollView';
 import { Stack, useRouter } from 'expo-router';
 import {
   Building2,
@@ -37,11 +37,11 @@ import {
   Settings,
 } from 'lucide-react-native';
 import * as Haptics from 'expo-haptics';
-import Colors from '@/constants/colors';
-import { useRequireProviderMode } from '@/hooks/useRequireProviderMode';
-import { useEnterprise } from '@/providers/EnterpriseProvider';
-import { DEFAULT_ORGANIZATION, ROLE_LABELS, TIER_LABELS } from '@/constants/enterprise';
-import { EnterpriseRole, OrgMember } from '@/types';
+import Colors from '../constants/colors';
+import { useRequireProviderMode } from '../hooks/useRequireProviderMode';
+import { useEnterprise } from '../providers/EnterpriseProvider';
+import { DEFAULT_ORGANIZATION, ROLE_LABELS, TIER_LABELS } from '../constants/enterprise';
+import { EnterpriseRole, OrgMember } from '../types';
 
 const METRIC_COLORS = {
   excellent: '#4CAF50',

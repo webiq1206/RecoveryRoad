@@ -8,7 +8,7 @@ import {
   Platform,
   Alert,
 } from 'react-native';
-import { ScreenScrollView } from '@/components/ScreenScrollView';
+import { ScreenScrollView } from '../components/ScreenScrollView';
 import { Stack } from 'expo-router';
 import {
   CreditCard,
@@ -22,11 +22,11 @@ import {
   Zap,
 } from 'lucide-react-native';
 import * as Haptics from 'expo-haptics';
-import Colors from '@/constants/colors';
-import { useRequireProviderMode } from '@/hooks/useRequireProviderMode';
-import { useEnterprise } from '@/providers/EnterpriseProvider';
-import { TIER_LABELS, TIER_PRICING } from '@/constants/enterprise';
-import { OrgTier } from '@/types';
+import Colors from '../constants/colors';
+import { useRequireProviderMode } from '../hooks/useRequireProviderMode';
+import { useEnterprise } from '../providers/EnterpriseProvider';
+import { TIER_LABELS, TIER_PRICING } from '../constants/enterprise';
+import { OrgTier } from '../types';
 
 const TIER_FEATURES: Record<OrgTier, string[]> = {
   starter: ['Up to 5 seats', 'Basic dashboards', 'Email reports', 'Standard support'],

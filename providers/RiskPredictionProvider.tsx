@@ -2,8 +2,8 @@ import createContextHook from '@nkzw/create-context-hook';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
-import { useUser } from '@/core/domains/useUser';
-import { useCheckin } from '@/core/domains/useCheckin';
+import { useUser } from '../core/domains/useUser';
+import { useCheckin } from '../core/domains/useCheckin';
 import {
   DailyCheckIn,
   RiskPrediction,
@@ -17,8 +17,8 @@ import {
   AlertSeverity,
   InterventionType,
   NearMissEvent,
-} from '@/types';
-import { getLocalDateKey } from '@/utils/checkInDate';
+} from '../types';
+import { getLocalDateKey } from '../utils/checkInDate';
 
 const STORAGE_KEY = 'risk_prediction_data';
 

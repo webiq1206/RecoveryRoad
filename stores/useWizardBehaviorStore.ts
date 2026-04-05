@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import { subscribeWithSelector } from 'zustand/middleware';
-import { loadStorageItem, saveStorageItem } from '@/core/persistence';
-import { createSelectors } from '@/stores/zustand/createSelectors';
+import { loadStorageItem, saveStorageItem } from '../core/persistence';
+import { createSelectors } from './zustand/createSelectors';
 import { useEffect } from 'react';
 
 const STORAGE_KEY = 'recovery:wizard_behavior';

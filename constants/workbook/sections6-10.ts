@@ -1,4 +1,4 @@
-import { WorkbookSection } from '@/types';
+import { WorkbookSection } from '../../types';
 
 export const WORKBOOK_SECTIONS_6_10: WorkbookSection[] = [
   {

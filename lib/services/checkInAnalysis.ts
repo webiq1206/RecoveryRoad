@@ -3,12 +3,12 @@
  * Single source of truth for daily check-in copy and thresholds.
  */
 
-import type { DailyCheckIn } from '@/types';
+import type { DailyCheckIn } from '../../types';
 import {
   getRecoveryStage,
   getRiskLevel,
   getEmotionalInsight,
-} from '@/constants/companion';
+} from '../../constants/companion';
 
 export const REFLECTIONS: Record<string, string[]> = {
   excellent: [

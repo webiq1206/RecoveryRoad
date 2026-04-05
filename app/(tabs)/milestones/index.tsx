@@ -10,7 +10,7 @@ import {
   Platform,
   Modal,
 } from 'react-native';
-import { ScreenScrollView } from '@/components/ScreenScrollView';
+import { ScreenScrollView } from '../../../components/ScreenScrollView';
 import {
   Sunrise,
   Flame,
@@ -39,15 +39,15 @@ import {
   Send,
 } from 'lucide-react-native';
 import * as Haptics from 'expo-haptics';
-import Colors from '@/constants/colors';
-import { useUser } from '@/core/domains/useUser';
-import { useCheckin } from '@/core/domains/useCheckin';
-import { useJournal } from '@/core/domains/useJournal';
-import { usePledges } from '@/core/domains/usePledges';
-import { useEngagement } from '@/providers/EngagementProvider';
-import { MILESTONE_DATA } from '@/constants/milestones';
-import { MILESTONE_SHARE_MESSAGES, SHAREABLE_FOOTER, BRAND } from '@/constants/branding';
-import { MicroWin, GrowthDimension } from '@/types';
+import Colors from '../../../constants/colors';
+import { useUser } from '../../../core/domains/useUser';
+import { useCheckin } from '../../../core/domains/useCheckin';
+import { useJournal } from '../../../core/domains/useJournal';
+import { usePledges } from '../../../core/domains/usePledges';
+import { useEngagement } from '../../../providers/EngagementProvider';
+import { MILESTONE_DATA } from '../../../constants/milestones';
+import { MILESTONE_SHARE_MESSAGES, SHAREABLE_FOOTER, BRAND } from '../../../constants/branding';
+import { MicroWin, GrowthDimension } from '../../../types';
 import { Share2, X as XIcon, ShieldCheck as ShieldCheckBrand, Eye, EyeOff } from 'lucide-react-native';
 
 const MILESTONE_ICON_MAP: Record<string, React.ComponentType<{ size: number; color: string }>> = {

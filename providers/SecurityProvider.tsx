@@ -12,7 +12,7 @@ import {
   AnonymizedEvent,
   AuthMethod,
   SecurityLevel,
-} from '@/types';
+} from '../types';
 import {
   storePIN,
   verifyPIN,
@@ -22,7 +22,7 @@ import {
   hashData,
   secureSetJSON,
   secureGetJSON,
-} from '@/utils/secureStorage';
+} from '../utils/secureStorage';
 
 const STORAGE_KEYS = {
   SECURITY_SETTINGS: 'ro_security_settings',

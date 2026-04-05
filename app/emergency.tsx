@@ -4,7 +4,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import * as Haptics from 'expo-haptics';
 import { ShieldAlert, Phone, MessageCircle, Heart, ArrowLeft, Check } from 'lucide-react-native';
-import Colors from '@/constants/colors';
+import Colors from '../constants/colors';
 
 const TOTAL_SECONDS = 90;
 

@@ -2,9 +2,9 @@ import createContextHook from '@nkzw/create-context-hook';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useQueryClient } from '@tanstack/react-query';
 import { useCallback, useMemo } from 'react';
-import { Pledge, JournalEntry, MediaItem, WorkbookAnswer, EmergencyContact, DailyCheckIn, CheckInTimeOfDay, RebuildData, ReplacementHabit, RoutineBlock, PurposeGoal, ConfidenceMilestone, AccountabilityData, CommitmentContract, AccountabilityPartner, DriftAlert, ContractCheckIn, RecoveryProfile, PrivacyControls, IdentityProgramData, IdentityExerciseResponse, IdentityValue, TimelineEvent, RelapsePlan, NearMissEvent } from '@/types';
-import { calculateStability } from '@/utils/stabilityEngine';
-import { useRecoveryProfileStore } from '@/stores/useRecoveryProfileStore';
+import { Pledge, JournalEntry, MediaItem, WorkbookAnswer, EmergencyContact, DailyCheckIn, CheckInTimeOfDay, RebuildData, ReplacementHabit, RoutineBlock, PurposeGoal, ConfidenceMilestone, AccountabilityData, CommitmentContract, AccountabilityPartner, DriftAlert, ContractCheckIn, RecoveryProfile, PrivacyControls, IdentityProgramData, IdentityExerciseResponse, IdentityValue, TimelineEvent, RelapsePlan, NearMissEvent } from '../types';
+import { calculateStability } from '../utils/stabilityEngine';
+import { useRecoveryProfileStore } from '../stores/useRecoveryProfileStore';
 import {
   useCheckInsStore,
   useTodayCheckIns,
@@ -13,16 +13,16 @@ import {
   useCurrentCheckInPeriod,
   useCurrentPeriodCheckIn,
   useHydrateCheckInsStore,
-} from '@/stores/useCheckInsStore';
-import { useHydrateRecoveryProfileStore, useDaysSober } from '@/stores/useRecoveryProfileStore';
-import { usePledgesStore, useHydratePledgesStore, usePledgeStreak, useTodayPledge } from '@/features/pledges/state/usePledgesStore';
-import { useJournalStore, useHydrateJournalStore } from '@/features/journal/state/useJournalStore';
-import { useMediaStore, useHydrateMediaStore } from '@/features/media/state/useMediaStore';
-import { useWorkbookStore, useHydrateWorkbookStore } from '@/features/workbook/state/useWorkbookStore';
-import { useSupportContactsStore, useHydrateSupportContactsStore } from '@/features/supportContacts/state/useSupportContactsStore';
-import { useRebuildStore, useHydrateRebuildStore } from '@/features/rebuild/state/useRebuildStore';
-import { useAccountabilityStore, useHydrateAccountabilityStore } from '@/features/accountability/state/useAccountabilityStore';
-import { useAppMetaStore, useStabilityScore } from '@/features/appMeta/state/useAppMetaStore';
+} from '../stores/useCheckInsStore';
+import { useHydrateRecoveryProfileStore, useDaysSober } from '../stores/useRecoveryProfileStore';
+import { usePledgesStore, useHydratePledgesStore, usePledgeStreak, useTodayPledge } from '../features/pledges/state/usePledgesStore';
+import { useJournalStore, useHydrateJournalStore } from '../features/journal/state/useJournalStore';
+import { useMediaStore, useHydrateMediaStore } from '../features/media/state/useMediaStore';
+import { useWorkbookStore, useHydrateWorkbookStore } from '../features/workbook/state/useWorkbookStore';
+import { useSupportContactsStore, useHydrateSupportContactsStore } from '../features/supportContacts/state/useSupportContactsStore';
+import { useRebuildStore, useHydrateRebuildStore } from '../features/rebuild/state/useRebuildStore';
+import { useAccountabilityStore, useHydrateAccountabilityStore } from '../features/accountability/state/useAccountabilityStore';
+import { useAppMetaStore, useStabilityScore } from '../features/appMeta/state/useAppMetaStore';
 
 export function calculateRiskScore(rp: RecoveryProfile): number {
   let risk = 0;

@@ -5,29 +5,29 @@
 
 import { useState, useCallback, useMemo, useEffect } from 'react';
 import * as Haptics from 'expo-haptics';
-import { useRetention } from '@/providers/RetentionProvider';
-import { useUser } from '@/core/domains/useUser';
-import { useCheckin } from '@/core/domains/useCheckin';
-import { computeDailyCheckInStabilityScore } from '@/utils/stabilityEngine';
+import { useRetention } from '../../../providers/RetentionProvider';
+import { useUser } from '../../../core/domains/useUser';
+import { useCheckin } from '../../../core/domains/useCheckin';
+import { computeDailyCheckInStabilityScore } from '../../../utils/stabilityEngine';
 import {
   getEmotionalReflection,
   getScoreColor,
   getScoreLabel,
-} from '@/lib/services/checkInAnalysis';
+} from '../../../lib/services/checkInAnalysis';
 import {
   METRICS_CONFIG,
   EMOTIONAL_TAGS,
   PERIOD_CONFIG_DATA,
   type CheckInTimeOfDay,
-} from '@/features/checkin/constants/checkinMetrics';
-import type { DailyCheckIn, EmotionalTag } from '@/types';
-import { useAppStore } from '@/stores/useAppStore';
-import { selectCurrentCheckInPeriod } from '@/core/contracts/checkin';
+} from '../constants/checkinMetrics';
+import type { DailyCheckIn, EmotionalTag } from '../../../types';
+import { useAppStore } from '../../../stores/useAppStore';
+import { selectCurrentCheckInPeriod } from '../../../core/contracts/checkin';
 import {
   mergeRecoveryProfiles,
   mergeTodayCheckInsFromSources,
-} from '@/utils/mergeProfile';
-import { getLocalDateKey } from '@/utils/checkInDate';
+} from '../../../utils/mergeProfile';
+import { getLocalDateKey } from '../../../utils/checkInDate';
 
 export interface PeriodConfig {
   label: string;

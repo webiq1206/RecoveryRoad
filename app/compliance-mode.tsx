@@ -10,7 +10,7 @@ import {
   Animated,
   Platform,
 } from 'react-native';
-import { ScreenScrollView } from '@/components/ScreenScrollView';
+import { ScreenScrollView } from '../components/ScreenScrollView';
 import { Stack, useRouter } from 'expo-router';
 import {
   Shield,
@@ -34,10 +34,10 @@ import {
   EyeOff,
 } from 'lucide-react-native';
 import * as Haptics from 'expo-haptics';
-import Colors from '@/constants/colors';
-import { useRequireProviderMode } from '@/hooks/useRequireProviderMode';
-import { useCompliance } from '@/providers/ComplianceProvider';
-import { ComplianceRequirement, ComplianceRequirementType } from '@/types';
+import Colors from '../constants/colors';
+import { useRequireProviderMode } from '../hooks/useRequireProviderMode';
+import { useCompliance } from '../providers/ComplianceProvider';
+import { ComplianceRequirement, ComplianceRequirementType } from '../types';
 
 const REQUIREMENT_ICONS: Record<ComplianceRequirementType, typeof Shield> = {
   checkin: CheckCircle,

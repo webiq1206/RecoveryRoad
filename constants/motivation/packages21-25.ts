@@ -1,4 +1,4 @@
-import { MotivationalPackage } from '@/types';
+import { MotivationalPackage } from '../../types';
 
 export const MOTIVATIONAL_PACKAGES_21_25: MotivationalPackage[] = [
   {

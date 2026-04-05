@@ -10,7 +10,7 @@ import {
   Dimensions,
   InteractionManager,
 } from 'react-native';
-import { ScreenScrollView } from '@/components/ScreenScrollView';
+import { ScreenScrollView } from '../../../components/ScreenScrollView';
 import { Stack, useRouter as useRebuildRouter, useLocalSearchParams } from 'expo-router';
 import { Pressable } from 'react-native';
 import {
@@ -50,16 +50,16 @@ import {
   Eye,
   Play,
 } from 'lucide-react-native';
-import { useUser } from '@/core/domains/useUser';
-import { useCheckin } from '@/core/domains/useCheckin';
-import { useRebuild } from '@/core/domains/useRebuild';
-import { useSubscription } from '@/providers/SubscriptionProvider';
-import Colors from '@/constants/colors';
+import { useUser } from '../../../core/domains/useUser';
+import { useCheckin } from '../../../core/domains/useCheckin';
+import { useRebuild } from '../../../core/domains/useRebuild';
+import { useSubscription } from '../../../providers/SubscriptionProvider';
+import Colors from '../../../constants/colors';
 import {
   getRecoveryStage,
   getRiskLevel,
   generateRebuildEncouragement,
-} from '@/constants/companion';
+} from '../../../constants/companion';
 import {
   ReplacementHabit,
   RoutineBlock,
@@ -70,24 +70,24 @@ import {
   IdentityExercise,
   IdentityExerciseResponse,
   IdentityValue,
-} from '@/types';
-import { IDENTITY_MODULES, CATEGORY_INFO } from '@/constants/identityModules';
+} from '../../../types';
+import { IDENTITY_MODULES, CATEGORY_INFO } from '../../../constants/identityModules';
 import * as Haptics from 'expo-haptics';
-import { RebuildExerciseModal } from '@/features/rebuild/ui/RebuildExerciseModal';
-import { RebuildValueModal } from '@/features/rebuild/ui/RebuildValueModal';
-import { RebuildAddHabitModal } from '@/features/rebuild/ui/RebuildAddHabitModal';
-import { RebuildAddRoutineModal } from '@/features/rebuild/ui/RebuildAddRoutineModal';
-import { RebuildAddGoalModal } from '@/features/rebuild/ui/RebuildAddGoalModal';
-import { RebuildAddMilestoneModal } from '@/features/rebuild/ui/RebuildAddMilestoneModal';
-import { RebuildHeroCard } from '@/features/rebuild/ui/RebuildHeroCard';
-import { RebuildSectionTabs } from '@/features/rebuild/ui/RebuildSectionTabs';
-import { RebuildEncouragementToast } from '@/features/rebuild/ui/RebuildEncouragementToast';
-import { RebuildHabitsSection } from '@/features/rebuild/ui/sections/RebuildHabitsSection';
-import { RebuildRoutineSection } from '@/features/rebuild/ui/sections/RebuildRoutineSection';
-import { RebuildGoalsSection } from '@/features/rebuild/ui/sections/RebuildGoalsSection';
-import { RebuildConfidenceSection } from '@/features/rebuild/ui/sections/RebuildConfidenceSection';
-import { RebuildProgramWelcome } from '@/features/rebuild/ui/sections/RebuildProgramWelcome';
-import { TabHeaderActions } from '@/components/TabHeaderActions';
+import { RebuildExerciseModal } from '../../../features/rebuild/ui/RebuildExerciseModal';
+import { RebuildValueModal } from '../../../features/rebuild/ui/RebuildValueModal';
+import { RebuildAddHabitModal } from '../../../features/rebuild/ui/RebuildAddHabitModal';
+import { RebuildAddRoutineModal } from '../../../features/rebuild/ui/RebuildAddRoutineModal';
+import { RebuildAddGoalModal } from '../../../features/rebuild/ui/RebuildAddGoalModal';
+import { RebuildAddMilestoneModal } from '../../../features/rebuild/ui/RebuildAddMilestoneModal';
+import { RebuildHeroCard } from '../../../features/rebuild/ui/RebuildHeroCard';
+import { RebuildSectionTabs } from '../../../features/rebuild/ui/RebuildSectionTabs';
+import { RebuildEncouragementToast } from '../../../features/rebuild/ui/RebuildEncouragementToast';
+import { RebuildHabitsSection } from '../../../features/rebuild/ui/sections/RebuildHabitsSection';
+import { RebuildRoutineSection } from '../../../features/rebuild/ui/sections/RebuildRoutineSection';
+import { RebuildGoalsSection } from '../../../features/rebuild/ui/sections/RebuildGoalsSection';
+import { RebuildConfidenceSection } from '../../../features/rebuild/ui/sections/RebuildConfidenceSection';
+import { RebuildProgramWelcome } from '../../../features/rebuild/ui/sections/RebuildProgramWelcome';
+import { TabHeaderActions } from '../../../components/TabHeaderActions';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 

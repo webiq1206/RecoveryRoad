@@ -1,4 +1,4 @@
-import { WorkbookSection } from '@/types';
+import { WorkbookSection } from '../../types';
 import { WORKBOOK_SECTIONS_1_5 } from './sections1-5';
 import { WORKBOOK_SECTIONS_6_10 } from './sections6-10';
 import { WORKBOOK_SECTIONS_11_15 } from './sections11-15';

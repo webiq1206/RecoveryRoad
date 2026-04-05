@@ -9,11 +9,11 @@
  * Outputs a WizardPlan consumed by the Today Hub.
  */
 
-import type { RecoveryStage, RiskCategory, DailyCheckIn, Pledge, CheckInTimeOfDay } from '@/types';
-import type { WizardBehaviorState, ActionHistoryEntry } from '@/stores/useWizardBehaviorStore';
-import { getCompletedOnboardingSteps, ONBOARDING_STEP_IDS } from '@/utils/wizardSteps';
-import type { UserProfile, EmergencyContact, AccountabilityData } from '@/types';
-import { getRecoveryStage as getCompanionStage } from '@/constants/companion';
+import type { RecoveryStage, RiskCategory, DailyCheckIn, Pledge, CheckInTimeOfDay } from '../types';
+import type { WizardBehaviorState, ActionHistoryEntry } from '../stores/useWizardBehaviorStore';
+import { getCompletedOnboardingSteps, ONBOARDING_STEP_IDS } from './wizardSteps';
+import type { UserProfile, EmergencyContact, AccountabilityData } from '../types';
+import { getRecoveryStage as getCompanionStage } from '../constants/companion';
 
 // ── Types ────────────────────────────────────────────────────────────────
 

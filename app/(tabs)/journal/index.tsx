@@ -1,19 +1,19 @@
 import React, { useCallback, useState, useMemo } from 'react';
 import { View, Text, StyleSheet, Pressable } from 'react-native';
-import { ScreenFlatList } from '@/components/ScreenFlatList';
-import { ScreenScrollView } from '@/components/ScreenScrollView';
+import { ScreenFlatList } from '../../../components/ScreenFlatList';
+import { ScreenScrollView } from '../../../components/ScreenScrollView';
 import { useRouter } from 'expo-router';
 import { Plus, BookOpen, Trash2, Lock, CheckCircle, BookMarked, PenLine, ChevronRight, Crown } from 'lucide-react-native';
 import * as Haptics from 'expo-haptics';
 import { Alert } from 'react-native';
-import Colors from '@/constants/colors';
-import { useJournal } from '@/core/domains/useJournal';
-import { useUser } from '@/core/domains/useUser';
-import { useWorkbook } from '@/core/domains/useWorkbook';
-import { useSubscription } from '@/providers/SubscriptionProvider';
-import { MOOD_EMOJIS } from '@/constants/milestones';
-import { WORKBOOK_SECTIONS } from '@/constants/workbook';
-import { JournalEntry } from '@/types';
+import Colors from '../../../constants/colors';
+import { useJournal } from '../../../core/domains/useJournal';
+import { useUser } from '../../../core/domains/useUser';
+import { useWorkbook } from '../../../core/domains/useWorkbook';
+import { useSubscription } from '../../../providers/SubscriptionProvider';
+import { MOOD_EMOJIS } from '../../../constants/milestones';
+import { WORKBOOK_SECTIONS } from '../../../constants/workbook';
+import { JournalEntry } from '../../../types';
 
 /** Exercises 1–3 free for all plans; the rest require Paid Premium (`deep_exercises`). */
 const FREE_EXERCISE_COUNT = 3;

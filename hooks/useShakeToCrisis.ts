@@ -2,8 +2,8 @@ import React, { useEffect, useRef } from 'react';
 import { Platform } from 'react-native';
 import { useRouter } from 'expo-router';
 import * as Haptics from 'expo-haptics';
-import { useRelapse } from '@/core/domains/useRelapse';
-import { isExpoGo } from '@/utils/runtime';
+import { useRelapse } from '../core/domains/useRelapse';
+import { isExpoGo } from '../utils/runtime';
 
 /** Higher threshold reduces accidental triggers (walking, commuting). */
 const SHAKE_THRESHOLD = 3.6;

@@ -8,7 +8,7 @@ import {
   Alert,
   ActivityIndicator,
 } from 'react-native';
-import { ScreenScrollView } from '@/components/ScreenScrollView';
+import { ScreenScrollView } from '../components/ScreenScrollView';
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import {
@@ -22,13 +22,13 @@ import {
   Infinity as InfinityIcon,
 } from 'lucide-react-native';
 import * as Haptics from 'expo-haptics';
-import Colors from '@/constants/colors';
+import Colors from '../constants/colors';
 import {
   FREEMIUM_HIGHLIGHTS,
   FREEMIUM_SECTION_TITLE,
   PREMIUM_FEATURE_CARDS,
-} from '@/constants/subscriptionPlans';
-import { useSubscription } from '@/providers/SubscriptionProvider';
+} from '../constants/subscriptionPlans';
+import { useSubscription } from '../providers/SubscriptionProvider';
 
 interface PlanOption {
   id: string;

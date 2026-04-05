@@ -1,26 +1,26 @@
 import React, { useState, useRef, useCallback, useMemo, useEffect } from 'react';
 import { View, Text, StyleSheet, TextInput, Pressable, Animated, Dimensions, Switch, Image } from 'react-native';
-import { ScreenScrollView } from '@/components/ScreenScrollView';
+import { ScreenScrollView } from '../components/ScreenScrollView';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter, useLocalSearchParams, useFocusEffect } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
 import { ShieldCheck, ChevronRight, ChevronLeft, Eye, EyeOff, Target, AlertTriangle, Heart, Zap, Shield, Lock } from 'lucide-react-native';
 import * as Haptics from 'expo-haptics';
-import Colors from '@/constants/colors';
-import { useUser } from '@/core/domains/useUser';
-import { useSupportContacts } from '@/core/domains/useSupportContacts';
-import { useAccountability } from '@/core/domains/useAccountability';
-import { calculateRiskScore, calculateInterventionIntensity, calculateBaselineStability } from '@/providers/RecoveryProvider';
-import { ADDICTION_TYPES } from '@/constants/milestones';
-import { ONBOARDING_COPY, BRAND } from '@/constants/branding';
-import { RecoveryStage, RecoveryProfile, PrivacyControls } from '@/types';
-import type { StruggleLevel, SleepQualityLevel, SupportAvailability } from '@/types';
+import Colors from '../constants/colors';
+import { useUser } from '../core/domains/useUser';
+import { useSupportContacts } from '../core/domains/useSupportContacts';
+import { useAccountability } from '../core/domains/useAccountability';
+import { calculateRiskScore, calculateInterventionIntensity, calculateBaselineStability } from '../providers/RecoveryProvider';
+import { ADDICTION_TYPES } from '../constants/milestones';
+import { ONBOARDING_COPY, BRAND } from '../constants/branding';
+import { RecoveryStage, RecoveryProfile, PrivacyControls } from '../types';
+import type { StruggleLevel, SleepQualityLevel, SupportAvailability } from '../types';
 import {
   getAllOnboardingStepDefs,
   getRemainingOnboardingSteps,
   type OnboardingStepId,
-} from '@/utils/wizardSteps';
-import { useAppStore } from '@/stores/useAppStore';
+} from '../utils/wizardSteps';
+import { useAppStore } from '../stores/useAppStore';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const RECOVERY_STAGES: { value: RecoveryStage; label: string; desc: string; icon: React.ReactNode }[] = [
@@ -771,7 +771,7 @@ export default function OnboardingScreen() {
         >
           <View style={styles.heroContainer}>
             <Image
-              source={require('@/assets/images/app-icon.png')}
+              source={require('../assets/images/app-icon.png')}
               style={styles.heroAppIcon}
               resizeMode="contain"
             />

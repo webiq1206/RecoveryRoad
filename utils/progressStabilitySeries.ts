@@ -3,7 +3,7 @@
  * One value per day: when multiple check-ins exist on the same date, the latest by `completedAt` wins.
  */
 
-import type { CheckInTimeOfDay, DailyCheckIn } from '@/types';
+import type { CheckInTimeOfDay, DailyCheckIn } from '../types';
 
 export type StabilityWindowDays = 7 | 14 | 30;
 

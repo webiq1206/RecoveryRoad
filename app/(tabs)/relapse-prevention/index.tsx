@@ -1,10 +1,10 @@
 import React from 'react';
 import { View, Text, StyleSheet, Pressable } from 'react-native';
-import { ScreenScrollView } from '@/components/ScreenScrollView';
+import { ScreenScrollView } from '../../../components/ScreenScrollView';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { ShieldAlert, AlertTriangle, Target, FileText, Activity } from 'lucide-react-native';
-import Colors from '@/constants/colors';
+import Colors from '../../../constants/colors';
 
 export default function RelapsePreventionTabScreen() {
   const insets = useSafeAreaInsets();

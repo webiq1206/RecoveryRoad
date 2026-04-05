@@ -1,14 +1,14 @@
 import React, { useState, useCallback, useMemo } from 'react';
 import { View, Text, StyleSheet, Pressable, TextInput, Alert, KeyboardAvoidingView, Platform } from 'react-native';
-import { ScreenFlatList } from '@/components/ScreenFlatList';
+import { ScreenFlatList } from '../components/ScreenFlatList';
 import { Redirect, useLocalSearchParams, Stack } from 'expo-router';
-import { useSubscription } from '@/providers/SubscriptionProvider';
+import { useSubscription } from '../providers/SubscriptionProvider';
 import { CheckCircle, Circle, ChevronDown, ChevronUp, BookOpen, PenLine, Lightbulb, Dumbbell } from 'lucide-react-native';
 import * as Haptics from 'expo-haptics';
-import Colors from '@/constants/colors';
-import { useWorkbook } from '@/core/domains/useWorkbook';
-import { WORKBOOK_SECTIONS } from '@/constants/workbook';
-import { WorkbookQuestion } from '@/types';
+import Colors from '../constants/colors';
+import { useWorkbook } from '../core/domains/useWorkbook';
+import { WORKBOOK_SECTIONS } from '../constants/workbook';
+import { WorkbookQuestion } from '../types';
 
 const TYPE_ICONS: Record<string, React.ComponentType<{ size: number; color: string }>> = {
   reflection: Lightbulb,

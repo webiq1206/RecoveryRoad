@@ -1,13 +1,13 @@
 import React, { useMemo } from 'react';
 import { View, Text, StyleSheet, Pressable } from 'react-native';
-import { ScreenScrollView } from '@/components/ScreenScrollView';
+import { ScreenScrollView } from '../components/ScreenScrollView';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { ShieldAlert, ShieldCheck, Shield, TrendingUp, AlertTriangle, ChevronRight } from 'lucide-react-native';
-import Colors from '@/constants/colors';
-import { useHydrateRecoveryProfileStore, useRecoveryProfileStore } from '@/stores/useRecoveryProfileStore';
-import { calculateProtectionScore, type ProtectionStatus } from '@/utils/protectionScore';
-import { ProtectionScoreCircle } from '@/components/ProtectionScoreCircle';
+import Colors from '../constants/colors';
+import { useHydrateRecoveryProfileStore, useRecoveryProfileStore } from '../stores/useRecoveryProfileStore';
+import { calculateProtectionScore, type ProtectionStatus } from '../utils/protectionScore';
+import { ProtectionScoreCircle } from '../components/ProtectionScoreCircle';
 
 function getProtectionBadgeMeta(level: ProtectionStatus) {
   switch (level) {

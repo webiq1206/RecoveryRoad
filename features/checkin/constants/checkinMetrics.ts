@@ -2,7 +2,7 @@
  * Check-in metrics and emotional tags (data only; icons wired in hook/screen).
  */
 
-import type { EmotionalTag } from '@/types';
+import type { EmotionalTag } from '../../../types';
 
 export const CHECKIN_METRIC_KEYS = [
   'mood',

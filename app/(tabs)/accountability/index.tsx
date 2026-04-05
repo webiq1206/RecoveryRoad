@@ -11,7 +11,7 @@ import {
   Platform,
   InteractionManager,
 } from 'react-native';
-import { ScreenScrollView } from '@/components/ScreenScrollView';
+import { ScreenScrollView } from '../../../components/ScreenScrollView';
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import {
   Shield,
@@ -36,13 +36,13 @@ import {
   Zap,
 } from 'lucide-react-native';
 import * as Haptics from 'expo-haptics';
-import Colors from '@/constants/colors';
-import { useAccountability } from '@/core/domains/useAccountability';
-import { useUser } from '@/core/domains/useUser';
-import { useCheckin } from '@/core/domains/useCheckin';
-import { usePledges } from '@/core/domains/usePledges';
-import { useSubscription } from '@/providers/SubscriptionProvider';
-import { CommitmentContract, AccountabilityPartner } from '@/types';
+import Colors from '../../../constants/colors';
+import { useAccountability } from '../../../core/domains/useAccountability';
+import { useUser } from '../../../core/domains/useUser';
+import { useCheckin } from '../../../core/domains/useCheckin';
+import { usePledges } from '../../../core/domains/usePledges';
+import { useSubscription } from '../../../providers/SubscriptionProvider';
+import { CommitmentContract, AccountabilityPartner } from '../../../types';
 
 const CATEGORIES: { key: CommitmentContract['category']; label: string; icon: string }[] = [
   { key: 'sobriety', label: 'Sobriety', icon: 'shield' },
@@ -628,7 +628,6 @@ export default function AccountabilityScreen() {
           title: 'Accountability',
           headerTitleAlign: 'center',
           headerBackVisible: false,
-          headerLeftContainerStyle: { paddingLeft: 8 },
           headerLeft: () => (
             <Pressable onPress={handleClose} style={styles.closeBtn} testID="accountability-close">
               <X size={22} color={Colors.textSecondary} />

@@ -1,4 +1,4 @@
-import { MotivationalPackage } from '@/types';
+import { MotivationalPackage } from '../../types';
 import { MOTIVATIONAL_PACKAGES_1_5 } from './packages1-5';
 import { MOTIVATIONAL_PACKAGES_6_10 } from './packages6-10';
 import { MOTIVATIONAL_PACKAGES_11_15 } from './packages11-15';

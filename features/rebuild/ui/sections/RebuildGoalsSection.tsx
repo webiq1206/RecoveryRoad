@@ -2,7 +2,7 @@ import React from 'react';
 import { Text, TouchableOpacity, View } from 'react-native';
 import { Check, ChevronDown, ChevronUp, Plus, Target, Trash2 } from 'lucide-react-native';
 
-import type { GoalStep, PurposeGoal } from '@/types';
+import type { GoalStep, PurposeGoal } from '../../../../types';
 
 export function RebuildGoalsSection(props: {
   goals: PurposeGoal[];

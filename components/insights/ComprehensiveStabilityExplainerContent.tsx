@@ -1,7 +1,7 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { Activity } from 'lucide-react-native';
-import Colors from '@/constants/colors';
+import Colors from '../../constants/colors';
 
 interface ExplainerCardProps {
   icon: React.ReactNode;

@@ -6,15 +6,15 @@
 import { useEffect, useMemo } from 'react';
 import { create } from 'zustand';
 import { subscribeWithSelector } from 'zustand/middleware';
-import type { UserProfile, TimelineEvent, RelapsePlan } from '@/types';
+import type { UserProfile, TimelineEvent, RelapsePlan } from '../types';
 import {
   STORAGE_KEYS,
   DEFAULT_PROFILE,
   migrateProfile,
   loadStorageItem,
   saveStorageItem,
-} from '@/core/persistence';
-import { createSelectors } from '@/stores/zustand/createSelectors';
+} from '../core/persistence';
+import { createSelectors } from './zustand/createSelectors';
 
 type RecoveryProfileState = {
   profile: UserProfile;

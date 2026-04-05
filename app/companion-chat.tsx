@@ -10,15 +10,15 @@ import {
   Platform,
   Animated,
 } from 'react-native';
-import { ScreenFlatList } from '@/components/ScreenFlatList';
+import { ScreenFlatList } from '../components/ScreenFlatList';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { ArrowLeft, Send, ShieldAlert, Sparkles, Heart, Brain, Eye, RefreshCw, MessageCircle } from 'lucide-react-native';
 import * as Haptics from 'expo-haptics';
-import Colors from '@/constants/colors';
-import { useUser } from '@/core/domains/useUser';
-import { useCheckin } from '@/core/domains/useCheckin';
-import { useSubscription } from '@/providers/SubscriptionProvider';
+import Colors from '../constants/colors';
+import { useUser } from '../core/domains/useUser';
+import { useCheckin } from '../core/domains/useCheckin';
+import { useSubscription } from '../providers/SubscriptionProvider';
 import {
   CompanionMessage,
   CompanionMessageType,
@@ -31,8 +31,8 @@ import {
   getStageLabel,
   getEmotionalInsight,
   COMPANION_QUICK_PROMPTS,
-} from '@/constants/companion';
-import { useRiskPrediction } from '@/providers/RiskPredictionProvider';
+} from '../constants/companion';
+import { useRiskPrediction } from '../providers/RiskPredictionProvider';
 
 const TYPE_ICONS: Record<CompanionMessageType, typeof Heart> = {
   reflection: Eye,

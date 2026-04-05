@@ -10,9 +10,9 @@ import type {
   RebuildData,
   ReplacementHabit,
   RoutineBlock,
-} from '@/types';
-import { DEFAULT_IDENTITY_PROGRAM, DEFAULT_REBUILD, STORAGE_KEYS, loadStorageItem, saveStorageItem } from '@/core/persistence';
-import { createSelectors } from '@/stores/zustand/createSelectors';
+} from '../../../types';
+import { DEFAULT_IDENTITY_PROGRAM, DEFAULT_REBUILD, STORAGE_KEYS, loadStorageItem, saveStorageItem } from '../../../core/persistence';
+import { createSelectors } from '../../../stores/zustand/createSelectors';
 
 type RebuildState = {
   rebuildData: RebuildData;

@@ -1,4 +1,4 @@
-import type { CheckInTimeOfDay } from '@/types';
+import type { CheckInTimeOfDay } from '../types';
 
 /**
  * When true, all check-in periods are tappable from the home screen regardless of

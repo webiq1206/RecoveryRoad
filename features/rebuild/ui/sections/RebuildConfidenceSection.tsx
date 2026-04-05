@@ -2,7 +2,7 @@ import React from 'react';
 import { Text, TouchableOpacity, View } from 'react-native';
 import { Award, Plus, Sparkles, Star } from 'lucide-react-native';
 
-import type { ConfidenceMilestone } from '@/types';
+import type { ConfidenceMilestone } from '../../../../types';
 
 export function RebuildConfidenceSection(props: {
   milestones: ConfidenceMilestone[];

@@ -17,7 +17,7 @@ import {
   WhiteLabelConfig,
   ReportFormat,
   ReportSection,
-} from '@/types';
+} from '../types';
 import {
   ROLE_PERMISSIONS,
   DEFAULT_ORGANIZATION,
@@ -29,7 +29,7 @@ import {
   SAMPLE_REPORTS,
   SAMPLE_BILLING,
   DEFAULT_WHITE_LABEL,
-} from '@/constants/enterprise';
+} from '../constants/enterprise';
 
 const STORAGE_KEY = 'enterprise_data';
 

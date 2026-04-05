@@ -10,7 +10,7 @@ import {
   Animated,
   Platform,
 } from 'react-native';
-import { ScreenScrollView } from '@/components/ScreenScrollView';
+import { ScreenScrollView } from '../components/ScreenScrollView';
 import { Stack, useRouter } from 'expo-router';
 import {
   Shield,
@@ -36,12 +36,12 @@ import {
   Filter,
 } from 'lucide-react-native';
 import * as Haptics from 'expo-haptics';
-import Colors from '@/constants/colors';
-import { useTherapist } from '@/providers/TherapistProvider';
-import { useSubscription } from '@/providers/SubscriptionProvider';
-import { PremiumSectionOverlay } from '@/components/PremiumGate';
-import { useRequireProviderMode } from '@/hooks/useRequireProviderMode';
-import { ConnectedClient, ProviderRole, ConsentScope } from '@/types';
+import Colors from '../constants/colors';
+import { useTherapist } from '../providers/TherapistProvider';
+import { useSubscription } from '../providers/SubscriptionProvider';
+import { PremiumSectionOverlay } from '../components/PremiumGate';
+import { useRequireProviderMode } from '../hooks/useRequireProviderMode';
+import { ConnectedClient, ProviderRole, ConsentScope } from '../types';
 
 const ROLE_LABELS: Record<ProviderRole, string> = {
   therapist: 'Therapist',

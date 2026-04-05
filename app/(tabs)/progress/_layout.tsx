@@ -1,7 +1,7 @@
 import { Redirect, Stack } from "expo-router";
-import Colors from "@/constants/colors";
-import { TabHeaderActions } from "@/components/TabHeaderActions";
-import { getStrictRedirectTarget } from "@/utils/legacyRoutes";
+import Colors from "../../../constants/colors";
+import { TabHeaderActions } from "../../../components/TabHeaderActions";
+import { getStrictRedirectTarget } from "../../../utils/legacyRoutes";
 
 export default function ProgressLayout() {
   const strictTarget = getStrictRedirectTarget("/(tabs)/progress");

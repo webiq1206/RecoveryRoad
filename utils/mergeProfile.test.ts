@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'bun:test';
-import { mergeTodayCheckInsFromSources } from '@/utils/mergeProfile';
-import type { DailyCheckIn } from '@/types';
+import { mergeTodayCheckInsFromSources } from './mergeProfile';
+import type { DailyCheckIn } from '../types';
 
 const base = (partial: Partial<DailyCheckIn>): DailyCheckIn => ({
   id: '1',

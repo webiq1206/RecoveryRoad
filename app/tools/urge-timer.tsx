@@ -3,8 +3,8 @@ import { Animated, View, Text, StyleSheet, Pressable } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter, Stack } from 'expo-router';
 import * as Haptics from 'expo-haptics';
-import Colors from '@/constants/colors';
-import { useToolUsageStore } from '@/features/tools/state/useToolUsageStore';
+import Colors from '../../constants/colors';
+import { useToolUsageStore } from '../../features/tools/state/useToolUsageStore';
 
 function formatTime(seconds: number) {
   const m = Math.floor(seconds / 60);

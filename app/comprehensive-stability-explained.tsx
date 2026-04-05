@@ -1,10 +1,10 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
-import { ScreenScrollView } from '@/components/ScreenScrollView';
+import { ScreenScrollView } from '../components/ScreenScrollView';
 import { Stack } from 'expo-router';
 import { Info } from 'lucide-react-native';
-import Colors from '@/constants/colors';
-import { ComprehensiveStabilityExplainerContent } from '@/components/insights/ComprehensiveStabilityExplainerContent';
+import Colors from '../constants/colors';
+import { ComprehensiveStabilityExplainerContent } from '../components/insights/ComprehensiveStabilityExplainerContent';
 
 export default function ComprehensiveStabilityExplainedScreen() {
   return (

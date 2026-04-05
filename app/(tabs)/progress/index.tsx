@@ -9,7 +9,7 @@ import {
   TouchableOpacity,
   Modal,
 } from 'react-native';
-import { ScreenScrollView } from '@/components/ScreenScrollView';
+import { ScreenScrollView } from '../../../components/ScreenScrollView';
 import {
   Clock,
   TrendingUp,
@@ -44,26 +44,26 @@ import {
 } from 'lucide-react-native';
 import { useRouter } from 'expo-router';
 import * as Haptics from 'expo-haptics';
-import Colors from '@/constants/colors';
-import { useUser } from '@/core/domains/useUser';
-import { useCheckin } from '@/core/domains/useCheckin';
-import { useAppStore } from '@/stores/useAppStore';
-import { useRelapse } from '@/core/domains/useRelapse';
-import { usePledges } from '@/core/domains/usePledges';
-import { useRebuild } from '@/core/domains/useRebuild';
-import { useSubscription } from '@/providers/SubscriptionProvider';
-import { useRiskPrediction } from '@/providers/RiskPredictionProvider';
-import { PremiumSectionOverlay } from '@/components/PremiumGate';
-import { getStabilityPhrase, getMoodPhrase, getCravingsPhrase } from '@/constants/emotionalRisk';
-import { MILESTONE_DATA } from '@/constants/milestones';
+import Colors from '../../../constants/colors';
+import { useUser } from '../../../core/domains/useUser';
+import { useCheckin } from '../../../core/domains/useCheckin';
+import { useAppStore } from '../../../stores/useAppStore';
+import { useRelapse } from '../../../core/domains/useRelapse';
+import { usePledges } from '../../../core/domains/usePledges';
+import { useRebuild } from '../../../core/domains/useRebuild';
+import { useSubscription } from '../../../providers/SubscriptionProvider';
+import { useRiskPrediction } from '../../../providers/RiskPredictionProvider';
+import { PremiumSectionOverlay } from '../../../components/PremiumGate';
+import { getStabilityPhrase, getMoodPhrase, getCravingsPhrase } from '../../../constants/emotionalRisk';
+import { MILESTONE_DATA } from '../../../constants/milestones';
 import {
   buildProgressStabilitySeries,
   buildDailyAverageStabilitySeries,
   computeDailyAverageScoreForDate,
   countNonNullScores,
   type StabilityWindowDays,
-} from '@/utils/progressStabilitySeries';
-import { StabilityRollingChart } from '@/components/progress/StabilityRollingChart';
+} from '../../../utils/progressStabilitySeries';
+import { StabilityRollingChart } from '../../../components/progress/StabilityRollingChart';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const CHART_WIDTH = SCREEN_WIDTH - 72;

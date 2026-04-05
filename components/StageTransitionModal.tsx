@@ -2,8 +2,8 @@ import React, { useEffect, useRef, useMemo } from 'react';
 import { View, Text, StyleSheet, Pressable, Animated, Modal, Platform } from 'react-native';
 import { ShieldAlert, Anchor, Hammer, Trophy, ArrowUp, ArrowDown, ChevronRight, X } from 'lucide-react-native';
 import * as Haptics from 'expo-haptics';
-import Colors from '@/constants/colors';
-import { StageTransition, StageConfig, RecoveryStage } from '@/types';
+import Colors from '../constants/colors';
+import { StageTransition, StageConfig, RecoveryStage } from '../types';
 
 interface StageTransitionModalProps {
   visible: boolean;

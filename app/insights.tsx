@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { View, Text, StyleSheet, Pressable, type ScrollView } from 'react-native';
-import { ScreenScrollView } from '@/components/ScreenScrollView';
+import { ScreenScrollView } from '../components/ScreenScrollView';
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import {
   BarChart3,
@@ -11,10 +11,10 @@ import {
   Shield,
   Layers,
 } from 'lucide-react-native';
-import Colors from '@/constants/colors';
+import Colors from '../constants/colors';
 import * as Haptics from 'expo-haptics';
-import { useCheckin } from '@/core/domains/useCheckin';
-import { useEngagement } from '@/providers/EngagementProvider';
+import { useCheckin } from '../core/domains/useCheckin';
+import { useEngagement } from '../providers/EngagementProvider';
 
 /** Matches `params.focus` from deep links to the Comprehensive Stability Explained card. */
 export const INSIGHTS_FOCUS_COMPREHENSIVE_STABILITY = 'comprehensive-stability-explained';

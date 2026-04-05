@@ -10,7 +10,7 @@ import {
   Alert,
   Switch,
 } from 'react-native';
-import { ScreenScrollView } from '@/components/ScreenScrollView';
+import { ScreenScrollView } from '../components/ScreenScrollView';
 import { Stack } from 'expo-router';
 import {
   Palette,
@@ -24,9 +24,9 @@ import {
   RefreshCw,
 } from 'lucide-react-native';
 import * as Haptics from 'expo-haptics';
-import Colors from '@/constants/colors';
-import { useRequireProviderMode } from '@/hooks/useRequireProviderMode';
-import { useEnterprise } from '@/providers/EnterpriseProvider';
+import Colors from '../constants/colors';
+import { useRequireProviderMode } from '../hooks/useRequireProviderMode';
+import { useEnterprise } from '../providers/EnterpriseProvider';
 
 const COLOR_PRESETS = [
   { name: 'Teal', primary: '#2EC4B6', accent: '#FF6B35' },

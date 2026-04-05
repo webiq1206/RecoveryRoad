@@ -6,7 +6,7 @@ import {
   TouchableOpacity,
   Animated,
 } from 'react-native';
-import { ScreenScrollView } from '@/components/ScreenScrollView';
+import { ScreenScrollView } from '../../../components/ScreenScrollView';
 import { Stack } from 'expo-router';
 import {
   Zap,
@@ -23,11 +23,11 @@ import {
   Brain,
   Eye,
 } from 'lucide-react-native';
-import Colors from '@/constants/colors';
-import { getOverallRiskPhrase } from '@/constants/emotionalRisk';
-import { DailyCheckIn } from '@/types';
-import { useUser } from '@/core/domains/useUser';
-import { useCheckin } from '@/core/domains/useCheckin';
+import Colors from '../../../constants/colors';
+import { getOverallRiskPhrase } from '../../../constants/emotionalRisk';
+import { DailyCheckIn } from '../../../types';
+import { useUser } from '../../../core/domains/useUser';
+import { useCheckin } from '../../../core/domains/useCheckin';
 
 const DAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 const TIME_BLOCKS = [

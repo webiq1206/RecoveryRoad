@@ -1,12 +1,12 @@
 import React, { useState, useCallback } from 'react';
 import { View, Text, StyleSheet, Pressable, Alert, Modal } from 'react-native';
-import { ScreenScrollView } from '@/components/ScreenScrollView';
+import { ScreenScrollView } from '../components/ScreenScrollView';
 import { Shield, Lock, Fingerprint, Eye, EyeOff, FileText, BarChart3, ChevronRight, Trash2, ShieldCheck, ShieldAlert, ShieldOff, Clock, Activity, X } from 'lucide-react-native';
 import * as Haptics from 'expo-haptics';
-import Colors from '@/constants/colors';
-import { useSecurity } from '@/providers/SecurityProvider';
-import { SecurityLevel, AuditLogEntry } from '@/types';
-import LockScreen from '@/components/LockScreen';
+import Colors from '../constants/colors';
+import { useSecurity } from '../providers/SecurityProvider';
+import { SecurityLevel, AuditLogEntry } from '../types';
+import LockScreen from '../components/LockScreen';
 
 export default function SecuritySettingsScreen() {
   const {

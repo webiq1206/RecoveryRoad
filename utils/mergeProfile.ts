@@ -4,7 +4,7 @@
  * progress and identical per-period stability scores.
  */
 
-import type { DailyCheckIn, RecoveryProfile } from '@/types';
+import type { DailyCheckIn, RecoveryProfile } from '../types';
 
 export function isRecoveryProfileEmpty(
   rp: RecoveryProfile | null | undefined,
@@ -21,8 +21,8 @@ export function mergeRecoveryProfiles(
   const cEmpty = isRecoveryProfileEmpty(central);
   const lEmpty = isRecoveryProfileEmpty(local);
   if (cEmpty && lEmpty) return undefined;
-  if (cEmpty) return local;
-  if (lEmpty) return central;
+  if (cEmpty) return local ?? undefined;
+  if (lEmpty) return central ?? undefined;
   return { ...local!, ...central! };
 }
 

@@ -1,6 +1,6 @@
-import Colors from "@/constants/colors";
+import Colors from "../../../constants/colors";
 import { Redirect, Stack } from "expo-router";
-import { getStrictRedirectTarget } from "@/utils/legacyRoutes";
+import { getStrictRedirectTarget } from "../../../utils/legacyRoutes";
 
 export default function CommunityLayout() {
   const strictTarget = getStrictRedirectTarget("/(tabs)/community");

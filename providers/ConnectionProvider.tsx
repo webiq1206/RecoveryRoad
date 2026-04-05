@@ -12,7 +12,7 @@ import {
   SponsorPairing,
   SponsorMessage,
   UserProfile,
-} from '@/types';
+} from '../types';
 
 const STORAGE_KEYS = {
   TRUSTED_CONTACTS: 'connection_trusted_contacts',

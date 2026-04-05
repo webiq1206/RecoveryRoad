@@ -1,14 +1,14 @@
 import React, { useState, useCallback } from 'react';
 import { View, Text, StyleSheet, TextInput, Pressable, Alert } from 'react-native';
-import { ScreenScrollView } from '@/components/ScreenScrollView';
+import { ScreenScrollView } from '../components/ScreenScrollView';
 import { useRouter, Stack } from 'expo-router';
 import * as Haptics from 'expo-haptics';
-import Colors from '@/constants/colors';
-import { useJournal } from '@/core/domains/useJournal';
-import { useEngagement } from '@/providers/EngagementProvider';
-import { useRetention } from '@/providers/RetentionProvider';
-import { MOOD_EMOJIS, MOOD_LABELS } from '@/constants/milestones';
-import { JournalEntry } from '@/types';
+import Colors from '../constants/colors';
+import { useJournal } from '../core/domains/useJournal';
+import { useEngagement } from '../providers/EngagementProvider';
+import { useRetention } from '../providers/RetentionProvider';
+import { MOOD_EMOJIS, MOOD_LABELS } from '../constants/milestones';
+import { JournalEntry } from '../types';
 
 export default function NewJournalScreen() {
   const router = useRouter();

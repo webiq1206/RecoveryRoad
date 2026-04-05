@@ -1,6 +1,6 @@
 import React, { forwardRef, useCallback, useRef } from 'react';
 import { ScrollView, type ScrollViewProps } from 'react-native';
-import { useScrollToTopOnFocus } from '@/hooks/useScrollToTopOnFocus';
+import { useScrollToTopOnFocus } from '../hooks/useScrollToTopOnFocus';
 
 export type ScreenScrollViewProps = ScrollViewProps & {
   /** When false, skip scrolling to top on focus (e.g. deep links that scroll to a section). Default true. */

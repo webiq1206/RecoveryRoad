@@ -2,9 +2,9 @@ import { useEffect } from 'react';
 import { create } from 'zustand';
 import { subscribeWithSelector } from 'zustand/middleware';
 
-import type { WorkbookAnswer } from '@/types';
-import { STORAGE_KEYS, loadStorageItem, saveStorageItem } from '@/core/persistence';
-import { createSelectors } from '@/stores/zustand/createSelectors';
+import type { WorkbookAnswer } from '../../../types';
+import { STORAGE_KEYS, loadStorageItem, saveStorageItem } from '../../../core/persistence';
+import { createSelectors } from '../../../stores/zustand/createSelectors';
 
 type WorkbookState = {
   workbookAnswers: WorkbookAnswer[];

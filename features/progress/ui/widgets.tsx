@@ -2,8 +2,8 @@ import React, { useEffect, useRef } from 'react';
 import { Animated, Dimensions, Pressable, StyleSheet, Text, View } from 'react-native';
 import { ChevronDown, ChevronRight, ChevronUp, Minus, Shield } from 'lucide-react-native';
 
-import Colors from '@/constants/colors';
-import { getProtectionReadingSummary } from '@/constants/emotionalRisk';
+import Colors from '../../../constants/colors';
+import { getProtectionReadingSummary } from '../../../constants/emotionalRisk';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const CHART_WIDTH = SCREEN_WIDTH - 72;

@@ -8,14 +8,14 @@ import {
   Linking,
   Alert,
 } from 'react-native';
-import { ScreenScrollView } from '@/components/ScreenScrollView';
+import { ScreenScrollView } from '../../../components/ScreenScrollView';
 import { Stack } from 'expo-router';
 import {
   Phone,
   Globe,
   MessageCircle,
 } from 'lucide-react-native';
-import Colors from '@/constants/colors';
+import Colors from '../../../constants/colors';
 
 interface HelpCenter {
   id: string;

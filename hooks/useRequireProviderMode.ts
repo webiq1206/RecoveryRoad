@@ -1,6 +1,6 @@
 import { useEffect } from 'react';
 import { useRouter } from 'expo-router';
-import { useProviderMode } from '@/providers/ProviderModeProvider';
+import { useProviderMode } from '../providers/ProviderModeProvider';
 
 /**
  * Call from provider/enterprise screens. Redirects to Profile when Provider Mode is off

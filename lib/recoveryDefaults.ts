@@ -3,4 +3,4 @@
  * The single source of truth lives in `core/persistence/recovery.ts`.
  */
 
-export * from '@/core/persistence/recovery';
+export * from '../core/persistence/recovery';

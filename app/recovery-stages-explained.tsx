@@ -1,9 +1,9 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
-import { ScreenScrollView } from '@/components/ScreenScrollView';
+import { ScreenScrollView } from '../components/ScreenScrollView';
 import { Stack } from 'expo-router';
 import { ShieldAlert, Anchor, Hammer, Trophy, Info, ArrowRight, Zap, BarChart3, Brain, Heart, Clock, TrendingUp } from 'lucide-react-native';
-import Colors from '@/constants/colors';
+import Colors from '../constants/colors';
 
 interface StageCardProps {
   icon: React.ReactNode;

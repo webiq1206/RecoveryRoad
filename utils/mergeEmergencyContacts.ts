@@ -1,4 +1,4 @@
-import type { EmergencyContact, TrustedContact } from '@/types';
+import type { EmergencyContact, TrustedContact } from '../types';
 
 function normalizePhone(p: string): string {
   return p.replace(/\D/g, '');

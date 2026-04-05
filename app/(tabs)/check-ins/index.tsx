@@ -3,8 +3,8 @@ import { View, Text, StyleSheet, Pressable } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Activity, CheckCircle, Clock } from 'lucide-react-native';
-import Colors from '@/constants/colors';
-import { useCheckin } from '@/core/domains/useCheckin';
+import Colors from '../../../constants/colors';
+import { useCheckin } from '../../../core/domains/useCheckin';
 
 export default function CheckInsTabScreen() {
   const insets = useSafeAreaInsets();

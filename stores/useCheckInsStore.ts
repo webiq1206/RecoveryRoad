@@ -7,10 +7,10 @@ import { useEffect, useMemo } from 'react';
 import { create } from 'zustand';
 import { subscribeWithSelector } from 'zustand/middleware';
 
-import type { CheckInTimeOfDay, DailyCheckIn, NearMissEvent } from '@/types';
-import { STORAGE_KEYS, loadStorageItem, saveStorageItem } from '@/core/persistence';
-import { getLocalDateKey } from '@/utils/checkInDate';
-import { createSelectors } from '@/stores/zustand/createSelectors';
+import type { CheckInTimeOfDay, DailyCheckIn, NearMissEvent } from '../types';
+import { STORAGE_KEYS, loadStorageItem, saveStorageItem } from '../core/persistence';
+import { getLocalDateKey } from '../utils/checkInDate';
+import { createSelectors } from './zustand/createSelectors';
 
 type CheckInsState = {
   checkIns: DailyCheckIn[];

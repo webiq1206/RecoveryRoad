@@ -7,7 +7,7 @@ import {
   Pressable,
   Dimensions,
 } from 'react-native';
-import { ScreenScrollView } from '@/components/ScreenScrollView';
+import { ScreenScrollView } from '../components/ScreenScrollView';
 import { Stack, useRouter } from 'expo-router';
 import {
   Leaf,
@@ -28,16 +28,16 @@ import {
   ArrowDownRight,
 } from 'lucide-react-native';
 import * as Haptics from 'expo-haptics';
-import Colors from '@/constants/colors';
-import { useRetention } from '@/providers/RetentionProvider';
-import { useUser } from '@/core/domains/useUser';
-import { useCheckin } from '@/core/domains/useCheckin';
-import { useJournal } from '@/core/domains/useJournal';
-import { usePledges } from '@/core/domains/usePledges';
-import { useEngagement } from '@/providers/EngagementProvider';
-import { useSubscription } from '@/providers/SubscriptionProvider';
-import { RETENTION_LOOPS, MICRO_PROGRESS_DEFINITIONS } from '@/constants/retention';
-import { RetentionLoop, MicroProgressMarker, TriggerReductionMilestone, SupportiveNotification, RetentionLoopType } from '@/types';
+import Colors from '../constants/colors';
+import { useRetention } from '../providers/RetentionProvider';
+import { useUser } from '../core/domains/useUser';
+import { useCheckin } from '../core/domains/useCheckin';
+import { useJournal } from '../core/domains/useJournal';
+import { usePledges } from '../core/domains/usePledges';
+import { useEngagement } from '../providers/EngagementProvider';
+import { useSubscription } from '../providers/SubscriptionProvider';
+import { RETENTION_LOOPS, MICRO_PROGRESS_DEFINITIONS } from '../constants/retention';
+import { RetentionLoop, MicroProgressMarker, TriggerReductionMilestone, SupportiveNotification, RetentionLoopType } from '../types';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 

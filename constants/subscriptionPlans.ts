@@ -9,7 +9,7 @@ import {
   Users,
   ShieldCheck,
 } from 'lucide-react-native';
-import type { PremiumFeature } from '@/types';
+import type { PremiumFeature } from '../types';
 
 /**
  * What every user gets on the free (Freemium) tier — aligned with features not gated by `hasFeature`.

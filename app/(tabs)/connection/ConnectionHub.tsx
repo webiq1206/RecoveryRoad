@@ -4,8 +4,8 @@ import {
   Modal, Alert, Animated, KeyboardAvoidingView, Platform,
   Linking,
 } from 'react-native';
-import { ScreenFlatList } from '@/components/ScreenFlatList';
-import { ScreenScrollView } from '@/components/ScreenScrollView';
+import { ScreenFlatList } from '../../../components/ScreenFlatList';
+import { ScreenScrollView } from '../../../components/ScreenScrollView';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import {
@@ -14,10 +14,10 @@ import {
   PhoneCall, Trash2, ToggleLeft, ToggleRight, Radio,
 } from 'lucide-react-native';
 import * as Haptics from 'expo-haptics';
-import Colors from '@/constants/colors';
-import { useConnection } from '@/providers/ConnectionProvider';
-import { TrustedContact, PeerChat, SafeRoom, PeerMessage, RoomMessage } from '@/types';
-import { useHydrateToolUsageStore, useToolUsageStore } from '@/features/tools/state/useToolUsageStore';
+import Colors from '../../../constants/colors';
+import { useConnection } from '../../../providers/ConnectionProvider';
+import { TrustedContact, PeerChat, SafeRoom, PeerMessage, RoomMessage } from '../../../types';
+import { useHydrateToolUsageStore, useToolUsageStore } from '../../../features/tools/state/useToolUsageStore';
 
 type ConnectionTab = 'circle' | 'peers' | 'rooms';
 

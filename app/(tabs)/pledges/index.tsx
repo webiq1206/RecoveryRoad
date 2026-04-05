@@ -1,14 +1,14 @@
 import React, { useState, useCallback, useRef, useEffect } from 'react';
 import { View, Text, StyleSheet, Pressable, TextInput, Animated, LayoutChangeEvent, type ScrollView } from 'react-native';
-import { ScreenScrollView } from '@/components/ScreenScrollView';
+import { ScreenScrollView } from '../../../components/ScreenScrollView';
 import { LinearGradient } from 'expo-linear-gradient';
 import { HandHeart, Check, Flame } from 'lucide-react-native';
 import * as Haptics from 'expo-haptics';
-import Colors from '@/constants/colors';
-import { useUser } from '@/core/domains/useUser';
-import { usePledges } from '@/core/domains/usePledges';
-import { MOOD_EMOJIS, MOOD_LABELS } from '@/constants/milestones';
-import { Pledge } from '@/types';
+import Colors from '../../../constants/colors';
+import { useUser } from '../../../core/domains/useUser';
+import { usePledges } from '../../../core/domains/usePledges';
+import { MOOD_EMOJIS, MOOD_LABELS } from '../../../constants/milestones';
+import { Pledge } from '../../../types';
 
 export default function PledgesScreen() {
   const { profile } = useUser();

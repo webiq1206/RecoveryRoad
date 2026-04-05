@@ -1,4 +1,4 @@
-import { logger } from "@/utils/logger";
+import { logger } from "./logger";
 
 /**
  * Legacy -> canonical route mapping for gradual IA transition.

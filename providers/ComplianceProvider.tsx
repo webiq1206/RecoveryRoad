@@ -9,7 +9,7 @@ import {
   ComplianceAlert,
   ComplianceCheckInStatus,
   ComplianceRequirementType,
-} from '@/types';
+} from '../types';
 
 const STORAGE_KEY = 'compliance_data';
 

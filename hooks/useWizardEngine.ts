@@ -6,42 +6,42 @@
 
 import { useMemo, useRef, useEffect, useState, useCallback } from 'react';
 import { useShallow } from 'zustand/react/shallow';
-import { useUser } from '@/core/domains/useUser';
-import { useCheckin } from '@/core/domains/useCheckin';
-import { useRebuild } from '@/core/domains/useRebuild';
-import { usePledges } from '@/core/domains/usePledges';
-import { useSupportContacts } from '@/core/domains/useSupportContacts';
-import { useAccountability } from '@/core/domains/useAccountability';
-import { useJournal } from '@/core/domains/useJournal';
-import { useRelapse } from '@/core/domains/useRelapse';
-import { useAppMeta } from '@/core/domains/useAppMeta';
-import { useAppStore } from '@/stores/useAppStore';
-import { useRiskPrediction } from '@/providers/RiskPredictionProvider';
-import { useStageDetection } from '@/providers/StageDetectionProvider';
-import { useConnection } from '@/providers/ConnectionProvider';
-import { useEngagement } from '@/providers/EngagementProvider';
-import { usePersonalization } from '@/features/home/hooks/usePersonalization';
+import { useUser } from '../core/domains/useUser';
+import { useCheckin } from '../core/domains/useCheckin';
+import { useRebuild } from '../core/domains/useRebuild';
+import { usePledges } from '../core/domains/usePledges';
+import { useSupportContacts } from '../core/domains/useSupportContacts';
+import { useAccountability } from '../core/domains/useAccountability';
+import { useJournal } from '../core/domains/useJournal';
+import { useRelapse } from '../core/domains/useRelapse';
+import { useAppMeta } from '../core/domains/useAppMeta';
+import { useAppStore } from '../stores/useAppStore';
+import { useRiskPrediction } from '../providers/RiskPredictionProvider';
+import { useStageDetection } from '../providers/StageDetectionProvider';
+import { useConnection } from '../providers/ConnectionProvider';
+import { useEngagement } from '../providers/EngagementProvider';
+import { usePersonalization } from '../features/home/hooks/usePersonalization';
 import {
   useWizardBehaviorStore,
   useHydrateWizardBehaviorStore,
-} from '@/stores/useWizardBehaviorStore';
+} from '../stores/useWizardBehaviorStore';
 import {
   useHydrateToolUsageStore,
   useToolUsageStore,
-} from '@/features/tools/state/useToolUsageStore';
-import type { ToolId } from '@/features/tools/types';
+} from '../features/tools/state/useToolUsageStore';
+import type { ToolId } from '../features/tools/types';
 import {
   generateWizardPlan,
   type WizardPlan,
   type WizardAction,
   type WizardEngineInput,
-} from '@/utils/wizardEngine';
-import type { DailyCheckIn, UserProfile } from '@/types';
+} from '../utils/wizardEngine';
+import type { DailyCheckIn, UserProfile } from '../types';
 import {
   mergeRecoveryProfiles,
   mergeTodayCheckInsFromSources,
-} from '@/utils/mergeProfile';
-import { mergeTrustedAndEmergencyContacts } from '@/utils/mergeEmergencyContacts';
+} from '../utils/mergeProfile';
+import { mergeTrustedAndEmergencyContacts } from '../utils/mergeEmergencyContacts';
 
 const EMPTY_PLAN: WizardPlan = {
   setupProgress: null,

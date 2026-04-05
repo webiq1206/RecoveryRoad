@@ -2,9 +2,9 @@ import { useEffect, useMemo } from 'react';
 import { create } from 'zustand';
 import { subscribeWithSelector } from 'zustand/middleware';
 
-import type { Pledge } from '@/types';
-import { STORAGE_KEYS, loadStorageItem, saveStorageItem } from '@/core/persistence';
-import { createSelectors } from '@/stores/zustand/createSelectors';
+import type { Pledge } from '../../../types';
+import { STORAGE_KEYS, loadStorageItem, saveStorageItem } from '../../../core/persistence';
+import { createSelectors } from '../../../stores/zustand/createSelectors';
 
 type PledgesState = {
   pledges: Pledge[];

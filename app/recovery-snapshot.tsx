@@ -1,12 +1,12 @@
 import React, { useMemo } from 'react';
 import { View, Text, StyleSheet, Pressable } from 'react-native';
-import { ScreenScrollView } from '@/components/ScreenScrollView';
+import { ScreenScrollView } from '../components/ScreenScrollView';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { AlertTriangle, ArrowRight, Heart } from 'lucide-react-native';
 import * as Haptics from 'expo-haptics';
-import Colors from '@/constants/colors';
-import { useHydrateRecoveryProfileStore, useRecoveryProfileStore } from '@/stores/useRecoveryProfileStore';
+import Colors from '../constants/colors';
+import { useHydrateRecoveryProfileStore, useRecoveryProfileStore } from '../stores/useRecoveryProfileStore';
 
 function mapRiskLevelLabel(
   relapseRiskLevel?: 'low' | 'moderate' | 'high' | 'critical',

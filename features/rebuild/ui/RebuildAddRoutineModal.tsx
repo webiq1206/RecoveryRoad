@@ -2,7 +2,7 @@ import React from 'react';
 import { Modal, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { X } from 'lucide-react-native';
 
-import type { RoutineBlock } from '@/types';
+import type { RoutineBlock } from '../../../types';
 
 export function RebuildAddRoutineModal(props: {
   visible: boolean;

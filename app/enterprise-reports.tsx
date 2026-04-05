@@ -10,7 +10,7 @@ import {
   Platform,
   Share,
 } from 'react-native';
-import { ScreenScrollView } from '@/components/ScreenScrollView';
+import { ScreenScrollView } from '../components/ScreenScrollView';
 import { Stack } from 'expo-router';
 import {
   FileText,
@@ -29,10 +29,10 @@ import {
   FileBarChart,
 } from 'lucide-react-native';
 import * as Haptics from 'expo-haptics';
-import Colors from '@/constants/colors';
-import { useRequireProviderMode } from '@/hooks/useRequireProviderMode';
-import { useEnterprise } from '@/providers/EnterpriseProvider';
-import { ExportableReport, ReportFormat } from '@/types';
+import Colors from '../constants/colors';
+import { useRequireProviderMode } from '../hooks/useRequireProviderMode';
+import { useEnterprise } from '../providers/EnterpriseProvider';
+import { ExportableReport, ReportFormat } from '../types';
 
 const FORMAT_LABELS: Record<ReportFormat, { label: string; icon: typeof FileText; color: string }> = {
   summary: { label: 'Summary', icon: FileText, color: Colors.primary },

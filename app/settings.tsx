@@ -10,7 +10,7 @@ import {
   Platform,
   ActivityIndicator,
 } from 'react-native';
-import { ScreenScrollView } from '@/components/ScreenScrollView';
+import { ScreenScrollView } from '../components/ScreenScrollView';
 import { Stack, useRouter } from 'expo-router';
 import {
   Eye,
@@ -31,18 +31,18 @@ import {
   Crown,
 } from 'lucide-react-native';
 import * as Haptics from 'expo-haptics';
-import Colors from '@/constants/colors';
-import { useUser } from '@/core/domains/useUser';
-import { useAppMeta } from '@/core/domains/useAppMeta';
-import { useEngagement } from '@/providers/EngagementProvider';
-import { useSubscription } from '@/providers/SubscriptionProvider';
-import { useNotifications } from '@/providers/NotificationProvider';
-import { useProviderMode } from '@/providers/ProviderModeProvider';
-import type { PrivacyControls, NotificationIntensityLevel } from '@/types';
+import Colors from '../constants/colors';
+import { useUser } from '../core/domains/useUser';
+import { useAppMeta } from '../core/domains/useAppMeta';
+import { useEngagement } from '../providers/EngagementProvider';
+import { useSubscription } from '../providers/SubscriptionProvider';
+import { useNotifications } from '../providers/NotificationProvider';
+import { useProviderMode } from '../providers/ProviderModeProvider';
+import type { PrivacyControls, NotificationIntensityLevel } from '../types';
 import {
   NOTIFICATION_INTENSITY_CONFIG,
   type NotificationIntensity,
-} from '@/constants/notifications';
+} from '../constants/notifications';
 
 const ANONYMOUS_NAMES = [
   'Quiet Phoenix',

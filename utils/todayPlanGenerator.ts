@@ -1,4 +1,4 @@
-import type { RecoveryStage, RiskCategory } from '@/types';
+import type { RecoveryStage, RiskCategory } from '../types';
 
 export type TodayPlanActionKind =
   | 'growth'

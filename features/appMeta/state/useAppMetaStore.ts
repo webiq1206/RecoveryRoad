@@ -3,18 +3,18 @@ import { useEffect, useMemo } from 'react';
 import { create } from 'zustand';
 import { subscribeWithSelector } from 'zustand/middleware';
 
-import { RECOVERY_KEYS_TO_CLEAR } from '@/core/persistence';
-import { calculateStability } from '@/utils/stabilityEngine';
-import { useRecoveryProfileStore, useHydrateRecoveryProfileStore } from '@/stores/useRecoveryProfileStore';
-import { useCheckInsStore, useHydrateCheckInsStore } from '@/stores/useCheckInsStore';
-import { usePledgesStore } from '@/features/pledges/state/usePledgesStore';
-import { useJournalStore } from '@/features/journal/state/useJournalStore';
-import { useSupportContactsStore } from '@/features/supportContacts/state/useSupportContactsStore';
-import { useRebuildStore } from '@/features/rebuild/state/useRebuildStore';
-import { useAccountabilityStore } from '@/features/accountability/state/useAccountabilityStore';
-import { useWorkbookStore } from '@/features/workbook/state/useWorkbookStore';
-import { useMediaStore } from '@/features/media/state/useMediaStore';
-import { createSelectors } from '@/stores/zustand/createSelectors';
+import { RECOVERY_KEYS_TO_CLEAR } from '../../../core/persistence';
+import { calculateStability } from '../../../utils/stabilityEngine';
+import { useRecoveryProfileStore, useHydrateRecoveryProfileStore } from '../../../stores/useRecoveryProfileStore';
+import { useCheckInsStore, useHydrateCheckInsStore } from '../../../stores/useCheckInsStore';
+import { usePledgesStore } from '../../pledges/state/usePledgesStore';
+import { useJournalStore } from '../../journal/state/useJournalStore';
+import { useSupportContactsStore } from '../../supportContacts/state/useSupportContactsStore';
+import { useRebuildStore } from '../../rebuild/state/useRebuildStore';
+import { useAccountabilityStore } from '../../accountability/state/useAccountabilityStore';
+import { useWorkbookStore } from '../../workbook/state/useWorkbookStore';
+import { useMediaStore } from '../../media/state/useMediaStore';
+import { createSelectors } from '../../../stores/zustand/createSelectors';
 
 type AppMetaState = {
   resetAllData: () => Promise<void>;

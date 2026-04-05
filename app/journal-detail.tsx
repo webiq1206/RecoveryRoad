@@ -1,10 +1,10 @@
 import React, { useMemo } from 'react';
 import { View, Text, StyleSheet } from 'react-native';
-import { ScreenScrollView } from '@/components/ScreenScrollView';
+import { ScreenScrollView } from '../components/ScreenScrollView';
 import { useLocalSearchParams, Stack } from 'expo-router';
-import Colors from '@/constants/colors';
-import { useJournal } from '@/core/domains/useJournal';
-import { MOOD_EMOJIS, MOOD_LABELS } from '@/constants/milestones';
+import Colors from '../constants/colors';
+import { useJournal } from '../core/domains/useJournal';
+import { MOOD_EMOJIS, MOOD_LABELS } from '../constants/milestones';
 
 export default function JournalDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();

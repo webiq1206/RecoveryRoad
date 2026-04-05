@@ -2,9 +2,9 @@ import { useEffect } from 'react';
 import { create } from 'zustand';
 import { subscribeWithSelector } from 'zustand/middleware';
 
-import type { AccountabilityData, AccountabilityPartner, CommitmentContract, DriftAlert } from '@/types';
-import { DEFAULT_ACCOUNTABILITY, STORAGE_KEYS, loadStorageItem, saveStorageItem } from '@/core/persistence';
-import { createSelectors } from '@/stores/zustand/createSelectors';
+import type { AccountabilityData, AccountabilityPartner, CommitmentContract, DriftAlert } from '../../../types';
+import { DEFAULT_ACCOUNTABILITY, STORAGE_KEYS, loadStorageItem, saveStorageItem } from '../../../core/persistence';
+import { createSelectors } from '../../../stores/zustand/createSelectors';
 
 type AccountabilityState = {
   accountabilityData: AccountabilityData;

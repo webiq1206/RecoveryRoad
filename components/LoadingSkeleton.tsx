@@ -1,6 +1,6 @@
 import React, { useEffect, useRef } from 'react';
 import { View, StyleSheet, Animated } from 'react-native';
-import Colors from '@/constants/colors';
+import Colors from '../constants/colors';
 
 const SkeletonPulse = React.memo(({ width, height, borderRadius = 8, style }: {
   width: number | string;

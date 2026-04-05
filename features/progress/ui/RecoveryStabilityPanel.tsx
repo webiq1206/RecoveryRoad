@@ -3,9 +3,9 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { Activity, Minus, Shield, TrendingDown, TrendingUp } from 'lucide-react-native';
 import * as Haptics from 'expo-haptics';
 
-import Colors from '@/constants/colors';
-import type { StabilityTrend } from '@/utils/stabilityEngine';
-import type { RiskCategory } from '@/types';
+import Colors from '../../../constants/colors';
+import type { StabilityTrend } from '../../../utils/stabilityEngine';
+import type { RiskCategory } from '../../../types';
 
 type StabilityZoneId = 'green' | 'yellow' | 'orange' | 'red';
 

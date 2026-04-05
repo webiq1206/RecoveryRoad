@@ -1,6 +1,6 @@
 import { useMemo } from 'react';
-import { useCheckin } from '@/core/domains/useCheckin';
-import { useRiskPrediction } from '@/providers/RiskPredictionProvider';
+import { useCheckin } from '../../../core/domains/useCheckin';
+import { useRiskPrediction } from '../../../providers/RiskPredictionProvider';
 
 export interface PersonalizationResult {
   /**

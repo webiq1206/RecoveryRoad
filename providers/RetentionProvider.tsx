@@ -13,13 +13,13 @@ import {
   ConfidenceGrowthMarker,
   SupportiveNotification,
   DailyCheckIn,
-} from '@/types';
+} from '../types';
 import {
   RETENTION_LOOPS,
   MICRO_PROGRESS_DEFINITIONS,
   TRIGGER_REDUCTION_MILESTONES,
   BEHAVIORAL_NOTIFICATION_TEMPLATES,
-} from '@/constants/retention';
+} from '../constants/retention';
 
 const STORAGE_KEY = 'retention_data';
 

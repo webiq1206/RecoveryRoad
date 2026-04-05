@@ -3,7 +3,7 @@ import {
   View, Text, StyleSheet, Pressable, TextInput,
   Modal, Alert, Animated, ScrollView, Platform,
 } from 'react-native';
-import { ScreenFlatList } from '@/components/ScreenFlatList';
+import { ScreenFlatList } from '../components/ScreenFlatList';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import {
@@ -12,10 +12,10 @@ import {
   MessageSquare, Star, Filter, LogOut,
 } from 'lucide-react-native';
 import * as Haptics from 'expo-haptics';
-import Colors from '@/constants/colors';
-import { useRecoveryRooms, TOPIC_LABELS } from '@/providers/RecoveryRoomsProvider';
-import { useSubscription } from '@/providers/SubscriptionProvider';
-import { RecoveryRoom, RecoveryRoomTopic, ScheduledSession } from '@/types';
+import Colors from '../constants/colors';
+import { useRecoveryRooms, TOPIC_LABELS } from '../providers/RecoveryRoomsProvider';
+import { useSubscription } from '../providers/SubscriptionProvider';
+import { RecoveryRoom, RecoveryRoomTopic, ScheduledSession } from '../types';
 
 type ViewMode = 'rooms' | 'sessions' | 'my_rooms';
 

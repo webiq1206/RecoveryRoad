@@ -11,7 +11,7 @@ import {
   EngagementData,
   NotificationPreferences,
   DailyCheckIn,
-} from '@/types';
+} from '../types';
 
 const STORAGE_KEY = 'engagement_data';
 

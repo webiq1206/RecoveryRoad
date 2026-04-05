@@ -3,7 +3,7 @@ import { Pressable, ScrollView, Text, View } from 'react-native';
 import { ChevronRight, Phone } from 'lucide-react-native';
 
 import { crisisStyles, CRISIS_COLORS } from './styles';
-import type { EmergencyContact } from '@/types';
+import type { EmergencyContact } from '../../../types';
 
 export function CrisisConnectStep(props: {
   emergencyContacts: EmergencyContact[];

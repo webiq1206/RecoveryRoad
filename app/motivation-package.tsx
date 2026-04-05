@@ -1,12 +1,12 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { View, Text, StyleSheet, Image, Animated, Pressable, Dimensions } from 'react-native';
-import { ScreenScrollView } from '@/components/ScreenScrollView';
+import { ScreenScrollView } from '../components/ScreenScrollView';
 import { useLocalSearchParams } from 'expo-router';
 import { Stack } from 'expo-router';
 import { Heart, ChevronLeft, ChevronRight, Quote } from 'lucide-react-native';
 import * as Haptics from 'expo-haptics';
-import Colors from '@/constants/colors';
-import { MOTIVATIONAL_PACKAGES } from '@/constants/motivation';
+import Colors from '../constants/colors';
+import { MOTIVATIONAL_PACKAGES } from '../constants/motivation';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 

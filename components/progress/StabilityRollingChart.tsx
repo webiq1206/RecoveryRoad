@@ -1,8 +1,8 @@
 import React, { useEffect, useMemo, useRef } from 'react';
 import { View, Text, StyleSheet, Animated, Easing } from 'react-native';
 import Svg, { Circle, Path } from 'react-native-svg';
-import Colors from '@/constants/colors';
-import { computeTrailingAverage3 } from '@/utils/progressStabilitySeries';
+import Colors from '../../constants/colors';
+import { computeTrailingAverage3 } from '../../utils/progressStabilitySeries';
 
 const PADDING_L = 10;
 const PADDING_R = 10;

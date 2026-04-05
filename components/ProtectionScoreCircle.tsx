@@ -1,7 +1,7 @@
 import React, { useEffect, useRef } from 'react';
 import { View, Text, StyleSheet, Animated } from 'react-native';
-import type { ProtectionStatus } from '@/utils/protectionScore';
-import Colors from '@/constants/colors';
+import type { ProtectionStatus } from '../utils/protectionScore';
+import Colors from '../constants/colors';
 
 export interface ProtectionScoreCircleProps {
   score: number;

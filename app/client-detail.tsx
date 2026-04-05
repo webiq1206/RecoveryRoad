@@ -9,7 +9,7 @@ import {
   Share,
   Platform,
 } from 'react-native';
-import { ScreenScrollView } from '@/components/ScreenScrollView';
+import { ScreenScrollView } from '../components/ScreenScrollView';
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import {
   ArrowLeft,
@@ -36,10 +36,10 @@ import {
   Zap,
 } from 'lucide-react-native';
 import * as Haptics from 'expo-haptics';
-import Colors from '@/constants/colors';
-import { useRequireProviderMode } from '@/hooks/useRequireProviderMode';
-import { useTherapist } from '@/providers/TherapistProvider';
-import { ConnectedClient, ClientReport, WeeklyTrend, ConsentScope } from '@/types';
+import Colors from '../constants/colors';
+import { useRequireProviderMode } from '../hooks/useRequireProviderMode';
+import { useTherapist } from '../providers/TherapistProvider';
+import { ConnectedClient, ClientReport, WeeklyTrend, ConsentScope } from '../types';
 
 const STAGE_COLORS: Record<string, string> = {
   crisis: '#EF5350',

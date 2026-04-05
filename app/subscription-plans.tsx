@@ -9,13 +9,13 @@ import {
   Linking,
   Platform,
 } from 'react-native';
-import { ScreenScrollView } from '@/components/ScreenScrollView';
+import { ScreenScrollView } from '../components/ScreenScrollView';
 import { useRouter } from 'expo-router';
 import { Check, X, Crown, Sparkles, Zap } from 'lucide-react-native';
 import * as Haptics from 'expo-haptics';
-import Colors from '@/constants/colors';
-import { TIER_COMPARISON_ROWS } from '@/constants/subscriptionPlans';
-import { useSubscription } from '@/providers/SubscriptionProvider';
+import Colors from '../constants/colors';
+import { TIER_COMPARISON_ROWS } from '../constants/subscriptionPlans';
+import { useSubscription } from '../providers/SubscriptionProvider';
 
 function openSubscriptionManagement() {
   if (Platform.OS === 'ios') {

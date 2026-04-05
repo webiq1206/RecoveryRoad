@@ -1,19 +1,19 @@
 import React, { useState, useCallback, useMemo, useRef, useEffect } from 'react';
 import { View, Text, StyleSheet, ScrollView, Pressable, Switch, Alert, Animated, TextInput, Modal } from 'react-native';
-import { ScreenScrollView } from '@/components/ScreenScrollView';
+import { ScreenScrollView } from '../../../components/ScreenScrollView';
 import { User, Shield, Eye, EyeOff, Target, TrendingUp, Bell, BellOff, Lock, Unlock, MessageCircle, BarChart3, ChevronRight, Sparkles, Clock, Heart, AlertTriangle, Sun, Moon as MoonIcon, ShieldAlert, Award, Crown, RotateCcw, Calendar, DollarSign, BookOpen, Check, X, Scale, Gauge, PauseCircle, PlayCircle, Activity } from 'lucide-react-native';
 import * as Haptics from 'expo-haptics';
-import Colors from '@/constants/colors';
-import { useUser } from '@/core/domains/useUser';
-import { usePledges } from '@/core/domains/usePledges';
-import { useJournal } from '@/core/domains/useJournal';
-import { useAppMeta } from '@/core/domains/useAppMeta';
-import { useEngagement } from '@/providers/EngagementProvider';
-import { useSubscription } from '@/providers/SubscriptionProvider';
-import { useNotifications } from '@/providers/NotificationProvider';
-import { RecoveryStage, PrivacyControls, NotificationIntensityLevel } from '@/types';
-import { ADDICTION_TYPES } from '@/constants/milestones';
-import { NOTIFICATION_INTENSITY_CONFIG, NotificationIntensity } from '@/constants/notifications';
+import Colors from '../../../constants/colors';
+import { useUser } from '../../../core/domains/useUser';
+import { usePledges } from '../../../core/domains/usePledges';
+import { useJournal } from '../../../core/domains/useJournal';
+import { useAppMeta } from '../../../core/domains/useAppMeta';
+import { useEngagement } from '../../../providers/EngagementProvider';
+import { useSubscription } from '../../../providers/SubscriptionProvider';
+import { useNotifications } from '../../../providers/NotificationProvider';
+import { RecoveryStage, PrivacyControls, NotificationIntensityLevel } from '../../../types';
+import { ADDICTION_TYPES } from '../../../constants/milestones';
+import { NOTIFICATION_INTENSITY_CONFIG, NotificationIntensity } from '../../../constants/notifications';
 
 
 const STAGE_CONFIG: Record<RecoveryStage, { label: string; color: string; icon: string; description: string }> = {

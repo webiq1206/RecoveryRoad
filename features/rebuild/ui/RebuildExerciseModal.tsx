@@ -2,7 +2,7 @@ import React from 'react';
 import { Modal, ScrollView, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { X } from 'lucide-react-native';
 
-import type { IdentityExercise, IdentityModule } from '@/types';
+import type { IdentityExercise, IdentityModule } from '../../../types';
 
 export function RebuildExerciseModal(props: {
   visible: boolean;

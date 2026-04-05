@@ -2,7 +2,7 @@ import React from 'react';
 import { Text, TouchableOpacity, View } from 'react-native';
 import { ArrowRight, Check, Flame, Plus, RefreshCw, Trash2 } from 'lucide-react-native';
 
-import type { ReplacementHabit } from '@/types';
+import type { ReplacementHabit } from '../../../../types';
 
 export function RebuildHabitsSection(props: {
   rebuildHabits: ReplacementHabit[];

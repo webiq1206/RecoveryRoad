@@ -9,7 +9,7 @@ import {
   Platform,
   Modal,
 } from 'react-native';
-import { ScreenScrollView } from '@/components/ScreenScrollView';
+import { ScreenScrollView } from '../components/ScreenScrollView';
 import { useRouter } from 'expo-router';
 import { Stack } from 'expo-router';
 import {
@@ -36,13 +36,13 @@ import {
   Crown,
 } from 'lucide-react-native';
 import * as Haptics from 'expo-haptics';
-import Colors from '@/constants/colors';
-import { useRiskPrediction } from '@/providers/RiskPredictionProvider';
-import { RiskAlert, RiskCategory } from '@/types';
-import { useUser } from '@/core/domains/useUser';
-import { useCheckin } from '@/core/domains/useCheckin';
-import { useSubscription } from '@/providers/SubscriptionProvider';
-import { resolveCanonicalRoute } from '@/utils/legacyRoutes';
+import Colors from '../constants/colors';
+import { useRiskPrediction } from '../providers/RiskPredictionProvider';
+import { RiskAlert, RiskCategory } from '../types';
+import { useUser } from '../core/domains/useUser';
+import { useCheckin } from '../core/domains/useCheckin';
+import { useSubscription } from '../providers/SubscriptionProvider';
+import { resolveCanonicalRoute } from '../utils/legacyRoutes';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const GAUGE_SIZE = 180;

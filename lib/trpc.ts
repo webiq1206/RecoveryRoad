@@ -2,19 +2,22 @@ import { httpLink } from "@trpc/client";
 import { createTRPCReact } from "@trpc/react-query";
 import superjson from "superjson";
 
-import type { AppRouter } from "@/backend/trpc/app-router";
+import type { AppRouter } from "../backend/trpc/app-router";
 
 export const trpc = createTRPCReact<AppRouter>();
 
+/** Set EXPO_PUBLIC_API_BASE_URL to your API origin (no trailing /api/trpc). */
 const getBaseUrl = () => {
-  const url = process.env.EXPO_PUBLIC_RORK_API_BASE_URL;
+  const url = process.env.EXPO_PUBLIC_API_BASE_URL;
 
   if (!url) {
-    console.warn("[tRPC] EXPO_PUBLIC_RORK_API_BASE_URL not set, using fallback");
+    if (__DEV__) {
+      console.warn("[tRPC] EXPO_PUBLIC_API_BASE_URL not set; tRPC requests use empty origin");
+    }
     return "";
   }
 
-  return url;
+  return url.replace(/\/$/, "");
 };
 
 export const trpcClient = trpc.createClient({

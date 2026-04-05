@@ -13,7 +13,7 @@ import {
   WeeklyTrend,
   RecoveryStage,
   RiskTrend,
-} from '@/types';
+} from '../types';
 
 const STORAGE_KEY = 'therapist_portal_data';
 

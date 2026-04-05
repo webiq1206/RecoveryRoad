@@ -1,4 +1,4 @@
-import { RetentionLoopType, MicroProgressCategory } from '@/types';
+import { RetentionLoopType, MicroProgressCategory } from '../types';
 
 export const RETENTION_LOOPS: {
   id: RetentionLoopType;

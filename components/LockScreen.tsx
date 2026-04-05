@@ -2,8 +2,8 @@ import React, { useState, useCallback, useEffect, useRef } from 'react';
 import { View, Text, StyleSheet, Pressable, Animated, Vibration, Platform } from 'react-native';
 import { Shield, Fingerprint, Delete, Lock } from 'lucide-react-native';
 import * as Haptics from 'expo-haptics';
-import Colors from '@/constants/colors';
-import { useSecurity } from '@/providers/SecurityProvider';
+import Colors from '../constants/colors';
+import { useSecurity } from '../providers/SecurityProvider';
 
 const PIN_LENGTH = 4;
 

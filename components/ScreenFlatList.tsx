@@ -1,6 +1,6 @@
 import React, { forwardRef, useCallback, useRef } from 'react';
 import { FlatList, type FlatListProps } from 'react-native';
-import { useScrollToTopOnFocus } from '@/hooks/useScrollToTopOnFocus';
+import { useScrollToTopOnFocus } from '../hooks/useScrollToTopOnFocus';
 
 /**
  * Drop-in FlatList that scrolls to top when the screen is focused.

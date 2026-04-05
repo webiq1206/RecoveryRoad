@@ -1,15 +1,15 @@
 import React, { useMemo, useState } from 'react';
 import { View, Text, StyleSheet, Pressable, TextInput } from 'react-native';
-import { ScreenScrollView } from '@/components/ScreenScrollView';
+import { ScreenScrollView } from '../components/ScreenScrollView';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter, Stack } from 'expo-router';
 import { AlertTriangle, BookOpenCheck, ChevronRight, Shield, Users } from 'lucide-react-native';
 import * as Haptics from 'expo-haptics';
-import Colors from '@/constants/colors';
-import { useRelapse } from '@/core/domains/useRelapse';
-import { useSupportContacts } from '@/core/domains/useSupportContacts';
-import { useConnection } from '@/providers/ConnectionProvider';
-import { mergeTrustedAndEmergencyContacts } from '@/utils/mergeEmergencyContacts';
+import Colors from '../constants/colors';
+import { useRelapse } from '../core/domains/useRelapse';
+import { useSupportContacts } from '../core/domains/useSupportContacts';
+import { useConnection } from '../providers/ConnectionProvider';
+import { mergeTrustedAndEmergencyContacts } from '../utils/mergeEmergencyContacts';
 
 type WizardStep = 1 | 2 | 3 | 4 | 5;
 

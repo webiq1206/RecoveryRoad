@@ -2,7 +2,7 @@ import React from 'react';
 import { Modal, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import { X } from 'lucide-react-native';
 
-import type { ReplacementHabit } from '@/types';
+import type { ReplacementHabit } from '../../../types';
 
 export function RebuildAddHabitModal(props: {
   visible: boolean;

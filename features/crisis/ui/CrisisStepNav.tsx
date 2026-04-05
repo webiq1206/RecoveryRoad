@@ -3,7 +3,7 @@ import { Pressable, View } from 'react-native';
 import { Brain, Eye, Phone, Timer, Wind } from 'lucide-react-native';
 
 import { crisisStyles, CRISIS_COLORS } from './styles';
-import type { ToolId } from '@/features/tools/types';
+import type { ToolId } from '../../tools/types';
 
 function getStepIcon(step: ToolId) {
   switch (step) {

@@ -2,7 +2,7 @@ import React from 'react';
 import { Text, TouchableOpacity, View } from 'react-native';
 import { Check, Plus, Sunrise, Trash2 } from 'lucide-react-native';
 
-import type { RoutineBlock } from '@/types';
+import type { RoutineBlock } from '../../../../types';
 
 export function RebuildRoutineSection(props: {
   routines: RoutineBlock[];

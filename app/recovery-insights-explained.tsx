@@ -1,6 +1,6 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
-import { ScreenScrollView } from '@/components/ScreenScrollView';
+import { ScreenScrollView } from '../components/ScreenScrollView';
 import { Stack } from 'expo-router';
 import {
   RefreshCw,
@@ -13,7 +13,7 @@ import {
   ArrowRight,
   BarChart3,
 } from 'lucide-react-native';
-import Colors from '@/constants/colors';
+import Colors from '../constants/colors';
 
 interface ExplainerCardProps {
   icon: React.ReactNode;

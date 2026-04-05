@@ -1,4 +1,4 @@
-import { DailyCheckIn } from '@/types';
+import { DailyCheckIn } from '../types';
 
 export type RecoveryStage = 'early' | 'building' | 'strengthening' | 'thriving';
 export type RiskLevel = 'low' | 'moderate' | 'elevated' | 'high' | 'crisis';

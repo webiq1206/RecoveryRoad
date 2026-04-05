@@ -1,13 +1,13 @@
 import React, { useMemo } from 'react';
 import { View, Text, StyleSheet, Pressable } from 'react-native';
-import { ScreenScrollView } from '@/components/ScreenScrollView';
+import { ScreenScrollView } from '../components/ScreenScrollView';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Wind, Timer, BookOpen, Heart } from 'lucide-react-native';
 import * as Haptics from 'expo-haptics';
-import Colors from '@/constants/colors';
-import { TOOL_REGISTRY } from '@/features/tools/registry';
-import type { ToolExperienceCategory, ToolDefinition } from '@/features/tools/types';
+import Colors from '../constants/colors';
+import { TOOL_REGISTRY } from '../features/tools/registry';
+import type { ToolExperienceCategory, ToolDefinition } from '../features/tools/types';
 
 const EXPERIENCE_CATEGORY_LABELS: Record<ToolExperienceCategory, string> = {
   calm: 'Calm',

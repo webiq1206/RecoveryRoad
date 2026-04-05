@@ -8,33 +8,33 @@ import {
   Platform,
   Alert,
 } from 'react-native';
-import { ScreenScrollView } from '@/components/ScreenScrollView';
+import { ScreenScrollView } from '../components/ScreenScrollView';
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ArrowRight, X } from 'lucide-react-native';
 import * as Haptics from 'expo-haptics';
-import { useUser } from '@/core/domains/useUser';
-import { useSupportContacts } from '@/core/domains/useSupportContacts';
-import { useConnection } from '@/providers/ConnectionProvider';
-import { mergeTrustedAndEmergencyContacts } from '@/utils/mergeEmergencyContacts';
-import { useRelapse } from '@/core/domains/useRelapse';
-import { generateCrisisSupportMessage } from '@/constants/companion';
-import { getToolsForContext } from '@/features/tools/registry';
-import type { ToolId } from '@/features/tools/types';
-import { useHydrateToolUsageStore, useToolUsageStore } from '@/features/tools/state/useToolUsageStore';
-import { CrisisLandingStep } from '@/features/crisis/ui/CrisisLandingStep';
-import { CrisisBreathingStep } from '@/features/crisis/ui/CrisisBreathingStep';
-import { CrisisGroundingStep } from '@/features/crisis/ui/CrisisGroundingStep';
-import { CrisisUrgeTimerStep } from '@/features/crisis/ui/CrisisUrgeTimerStep';
-import { CrisisResetStep } from '@/features/crisis/ui/CrisisResetStep';
-import { CrisisConnectStep } from '@/features/crisis/ui/CrisisConnectStep';
-import { CrisisProgressRow } from '@/features/crisis/ui/CrisisProgressRow';
-import { CrisisStepNav } from '@/features/crisis/ui/CrisisStepNav';
-import { CrisisCompanionBar } from '@/features/crisis/ui/CrisisCompanionBar';
-import { CrisisRelapsePlanCta } from '@/features/crisis/ui/CrisisRelapsePlanCta';
-import { crisisStyles, CRISIS_COLORS } from '@/features/crisis/ui/styles';
-import { CrisisStateActions, type CrisisStateId } from '@/features/crisis/ui/CrisisStateActions';
-import { CRISIS_BREATH_MAX_CYCLES, GROUNDING_STEPS, RESET_PROMPTS } from '@/features/crisis/ui/constants';
+import { useUser } from '../core/domains/useUser';
+import { useSupportContacts } from '../core/domains/useSupportContacts';
+import { useConnection } from '../providers/ConnectionProvider';
+import { mergeTrustedAndEmergencyContacts } from '../utils/mergeEmergencyContacts';
+import { useRelapse } from '../core/domains/useRelapse';
+import { generateCrisisSupportMessage } from '../constants/companion';
+import { getToolsForContext } from '../features/tools/registry';
+import type { ToolId } from '../features/tools/types';
+import { useHydrateToolUsageStore, useToolUsageStore } from '../features/tools/state/useToolUsageStore';
+import { CrisisLandingStep } from '../features/crisis/ui/CrisisLandingStep';
+import { CrisisBreathingStep } from '../features/crisis/ui/CrisisBreathingStep';
+import { CrisisGroundingStep } from '../features/crisis/ui/CrisisGroundingStep';
+import { CrisisUrgeTimerStep } from '../features/crisis/ui/CrisisUrgeTimerStep';
+import { CrisisResetStep } from '../features/crisis/ui/CrisisResetStep';
+import { CrisisConnectStep } from '../features/crisis/ui/CrisisConnectStep';
+import { CrisisProgressRow } from '../features/crisis/ui/CrisisProgressRow';
+import { CrisisStepNav } from '../features/crisis/ui/CrisisStepNav';
+import { CrisisCompanionBar } from '../features/crisis/ui/CrisisCompanionBar';
+import { CrisisRelapsePlanCta } from '../features/crisis/ui/CrisisRelapsePlanCta';
+import { crisisStyles, CRISIS_COLORS } from '../features/crisis/ui/styles';
+import { CrisisStateActions, type CrisisStateId } from '../features/crisis/ui/CrisisStateActions';
+import { CRISIS_BREATH_MAX_CYCLES, GROUNDING_STEPS, RESET_PROMPTS } from '../features/crisis/ui/constants';
 
 type CrisisStep = 'landing' | ToolId;
 
@@ -80,7 +80,7 @@ export default function CrisisModeScreen() {
 
   // Log a crisis activation domain event when the flow is first opened.
   useEffect(() => {
-    logCrisisActivation();
+    logCrisisActivation?.();
   }, [logCrisisActivation]);
 
   useEffect(() => {

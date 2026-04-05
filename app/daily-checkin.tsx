@@ -10,7 +10,7 @@ import {
   ScrollView,
   TextInput,
 } from 'react-native';
-import { useScrollToTopOnFocus } from '@/hooks/useScrollToTopOnFocus';
+import { useScrollToTopOnFocus } from '../hooks/useScrollToTopOnFocus';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import {
@@ -28,15 +28,15 @@ import {
   Lock,
 } from 'lucide-react-native';
 import * as Haptics from 'expo-haptics';
-import Colors from '@/constants/colors';
-import { useDailyCheckInFlow } from '@/features/checkin/hooks/useDailyCheckInFlow';
-import { useUser } from '@/core/domains/useUser';
-import { useAppStore } from '@/stores/useAppStore';
-import { mergeRecoveryProfiles } from '@/utils/mergeProfile';
-import { getScoreColor, getScoreLabel } from '@/lib/services/checkInAnalysis';
-import { computeDailyCheckInStabilityScore } from '@/utils/stabilityEngine';
-import type { DailyCheckIn } from '@/types';
-import type { CheckInTimeOfDay } from '@/features/checkin/constants/checkinMetrics';
+import Colors from '../constants/colors';
+import { useDailyCheckInFlow } from '../features/checkin/hooks/useDailyCheckInFlow';
+import { useUser } from '../core/domains/useUser';
+import { useAppStore } from '../stores/useAppStore';
+import { mergeRecoveryProfiles } from '../utils/mergeProfile';
+import { getScoreColor, getScoreLabel } from '../lib/services/checkInAnalysis';
+import { computeDailyCheckInStabilityScore } from '../utils/stabilityEngine';
+import type { DailyCheckIn } from '../types';
+import type { CheckInTimeOfDay } from '../features/checkin/constants/checkinMetrics';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const SLIDER_WIDTH = SCREEN_WIDTH - 80;

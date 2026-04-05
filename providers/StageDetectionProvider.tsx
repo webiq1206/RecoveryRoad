@@ -2,10 +2,10 @@ import createContextHook from '@nkzw/create-context-hook';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useState, useEffect, useCallback, useMemo } from 'react';
-import { useUser } from '@/core/domains/useUser';
-import { useCheckin } from '@/core/domains/useCheckin';
-import { useAppMeta } from '@/core/domains/useAppMeta';
-import { logger } from '@/utils/logger';
+import { useUser } from '../core/domains/useUser';
+import { useCheckin } from '../core/domains/useCheckin';
+import { useAppMeta } from '../core/domains/useAppMeta';
+import { logger } from '../utils/logger';
 import {
   RecoveryStage,
   StageTransition,
@@ -13,7 +13,7 @@ import {
   StageConfig,
   StageDetectionData,
   DailyCheckIn,
-} from '@/types';
+} from '../types';
 
 const STORAGE_KEY = 'stage_detection_data';
 

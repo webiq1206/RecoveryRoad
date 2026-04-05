@@ -15,7 +15,7 @@ import {
   NotificationIntensityLevel,
   DailyCheckIn,
   RiskCategory,
-} from '@/types';
+} from '../types';
 import {
   NOTIFICATION_INTENSITY_CONFIG,
   BEHAVIORAL_TEMPLATES,
@@ -24,7 +24,7 @@ import {
   ADAPTIVE_FREQUENCY_RULES,
   BehavioralTriggerType,
   NotificationIntensity,
-} from '@/constants/notifications';
+} from '../constants/notifications';
 
 const STORAGE_KEY = 'behavioral_notification_state';
 if (Platform.OS !== 'web' && !isExpoGo) {

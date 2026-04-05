@@ -8,7 +8,7 @@ import {
   ScheduledSession,
   RoomReport,
   RecoveryRoomTopic,
-} from '@/types';
+} from '../types';
 
 const STORAGE_KEYS = {
   ROOMS: 'recovery_rooms_data',

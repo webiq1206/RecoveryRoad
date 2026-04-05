@@ -7,7 +7,7 @@ import {
   Animated,
   Platform,
 } from 'react-native';
-import { ScreenScrollView } from '@/components/ScreenScrollView';
+import { ScreenScrollView } from '../components/ScreenScrollView';
 import { Stack } from 'expo-router';
 import {
   BarChart3,
@@ -19,10 +19,10 @@ import {
   ChevronDown,
   ChevronUp,
 } from 'lucide-react-native';
-import Colors from '@/constants/colors';
-import { useRequireProviderMode } from '@/hooks/useRequireProviderMode';
-import { useEnterprise } from '@/providers/EnterpriseProvider';
-import { EngagementHeatmapData, ComplianceSummary } from '@/types';
+import Colors from '../constants/colors';
+import { useRequireProviderMode } from '../hooks/useRequireProviderMode';
+import { useEnterprise } from '../providers/EnterpriseProvider';
+import { EngagementHeatmapData, ComplianceSummary } from '../types';
 
 type ViewMode = 'heatmap' | 'compliance';
 

@@ -10,9 +10,9 @@ import {
 } from "lucide-react-native";
 import React, { useCallback } from "react";
 import Colors from "../../constants/colors";
-import { useAppMeta } from "../../core/domains/useAppMeta";
 
 type IconType = typeof Home;
+import { useAppMeta } from "../../core/domains/useAppMeta";
 
 const STABILITY_DOT_COLORS: Record<string, string> = {
   green: '#22C55E',

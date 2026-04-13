@@ -83,10 +83,10 @@ export default function TodayHubScreen() {
   const router = useRouter();
   const pathname = usePathname();
   const vm = useTodayHub();
-  const { profile } = useUser();
+  const { profile, daysSober } = useUser();
   const centralProfile = useAppStore((s) => s.userProfile);
   const centralDailyCheckIns = useAppStore((s) => s.dailyCheckIns);
-  const { todayCheckIns: sliceTodayCheckIns } = useCheckin();
+  const { todayCheckIns: sliceTodayCheckIns, checkIns } = useCheckin();
 
 
   const mergedTodayCheckIns = useMemo(() => {
@@ -94,6 +94,26 @@ export default function TodayHubScreen() {
     return mergeTodayCheckInsFromSources(sliceTodayCheckIns, centralDailyCheckIns, todayStr);
   }, [sliceTodayCheckIns, centralDailyCheckIns]);
 
+  const sourceCheckIns = useMemo(
+    () => (centralDailyCheckIns.length > 0 ? centralDailyCheckIns : checkIns),
+    [centralDailyCheckIns, checkIns],
+  );
+
+  const uniqueCheckInDays = useMemo(
+    () => new Set(sourceCheckIns.map((c) => c.date)).size,
+    [sourceCheckIns],
+  );
+
+  const showRecoveryJourneyCard = uniqueCheckInDays < 7;
+
+  const recoveryJourneySinceLabel = useMemo(() => {
+    const soberDate = new Date(profile.soberDate);
+    return soberDate.toLocaleDateString('en-US', {
+      month: 'long',
+      day: 'numeric',
+      year: 'numeric',
+    });
+  }, [profile.soberDate]);
 
   const todayCheckIns = mergedTodayCheckIns;
   const { plan: wizardPlan, recentCompletion, clearRecentCompletion } =
@@ -185,6 +205,14 @@ export default function TodayHubScreen() {
           </Text>
         </View>
 
+        {showRecoveryJourneyCard && (
+          <View style={styles.recoveryJourneyCard} testID="todayhub-recovery-journey-card">
+            <Text style={styles.recoveryJourneyTitle}>Your recovery journey has begun</Text>
+            <Text style={styles.recoveryJourneyDays}>{daysSober}</Text>
+            <Text style={styles.recoveryJourneyDaysCaption}>Days Completed</Text>
+            <Text style={styles.recoveryJourneySub}>Since {recoveryJourneySinceLabel}</Text>
+          </View>
+        )}
 
         {/* Setup progress banner for new/incomplete users */}
         {setupProgress &&
@@ -574,6 +602,42 @@ const styles = StyleSheet.create({
     fontSize: 13,
     color: Colors.textSecondary,
     marginTop: 4,
+  },
+  recoveryJourneyCard: {
+    backgroundColor: Colors.primary + '0C',
+    borderRadius: 14,
+    paddingVertical: 12,
+    paddingHorizontal: 14,
+    alignItems: 'center' as const,
+    marginBottom: 12,
+    borderWidth: 1,
+    borderColor: Colors.primary + '22',
+  },
+  recoveryJourneyTitle: {
+    fontSize: 14,
+    fontWeight: '700' as const,
+    color: Colors.text,
+    textAlign: 'center' as const,
+    marginBottom: 4,
+  },
+  recoveryJourneyDays: {
+    fontSize: 28,
+    fontWeight: '800' as const,
+    color: Colors.primary,
+    marginTop: 2,
+  },
+  recoveryJourneyDaysCaption: {
+    fontSize: 11,
+    fontWeight: '600' as const,
+    color: Colors.primary,
+    marginTop: 0,
+    letterSpacing: 0.2,
+  },
+  recoveryJourneySub: {
+    fontSize: 11,
+    color: Colors.textSecondary,
+    marginTop: 4,
+    textAlign: 'center' as const,
   },
   sectionLabel: {
     fontSize: 12,

@@ -663,12 +663,6 @@ function StabilityTimelineScreen() {
   }, [sourceCheckIns]);
 
   if (isEarlyDays) {
-    const soberDate = new Date(profile.soberDate);
-    const formattedSoberDate = soberDate.toLocaleDateString('en-US', {
-      month: 'long',
-      day: 'numeric',
-      year: 'numeric',
-    });
     return (
       <ScreenScrollView
         style={styles.container}
@@ -683,16 +677,6 @@ function StabilityTimelineScreen() {
             <Text style={{ color: Colors.primary }}>
               {getStabilityStatusLabel(latestScore)}
             </Text>
-          </Text>
-        </View>
-
-        {/* Hero */}
-        <View style={earlyStyles.heroCard}>
-          <Text style={earlyStyles.heroTitle}>Your recovery journey has begun</Text>
-          <Text style={earlyStyles.heroDays}>{daysSober}</Text>
-          <Text style={earlyStyles.heroDaysCaption}>Days Completed</Text>
-          <Text style={earlyStyles.heroSub}>
-            Since {formattedSoberDate}
           </Text>
         </View>
 
@@ -2149,41 +2133,6 @@ const earlyStyles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '700' as const,
     color: Colors.text,
-  },
-  heroCard: {
-    backgroundColor: Colors.primary + '0C',
-    borderRadius: 20,
-    padding: 24,
-    alignItems: 'center' as const,
-    marginBottom: 16,
-    borderWidth: 1,
-    borderColor: Colors.primary + '25',
-  },
-  heroTitle: {
-    fontSize: 18,
-    fontWeight: '800' as const,
-    color: Colors.text,
-    textAlign: 'center' as const,
-    marginBottom: 8,
-  },
-  heroDays: {
-    fontSize: 40,
-    fontWeight: '900' as const,
-    color: Colors.primary,
-    marginTop: 4,
-  },
-  heroDaysCaption: {
-    fontSize: 14,
-    fontWeight: '600' as const,
-    color: Colors.primary,
-    marginTop: 2,
-    marginBottom: 2,
-    letterSpacing: 0.3,
-  },
-  heroSub: {
-    fontSize: 13,
-    color: Colors.textSecondary,
-    marginTop: 4,
   },
   comprehensiveStabilitySection: {
     marginBottom: 16,

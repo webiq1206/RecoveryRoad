@@ -1,11 +1,11 @@
 {
   "expo": {
-    "name": "Recovery Companion",
-    "slug": "recovery-companion",
+    "name": "Recovery Companion Clone",
+    "slug": "recovery-companion-clone",
     "version": "1.0.1",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
-    "scheme": "recovery-companion",
+    "scheme": "recovery-companion-clone",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": false,
     "splash": {

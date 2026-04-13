@@ -64,6 +64,8 @@ import {
   type StabilityWindowDays,
 } from '../../../utils/progressStabilitySeries';
 import { StabilityRollingChart } from '../../../components/progress/StabilityRollingChart';
+import { RecoveryStabilityPanel } from '../../../components/RecoveryStabilityPanel';
+import { useTodayHub } from '../../../features/home/hooks/useTodayHub';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const CHART_WIDTH = SCREEN_WIDTH - 72;
@@ -303,6 +305,7 @@ function StabilityTimelineScreen() {
   const centralProgress = useAppStore((s) => s.progress);
   const { timelineEvents } = useRelapse();
   const { trendLabel: riskTrendLabel, timeOfDayRisk } = useRiskPrediction();
+  const { stability, relapseRisk } = useTodayHub();
 
   const sourceCheckIns = useMemo(
     () => (centralDailyCheckIns.length > 0 ? centralDailyCheckIns : checkIns),
@@ -653,6 +656,21 @@ function StabilityTimelineScreen() {
           <Text style={earlyStyles.heroSub}>
             Since {formattedSoberDate}
           </Text>
+        </View>
+
+        <View style={earlyStyles.comprehensiveStabilitySection}>
+          <RecoveryStabilityPanel
+            score={stability.score}
+            stabilityTrend={stability.trend}
+            relapseRiskCategory={relapseRisk.category}
+            relapseRiskLabel={relapseRisk.label}
+            relapseRiskTrendLabel={relapseRisk.trendLabel}
+            relapseRiskWhySentence={relapseRisk.whySentence}
+            relapseRiskFactors={relapseRisk.factors}
+            onExplainedPress={() => {
+              router.push('/comprehensive-stability-explained' as any);
+            }}
+          />
         </View>
 
         {/* Encouragement */}
@@ -2109,6 +2127,9 @@ const earlyStyles = StyleSheet.create({
     fontSize: 13,
     color: Colors.textSecondary,
     marginTop: 4,
+  },
+  comprehensiveStabilitySection: {
+    marginBottom: 16,
   },
   encouragementCard: {
     flexDirection: 'row' as const,

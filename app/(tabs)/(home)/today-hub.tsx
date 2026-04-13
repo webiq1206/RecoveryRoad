@@ -29,7 +29,6 @@ import { useAppStore } from '../../../stores/useAppStore';
 import { useTodayHub } from '../../../features/home/hooks/useTodayHub';
 import { useWizardEngineHook } from '../../../hooks/useWizardEngine';
 import { HomeLoadingSkeleton } from '../../../components/LoadingSkeleton';
-import { RecoveryStabilityPanel } from '../../../components/RecoveryStabilityPanel';
 import { getStrictRedirectTarget, resolveCanonicalRoute } from '../../../utils/legacyRoutes';
 import {
   getCheckInAvailabilityWindow,
@@ -176,7 +175,7 @@ export default function TodayHubScreen() {
   }
 
 
-  const { stability, relapseRisk, showRelapsePlanCta } = vm;
+  const { showRelapsePlanCta } = vm;
   const { setupProgress, dailyGuidance } = wizardPlan;
 
 
@@ -317,21 +316,6 @@ export default function TodayHubScreen() {
             </View>
           </View>
         </View>
-
-
-        {/* Comprehensive Stability — directly under mood & urge */}
-        <RecoveryStabilityPanel
-          score={stability.score}
-          stabilityTrend={stability.trend}
-          relapseRiskCategory={relapseRisk.category}
-          relapseRiskLabel={relapseRisk.label}
-          relapseRiskTrendLabel={relapseRisk.trendLabel}
-          relapseRiskWhySentence={relapseRisk.whySentence}
-          relapseRiskFactors={relapseRisk.factors}
-          onExplainedPress={() => {
-            router.push('/comprehensive-stability-explained' as any);
-          }}
-        />
 
 
         {showRelapsePlanCta && (

@@ -55,7 +55,7 @@ import { useSubscription } from '../../../providers/SubscriptionProvider';
 import { useRiskPrediction } from '../../../providers/RiskPredictionProvider';
 import { PremiumSectionOverlay } from '../../../components/PremiumGate';
 import { getStabilityPhrase, getMoodPhrase, getCravingsPhrase } from '../../../constants/emotionalRisk';
-import { MILESTONE_DATA } from '../../../constants/milestones';
+import { MILESTONE_DATA, MOOD_EMOJIS, MOOD_LABELS } from '../../../constants/milestones';
 import {
   buildProgressStabilitySeries,
   buildDailyAverageStabilitySeries,
@@ -66,6 +66,8 @@ import {
 import { StabilityRollingChart } from '../../../components/progress/StabilityRollingChart';
 import { RecoveryStabilityPanel } from '../../../components/RecoveryStabilityPanel';
 import { useTodayHub } from '../../../features/home/hooks/useTodayHub';
+import { mergeTodayCheckInsFromSources } from '../../../utils/mergeProfile';
+import { getLocalDateKey } from '../../../utils/checkInDate';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const CHART_WIDTH = SCREEN_WIDTH - 72;
@@ -300,7 +302,7 @@ function StabilityTimelineScreen() {
   const { pledges } = usePledges();
   const { rebuildData } = useRebuild();
   const { profile, daysSober } = useUser();
-  const { checkIns } = useCheckin();
+  const { checkIns, todayCheckIns: sliceTodayCheckIns } = useCheckin();
   const centralDailyCheckIns = useAppStore((s) => s.dailyCheckIns);
   const centralProgress = useAppStore((s) => s.progress);
   const { timelineEvents } = useRelapse();
@@ -311,6 +313,42 @@ function StabilityTimelineScreen() {
     () => (centralDailyCheckIns.length > 0 ? centralDailyCheckIns : checkIns),
     [centralDailyCheckIns, checkIns],
   );
+
+  const mergedTodayCheckIns = useMemo(() => {
+    const todayStr = getLocalDateKey();
+    return mergeTodayCheckInsFromSources(sliceTodayCheckIns, centralDailyCheckIns, todayStr);
+  }, [sliceTodayCheckIns, centralDailyCheckIns]);
+
+  const latestTodayCheckIn = useMemo(() => {
+    if (mergedTodayCheckIns.length === 0) return null;
+    return mergedTodayCheckIns.reduce((latest, c) =>
+      new Date(c.completedAt).getTime() > new Date(latest.completedAt).getTime() ? c : latest,
+    mergedTodayCheckIns[0]);
+  }, [mergedTodayCheckIns]);
+
+  const moodEmoji = useMemo(
+    () =>
+      typeof latestTodayCheckIn?.mood === 'number'
+        ? MOOD_EMOJIS[Math.min(4, Math.max(0, Math.round((latestTodayCheckIn.mood / 100) * 4)))]
+        : '–',
+    [latestTodayCheckIn?.mood],
+  );
+
+  const moodLabel = useMemo(
+    () =>
+      typeof latestTodayCheckIn?.mood === 'number'
+        ? MOOD_LABELS[Math.min(4, Math.max(0, Math.round((latestTodayCheckIn.mood / 100) * 4)))]
+        : 'No check-in yet',
+    [latestTodayCheckIn?.mood],
+  );
+
+  const urgeLabel = useMemo(() => {
+    if (typeof latestTodayCheckIn?.cravingLevel !== 'number') return 'Unknown';
+    const v = latestTodayCheckIn.cravingLevel;
+    if (v >= 70) return 'High urge';
+    if (v >= 40) return 'Moderate urge';
+    return 'Low urge';
+  }, [latestTodayCheckIn?.cravingLevel]);
 
   const [stabilityWindowDays, setStabilityWindowDays] = useState<StabilityWindowDays>(14);
   const [milestonesExpanded, setMilestonesExpanded] = useState<boolean>(false);
@@ -671,6 +709,25 @@ function StabilityTimelineScreen() {
               router.push('/comprehensive-stability-explained' as any);
             }}
           />
+        </View>
+
+        <View style={earlyStyles.moodUrgeSection} testID="progress-mood-urge-card">
+          <View style={earlyStyles.moodUrgeCard}>
+            <View style={earlyStyles.moodUrgeRow}>
+              <View style={earlyStyles.moodUrgeMood}>
+                <Text style={earlyStyles.moodUrgeEmoji}>{moodEmoji}</Text>
+                <View>
+                  <Text style={earlyStyles.moodUrgeLabel}>Mood</Text>
+                  <Text style={earlyStyles.moodUrgeValue}>{moodLabel}</Text>
+                </View>
+              </View>
+              <View style={earlyStyles.moodUrgeDivider} />
+              <View style={earlyStyles.moodUrgeUrge}>
+                <Text style={earlyStyles.moodUrgeLabel}>Urge level</Text>
+                <Text style={earlyStyles.moodUrgeValue}>{urgeLabel}</Text>
+              </View>
+            </View>
+          </View>
         </View>
 
         {/* Encouragement */}
@@ -2130,6 +2187,54 @@ const earlyStyles = StyleSheet.create({
   },
   comprehensiveStabilitySection: {
     marginBottom: 16,
+  },
+  moodUrgeSection: {
+    marginBottom: 16,
+  },
+  moodUrgeCard: {
+    backgroundColor: Colors.cardBackground,
+    borderRadius: 18,
+    paddingVertical: 12,
+    paddingHorizontal: 14,
+    borderWidth: 1,
+    borderColor: Colors.border,
+  },
+  moodUrgeRow: {
+    flexDirection: 'row' as const,
+    alignItems: 'center' as const,
+    justifyContent: 'space-between' as const,
+  },
+  moodUrgeMood: {
+    flexDirection: 'row' as const,
+    alignItems: 'center' as const,
+    gap: 10,
+    flex: 1,
+  },
+  moodUrgeEmoji: {
+    fontSize: 22,
+  },
+  moodUrgeUrge: {
+    flex: 1,
+    alignItems: 'flex-start' as const,
+  },
+  moodUrgeLabel: {
+    fontSize: 11,
+    fontWeight: '600' as const,
+    color: Colors.textMuted,
+    textTransform: 'uppercase' as const,
+    letterSpacing: 0.8,
+  },
+  moodUrgeValue: {
+    fontSize: 14,
+    fontWeight: '600' as const,
+    color: Colors.text,
+    marginTop: 2,
+  },
+  moodUrgeDivider: {
+    width: 1,
+    height: 32,
+    backgroundColor: Colors.border,
+    marginHorizontal: 8,
   },
   encouragementCard: {
     flexDirection: 'row' as const,

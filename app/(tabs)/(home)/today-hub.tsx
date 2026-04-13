@@ -22,7 +22,6 @@ import {
 } from 'lucide-react-native';
 import * as Haptics from 'expo-haptics';
 import Colors from '../../../constants/colors';
-import { MOOD_EMOJIS, MOOD_LABELS } from '../../../constants/milestones';
 import { useUser } from '../../../core/domains/useUser';
 import { useCheckin } from '../../../core/domains/useCheckin';
 import { useAppStore } from '../../../stores/useAppStore';
@@ -87,7 +86,7 @@ export default function TodayHubScreen() {
   const { profile } = useUser();
   const centralProfile = useAppStore((s) => s.userProfile);
   const centralDailyCheckIns = useAppStore((s) => s.dailyCheckIns);
-  const { todayCheckIn: sliceTodayCheckIn, todayCheckIns: sliceTodayCheckIns } = useCheckin();
+  const { todayCheckIns: sliceTodayCheckIns } = useCheckin();
 
 
   const mergedTodayCheckIns = useMemo(() => {
@@ -97,12 +96,6 @@ export default function TodayHubScreen() {
 
 
   const todayCheckIns = mergedTodayCheckIns;
-  const todayCheckIn = useMemo(() => {
-    if (mergedTodayCheckIns.length === 0) return null;
-    return mergedTodayCheckIns.reduce((latest, c) =>
-      new Date(c.completedAt).getTime() > new Date(latest.completedAt).getTime() ? c : latest,
-    mergedTodayCheckIns[0]);
-  }, [mergedTodayCheckIns]);
   const { plan: wizardPlan, recentCompletion, clearRecentCompletion } =
     useWizardEngineHook();
 
@@ -135,28 +128,6 @@ export default function TodayHubScreen() {
     const firstName = displayProfile?.name?.split?.(' ')?.[0] || 'there';
     return `${base}, ${firstName}`;
   })();
-
-
-  const moodEmoji =
-    typeof todayCheckIn?.mood === 'number'
-      ? MOOD_EMOJIS[Math.min(4, Math.max(0, Math.round((todayCheckIn.mood / 100) * 4)))]
-      : '–';
-
-
-  const moodLabel =
-    typeof todayCheckIn?.mood === 'number'
-      ? MOOD_LABELS[Math.min(4, Math.max(0, Math.round((todayCheckIn.mood / 100) * 4)))]
-      : 'No check-in yet';
-
-
-  const urgeLabel =
-    typeof todayCheckIn?.cravingLevel === 'number'
-      ? todayCheckIn.cravingLevel >= 70
-        ? 'High urge'
-        : todayCheckIn.cravingLevel >= 40
-          ? 'Moderate urge'
-          : 'Low urge'
-      : 'Unknown';
 
 
   const strictTarget = getStrictRedirectTarget('/(tabs)/(home)/today-hub');
@@ -297,25 +268,6 @@ export default function TodayHubScreen() {
             </Text>
           </View>
         )}
-
-
-        {/* Current state: mood + urge */}
-        <View style={styles.stateCard}>
-          <View style={styles.stateRow}>
-            <View style={styles.stateMood}>
-              <Text style={styles.stateMoodEmoji}>{moodEmoji}</Text>
-              <View>
-                <Text style={styles.stateLabel}>Mood</Text>
-                <Text style={styles.stateValue}>{moodLabel}</Text>
-              </View>
-            </View>
-            <View style={styles.stateDivider} />
-            <View style={styles.stateUrge}>
-              <Text style={styles.stateLabel}>Urge level</Text>
-              <Text style={styles.stateValue}>{urgeLabel}</Text>
-            </View>
-          </View>
-        </View>
 
 
         {showRelapsePlanCta && (
@@ -731,52 +683,6 @@ const styles = StyleSheet.create({
     color: Colors.primary,
     fontWeight: '600',
     lineHeight: 21,
-  },
-  stateCard: {
-    backgroundColor: Colors.cardBackground,
-    borderRadius: 18,
-    paddingVertical: 12,
-    paddingHorizontal: 14,
-    borderWidth: 1,
-    borderColor: Colors.border,
-    marginBottom: 16,
-  },
-  stateRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-  },
-  stateMood: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 10,
-    flex: 1,
-  },
-  stateMoodEmoji: {
-    fontSize: 22,
-  },
-  stateUrge: {
-    flex: 1,
-    alignItems: 'flex-start',
-  },
-  stateLabel: {
-    fontSize: 11,
-    fontWeight: '600',
-    color: Colors.textMuted,
-    textTransform: 'uppercase',
-    letterSpacing: 0.8,
-  },
-  stateValue: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: Colors.text,
-    marginTop: 2,
-  },
-  stateDivider: {
-    width: 1,
-    height: 32,
-    backgroundColor: Colors.border,
-    marginHorizontal: 8,
   },
   struggleButton: {
     flexDirection: 'row',

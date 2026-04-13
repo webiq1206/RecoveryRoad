@@ -11,8 +11,8 @@
 
 import type { RecoveryStage, RiskCategory, DailyCheckIn, Pledge, CheckInTimeOfDay } from '../types';
 import {
-  getActiveCheckInPeriodForNow,
   getCheckInAvailabilityWindow,
+  getCheckInWindowHint,
   isCheckInPeriodInWindow,
 } from './checkInWindows';
 import { getLocalDateKey } from './checkInDate';
@@ -399,25 +399,39 @@ const CHECK_IN_GUIDANCE_TITLE: Record<CheckInTimeOfDay, string> = {
   evening: 'Evening Check-In',
 };
 
+const CHECK_IN_GUIDANCE_ORDER: CheckInTimeOfDay[] = ['morning', 'afternoon', 'evening'];
+
+function buildCheckInGuidanceSubtitle(
+  period: CheckInTimeOfDay,
+  done: boolean,
+  now: Date,
+): string {
+  if (done) return 'Completed today';
+  if (isCheckInPeriodInWindow(period, now)) {
+    return `Available ${getCheckInAvailabilityWindow(period)} · Tap to log`;
+  }
+  const hint = getCheckInWindowHint(period);
+  return hint ? `${hint} · PLEASE WAIT` : 'PLEASE WAIT';
+}
+
 function buildCandidateActions(input: WizardEngineInput): CandidateAction[] {
   const candidates: CandidateAction[] = [];
   const band = getStabilityBand(input.stabilityScore);
 
   const now = input.checkInWindowNow;
-  const activePeriod = getActiveCheckInPeriodForNow(now);
-  const activeIncomplete = !input.todayCheckIns.some((c) => c.timeOfDay === activePeriod);
-  if (activeIncomplete && isCheckInPeriodInWindow(activePeriod, now)) {
+  CHECK_IN_GUIDANCE_ORDER.forEach((period, index) => {
+    const done = input.todayCheckIns.some((c) => c.timeOfDay === period);
     candidates.push({
-      id: `check-in-${activePeriod}`,
-      title: CHECK_IN_GUIDANCE_TITLE[activePeriod],
-      subtitle: `Available ${getCheckInAvailabilityWindow(activePeriod)} · Tap to log`,
+      id: `check-in-${period}`,
+      title: CHECK_IN_GUIDANCE_TITLE[period],
+      subtitle: buildCheckInGuidanceSubtitle(period, done, now),
       route: '/daily-checkin',
       kind: 'awareness',
-      completed: false,
-      basePriority: 10_000,
-      params: { period: activePeriod },
+      completed: done,
+      basePriority: 10_000 - index,
+      params: { period },
     });
-  }
+  });
 
   candidates.push({
     id: 'daily-pledge',
@@ -426,7 +440,8 @@ function buildCandidateActions(input: WizardEngineInput): CandidateAction[] {
     route: '/pledges',
     kind: 'awareness',
     completed: !!input.todayPledge?.completed,
-    basePriority: 75,
+    /** Below active check-in (10_000), above rotating guidance slots. */
+    basePriority: 9000,
   });
 
   if (band === 'low' || input.highUrge) {
@@ -577,11 +592,12 @@ function buildScoredWizardActions(input: WizardEngineInput): WizardAction[] {
   });
 }
 
-/** Max non-check-in rows under Today’s guidance per calendar day (check-ins are separate). */
+/** Max rotating (non-pinned) rows under Today’s guidance per calendar day. */
 const MAX_NON_CHECKIN_GUIDANCE_ACTIONS_PER_DAY = 3;
 
-function isGuidanceCheckInAction(a: WizardAction): boolean {
-  return a.id.startsWith('check-in-');
+/** Always shown in Today’s guidance when present in candidates (not subject to daily rotation cap). */
+function isGuidanceCapExempt(a: WizardAction): boolean {
+  return a.id.startsWith('check-in-') || a.id === 'daily-pledge';
 }
 
 function hashStringToUint32(s: string): number {
@@ -618,28 +634,56 @@ function pickSeededActionIds(pool: WizardAction[], seedKey: string, count: numbe
 }
 
 /**
- * Keeps all time-of-day check-in guidance rows, plus up to {@link MAX_NON_CHECKIN_GUIDANCE_ACTIONS_PER_DAY}
- * other actions. Selection is stable for `localDateKey` and changes each day.
+ * Keeps pinned rows (time-window check-in + daily pledge) and up to
+ * {@link MAX_NON_CHECKIN_GUIDANCE_ACTIONS_PER_DAY} other actions. Selection is stable for `localDateKey`.
  */
 function limitDailyGuidanceActions(actions: WizardAction[], localDateKey: string): WizardAction[] {
-  const checkIns = actions.filter(isGuidanceCheckInAction);
-  const rest = actions.filter((a) => !isGuidanceCheckInAction(a));
+  const pool = actions.filter((a) => !isGuidanceCapExempt(a));
 
-  if (rest.length <= MAX_NON_CHECKIN_GUIDANCE_ACTIONS_PER_DAY) {
-    return [...checkIns, ...rest];
+  if (pool.length <= MAX_NON_CHECKIN_GUIDANCE_ACTIONS_PER_DAY) {
+    return actions;
   }
 
   const mustShow = new Set<string>();
-  const crisisIncomplete = rest.find((a) => a.id === 'crisis-tools' && !a.completed);
+  const crisisIncomplete = pool.find((a) => a.id === 'crisis-tools' && !a.completed);
   if (crisisIncomplete) mustShow.add('crisis-tools');
 
-  const pool = rest.filter((a) => !mustShow.has(a.id));
+  const poolForPick = pool.filter((a) => !mustShow.has(a.id));
   const need = MAX_NON_CHECKIN_GUIDANCE_ACTIONS_PER_DAY - mustShow.size;
-  const extra = pickSeededActionIds(pool, `${localDateKey}|dailyGuidance`, need);
-  const picked = new Set<string>([...mustShow, ...extra]);
+  const extra = pickSeededActionIds(poolForPick, `${localDateKey}|dailyGuidance`, need);
+  const pickedPoolIds = new Set<string>([...mustShow, ...extra]);
 
-  const orderedRest = rest.filter((a) => picked.has(a.id));
-  return [...checkIns, ...orderedRest];
+  return actions.filter((a) => isGuidanceCapExempt(a) || pickedPoolIds.has(a.id));
+}
+
+/** Morning → afternoon → evening first, then all other guidance rows (stable order). */
+export function stabilizeGuidanceActionOrder(actions: WizardAction[]): WizardAction[] {
+  const byId = new Map(actions.map((a) => [a.id, a] as const));
+  const chain = CHECK_IN_GUIDANCE_ORDER.map((p) => byId.get(`check-in-${p}`)).filter(
+    (a): a is WizardAction => a != null,
+  );
+  const rest = actions.filter((a) => !a.id.startsWith('check-in-'));
+  return [...chain, ...rest];
+}
+
+/**
+ * Collapsed guidance shows this index first: earliest incomplete check-in in M→A→E order,
+ * or the first non-check-in row if all three are done.
+ */
+export function getGuidanceCollapsedFocusIndex(actions: WizardAction[]): number {
+  for (let i = 0; i < actions.length; i++) {
+    const a = actions[i]!;
+    if (!a.id.startsWith('check-in-')) return i;
+    if (!a.completed) return i;
+  }
+  return Math.max(0, actions.length - 1);
+}
+
+function resolvePrimaryGuidanceAction(actions: WizardAction[]): WizardAction | null {
+  const i = getGuidanceCollapsedFocusIndex(actions);
+  const cand = actions[i];
+  if (cand && !cand.completed) return cand;
+  return actions.find((a) => !a.completed) ?? null;
 }
 
 // ── Risk warnings ────────────────────────────────────────────────────────
@@ -676,7 +720,7 @@ function buildRiskWarnings(input: WizardEngineInput): string[] {
 export function generateWizardPlan(input: WizardEngineInput): WizardPlan {
   const setupProgress = buildSetupProgress(input);
 
-  // Re-entry mode: user returning after 2+ day gap (no check-in rows here — those are only under Check-ins today)
+  // Re-entry mode: user returning after 2+ day gap
   if (input.daysSinceLastSession >= 2) {
     const isLongGap = input.daysSinceLastSession >= 5;
     const reentryMsg = isLongGap
@@ -685,10 +729,10 @@ export function generateWizardPlan(input: WizardEngineInput): WizardPlan {
 
     const rawActions = buildScoredWizardActions(input);
     const dateKey = getLocalDateKey(input.checkInWindowNow);
-    const actions = limitDailyGuidanceActions(rawActions, dateKey);
+    const actions = stabilizeGuidanceActionOrder(limitDailyGuidanceActions(rawActions, dateKey));
     const incompleteActions = actions.filter((a) => !a.completed);
     const isComplete = incompleteActions.length === 0;
-    const primaryAction = incompleteActions[0] ?? null;
+    const primaryAction = resolvePrimaryGuidanceAction(actions);
     const riskWarnings = buildRiskWarnings(input);
 
     return {
@@ -700,7 +744,7 @@ export function generateWizardPlan(input: WizardEngineInput): WizardPlan {
         encouragement: reentryMsg,
         contextHint: isComplete
           ? null
-          : "Welcome back — use Check-ins today when you're in that window, or choose a step below.",
+          : "Welcome back — use Today’s guidance when your check-in window is open, or choose a step below.",
         isComplete,
         completionMessage: isComplete ? getCompletionMessage(input.daysSober) : null,
         isReentryMode: true,
@@ -711,14 +755,14 @@ export function generateWizardPlan(input: WizardEngineInput): WizardPlan {
   // Normal mode
   const rawActions = buildScoredWizardActions(input);
   const dateKey = getLocalDateKey(input.checkInWindowNow);
-  const actions = limitDailyGuidanceActions(rawActions, dateKey);
+  const actions = stabilizeGuidanceActionOrder(limitDailyGuidanceActions(rawActions, dateKey));
   const contextHint = buildContextHint(input);
   const encouragement = buildEncouragement(input);
   const riskWarnings = buildRiskWarnings(input);
 
   const incompleteActions = actions.filter((a) => !a.completed);
   const isComplete = incompleteActions.length === 0;
-  const primaryAction = incompleteActions[0] ?? null;
+  const primaryAction = resolvePrimaryGuidanceAction(actions);
 
   return {
     setupProgress,

@@ -1,4 +1,4 @@
-import React, { useRef, useCallback, useMemo, useEffect } from 'react';
+import React, { useRef, useCallback, useMemo, useEffect, useState } from 'react';
 import {
   View,
   Text,
@@ -35,8 +35,8 @@ import { useAppStore } from '../stores/useAppStore';
 import { mergeRecoveryProfiles } from '../utils/mergeProfile';
 import { getScoreColor, getScoreLabel } from '../lib/services/checkInAnalysis';
 import { computeDailyCheckInStabilityScore } from '../utils/stabilityEngine';
-import type { DailyCheckIn } from '../types';
-import type { CheckInTimeOfDay } from '../features/checkin/constants/checkinMetrics';
+import type { DailyCheckIn, RecoveryProfile } from '../types';
+import type { CheckInTimeOfDay, EmotionalTagConfig } from '../features/checkin/constants/checkinMetrics';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const SLIDER_WIDTH = SCREEN_WIDTH - 80;
@@ -271,6 +271,92 @@ const sliderStyles = StyleSheet.create({
   },
 });
 
+type PeriodTabConfig = {
+  label: string;
+  icon: React.ReactNode;
+  color: string;
+  greeting: string;
+};
+
+interface CompletedPeriodSummaryProps {
+  period: CheckInTimeOfDay;
+  periodCheckIn: DailyCheckIn;
+  PERIOD_CONFIG_WITH_ICONS: Record<CheckInTimeOfDay, PeriodTabConfig>;
+  METRICS: SliderMetric[];
+  recoveryProfileForStability: RecoveryProfile | null | undefined;
+  emotionalTagsConfig: EmotionalTagConfig[];
+}
+
+function CompletedPeriodSummary({
+  period,
+  periodCheckIn,
+  PERIOD_CONFIG_WITH_ICONS,
+  METRICS,
+  recoveryProfileForStability,
+  emotionalTagsConfig,
+}: CompletedPeriodSummaryProps) {
+  const pConfig = PERIOD_CONFIG_WITH_ICONS[period];
+  const displayStabilityScore = computeDailyCheckInStabilityScore(
+    {
+      mood: periodCheckIn.mood,
+      cravingLevel: periodCheckIn.cravingLevel,
+      stress: periodCheckIn.stress,
+      sleepQuality: periodCheckIn.sleepQuality,
+      environment: periodCheckIn.environment,
+      emotionalState: periodCheckIn.emotionalState,
+    },
+    recoveryProfileForStability,
+  );
+  const scoreColor = getScoreColor(displayStabilityScore);
+  const scoreLabel = getScoreLabel(displayStabilityScore);
+
+  return (
+    <View style={styles.periodSection} testID={`checkin-readonly-${period}`}>
+      <View style={styles.periodSectionHeader}>
+        {pConfig.icon}
+        <Text style={styles.periodSectionTitle}>{pConfig.label}</Text>
+        <View style={[styles.periodScoreBadge, { backgroundColor: `${scoreColor}18` }]}>
+          <Text style={[styles.periodScoreBadgeText, { color: scoreColor }]}>
+            {displayStabilityScore} {scoreLabel}
+          </Text>
+        </View>
+      </View>
+
+      {periodCheckIn.reflection ? (
+        <Text style={styles.periodReflection}>{periodCheckIn.reflection}</Text>
+      ) : null}
+
+      {periodCheckIn.emotionalTags && periodCheckIn.emotionalTags.length > 0 ? (
+        <View style={styles.periodTagsReadonly}>
+          <Text style={styles.periodTagsReadonlyLabel}>Emotions logged</Text>
+          <View style={styles.periodTagsReadonlyRow}>
+            {periodCheckIn.emotionalTags.map((tag) => {
+              const meta = emotionalTagsConfig.find((t) => t.key === tag);
+              return (
+                <View key={tag} style={styles.periodTagPill}>
+                  <Text style={styles.periodTagPillText}>{meta?.label ?? tag}</Text>
+                </View>
+              );
+            })}
+          </View>
+        </View>
+      ) : null}
+
+      <View style={styles.periodMetricsRow}>
+        {METRICS.map((m) => {
+          const val = periodCheckIn[m.key as keyof DailyCheckIn] as number;
+          return (
+            <View key={m.key} style={styles.periodMetricItem}>
+              {m.icon}
+              <Text style={styles.periodMetricValue}>{val}</Text>
+            </View>
+          );
+        })}
+      </View>
+    </View>
+  );
+}
+
 export default function DailyCheckInScreen() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
@@ -293,7 +379,7 @@ export default function DailyCheckInScreen() {
 
   const {
     METRICS_CONFIG,
-    EMOTIONAL_TAGS,
+    EMOTIONAL_TAGS: emotionalTagsConfig,
     periodConfig,
     PERIOD_CONFIG,
     values,
@@ -332,10 +418,27 @@ export default function DailyCheckInScreen() {
           acc[p] = periodWithIcon(PERIOD_CONFIG[p]);
           return acc;
         },
-        {} as Record<CheckInTimeOfDay, { label: string; icon: React.ReactNode; color: string; greeting: string }>,
+        {} as Record<CheckInTimeOfDay, PeriodTabConfig>,
       ),
     [PERIOD_CONFIG],
   );
+
+  const [reviewSelectionPeriod, setReviewSelectionPeriod] = useState<CheckInTimeOfDay | null>(null);
+
+  const defaultReviewPeriod = useMemo((): CheckInTimeOfDay | null => {
+    if (
+      periodOverride &&
+      getCheckInForPeriod(periodOverride)
+    ) {
+      return periodOverride;
+    }
+    for (const p of ['morning', 'afternoon', 'evening'] as const) {
+      if (getCheckInForPeriod(p)) return p;
+    }
+    return null;
+  }, [periodOverride, getCheckInForPeriod, todayCheckIns]);
+
+  const activeReviewForReadOnly = reviewSelectionPeriod ?? defaultReviewPeriod;
 
   const scrollRef = useRef<ScrollView>(null);
   useScrollToTopOnFocus(scrollRef);
@@ -460,31 +563,50 @@ export default function DailyCheckInScreen() {
           <View style={styles.periodProgressRow}>
             {periods.map((period) => {
               const completed = completedPeriods.includes(period);
-              const isCurrent = period === currentCheckInPeriod;
+              const isSelected = completed && period === activeReviewForReadOnly;
               const config = PERIOD_CONFIG_WITH_ICONS[period];
-              return (
-                <View
-                  key={period}
-                  style={[
-                    styles.periodProgressItem,
-                    completed && styles.periodProgressCompleted,
-                    isCurrent && !completed && styles.periodProgressCurrent,
-                  ]}
-                >
+              const rowStyle = [
+                styles.periodProgressItem,
+                completed && styles.periodProgressCompleted,
+                isSelected && styles.periodProgressSelected,
+              ];
+              const labelStyle = [
+                styles.periodProgressLabel,
+                completed && styles.periodProgressLabelDone,
+                isSelected && styles.periodProgressLabelCurrent,
+              ];
+              const inner = (
+                <>
                   {completed ? (
                     <Check size={14} color="#2EC4B6" />
                   ) : (
                     config.icon
                   )}
-                  <Text
-                    style={[
-                      styles.periodProgressLabel,
-                      completed && styles.periodProgressLabelDone,
-                    ]}
-                  >
-                    {config.label}
-                  </Text>
-                </View>
+                  <Text style={labelStyle}>{config.label}</Text>
+                </>
+              );
+              if (!completed) {
+                return (
+                  <View key={period} style={rowStyle}>
+                    {inner}
+                  </View>
+                );
+              }
+              return (
+                <Pressable
+                  key={period}
+                  accessibilityRole="button"
+                  accessibilityState={{ selected: isSelected }}
+                  accessibilityLabel={`${config.label} check-in completed${isSelected ? ', showing details below' : ''}. Tap to view.`}
+                  onPress={() => {
+                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                    setReviewSelectionPeriod(period);
+                  }}
+                  style={({ pressed }) => [...rowStyle, pressed && { opacity: 0.92 }]}
+                  testID={`checkin-period-tab-${period}`}
+                >
+                  {inner}
+                </Pressable>
               );
             })}
           </View>
@@ -505,54 +627,16 @@ export default function DailyCheckInScreen() {
             </View>
           )}
 
-          {periods.map((period) => {
-            const periodCheckIn = getCheckInForPeriod(period);
-            if (!periodCheckIn) return null;
-            const pConfig = PERIOD_CONFIG_WITH_ICONS[period];
-            const displayStabilityScore = computeDailyCheckInStabilityScore(
-              {
-                mood: periodCheckIn.mood,
-                cravingLevel: periodCheckIn.cravingLevel,
-                stress: periodCheckIn.stress,
-                sleepQuality: periodCheckIn.sleepQuality,
-                environment: periodCheckIn.environment,
-                emotionalState: periodCheckIn.emotionalState,
-              },
-              recoveryProfileForStability,
-            );
-            const scoreColor = getScoreColor(displayStabilityScore);
-            const scoreLabel = getScoreLabel(displayStabilityScore);
-
-            return (
-              <View key={period} style={styles.periodSection}>
-                <View style={styles.periodSectionHeader}>
-                  {pConfig.icon}
-                  <Text style={styles.periodSectionTitle}>{pConfig.label}</Text>
-                  <View style={[styles.periodScoreBadge, { backgroundColor: `${scoreColor}18` }]}>
-                    <Text style={[styles.periodScoreBadgeText, { color: scoreColor }]}>
-                      {displayStabilityScore} {scoreLabel}
-                    </Text>
-                  </View>
-                </View>
-
-                {periodCheckIn.reflection ? (
-                  <Text style={styles.periodReflection}>{periodCheckIn.reflection}</Text>
-                ) : null}
-
-                <View style={styles.periodMetricsRow}>
-                  {METRICS.map((m) => {
-                    const val = periodCheckIn[m.key as keyof DailyCheckIn] as number;
-                    return (
-                      <View key={m.key} style={styles.periodMetricItem}>
-                        {m.icon}
-                        <Text style={styles.periodMetricValue}>{val}</Text>
-                      </View>
-                    );
-                  })}
-                </View>
-              </View>
-            );
-          })}
+          {activeReviewForReadOnly && getCheckInForPeriod(activeReviewForReadOnly) ? (
+            <CompletedPeriodSummary
+              period={activeReviewForReadOnly}
+              periodCheckIn={getCheckInForPeriod(activeReviewForReadOnly)!}
+              PERIOD_CONFIG_WITH_ICONS={PERIOD_CONFIG_WITH_ICONS}
+              METRICS={METRICS}
+              recoveryProfileForStability={recoveryProfileForStability}
+              emotionalTagsConfig={emotionalTagsConfig}
+            />
+          ) : null}
         </Animated.ScrollView>
       </View>
     );
@@ -578,34 +662,75 @@ export default function DailyCheckInScreen() {
           {(['morning', 'afternoon', 'evening'] as CheckInTimeOfDay[]).map((period) => {
             const completed = completedPeriods.includes(period);
             const isCurrent = period === currentCheckInPeriod;
+            const isReviewing = reviewSelectionPeriod === period && completed;
             const config = PERIOD_CONFIG_WITH_ICONS[period];
-            return (
-              <View
-                key={period}
-                style={[
-                  styles.periodProgressItem,
-                  completed && styles.periodProgressCompleted,
-                  isCurrent && !completed && styles.periodProgressCurrent,
-                ]}
-              >
+            const rowStyle = [
+              styles.periodProgressItem,
+              completed && styles.periodProgressCompleted,
+              isCurrent && !completed && styles.periodProgressCurrent,
+              isReviewing && styles.periodProgressSelected,
+            ];
+            const labelStyle = [
+              styles.periodProgressLabel,
+              completed && styles.periodProgressLabelDone,
+              isCurrent && !completed && styles.periodProgressLabelCurrent,
+              isReviewing && styles.periodProgressLabelCurrent,
+            ];
+            const inner = (
+              <>
                 {completed ? (
                   <Check size={14} color="#2EC4B6" />
                 ) : (
                   config.icon
                 )}
-                <Text
-                  style={[
-                    styles.periodProgressLabel,
-                    completed && styles.periodProgressLabelDone,
-                    isCurrent && !completed && styles.periodProgressLabelCurrent,
-                  ]}
-                >
-                  {config.label}
-                </Text>
-              </View>
+                <Text style={labelStyle}>{config.label}</Text>
+              </>
+            );
+            const canPress = completed || (isCurrent && !completed);
+            if (!canPress) {
+              return (
+                <View key={period} style={rowStyle}>
+                  {inner}
+                </View>
+              );
+            }
+            return (
+              <Pressable
+                key={period}
+                accessibilityRole="button"
+                accessibilityState={{ selected: !!isReviewing }}
+                accessibilityLabel={
+                  completed
+                    ? `${config.label} check-in completed, tap to view`
+                    : `${config.label} check-in in progress`
+                }
+                onPress={() => {
+                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                  if (completed) setReviewSelectionPeriod(period);
+                  else setReviewSelectionPeriod(null);
+                }}
+                style={({ pressed }) => [...rowStyle, pressed && { opacity: 0.92 }]}
+                testID={`checkin-period-tab-${period}`}
+              >
+                {inner}
+              </Pressable>
             );
           })}
         </View>
+
+        {reviewSelectionPeriod && getCheckInForPeriod(reviewSelectionPeriod) ? (
+          <>
+            <Text style={styles.reviewingHint}>Saved check-in (read-only)</Text>
+            <CompletedPeriodSummary
+              period={reviewSelectionPeriod}
+              periodCheckIn={getCheckInForPeriod(reviewSelectionPeriod)!}
+              PERIOD_CONFIG_WITH_ICONS={PERIOD_CONFIG_WITH_ICONS}
+              METRICS={METRICS}
+              recoveryProfileForStability={recoveryProfileForStability}
+              emotionalTagsConfig={emotionalTagsConfig}
+            />
+          </>
+        ) : null}
 
         {phase === 'metrics' ? (
           <>
@@ -646,7 +771,7 @@ export default function DailyCheckInScreen() {
             </Text>
 
             <View style={styles.tagsGrid}>
-              {EMOTIONAL_TAGS.map((tag) => {
+              {emotionalTagsConfig.map((tag) => {
                 const isSelected = selectedTags.includes(tag.key);
                 return (
                   <Pressable
@@ -806,6 +931,16 @@ const styles = StyleSheet.create({
   periodProgressCurrent: {
     borderColor: Colors.primary,
     borderWidth: 1.5,
+  },
+  periodProgressSelected: {
+    borderColor: Colors.primary,
+    borderWidth: 2,
+  },
+  reviewingHint: {
+    fontSize: 12,
+    fontWeight: '600' as const,
+    color: Colors.textMuted,
+    marginBottom: 8,
   },
   periodProgressLabel: {
     fontSize: 12,
@@ -1171,5 +1306,34 @@ const styles = StyleSheet.create({
     fontWeight: '700' as const,
     color: Colors.text,
     fontVariant: ['tabular-nums'],
+  },
+  periodTagsReadonly: {
+    marginBottom: 12,
+  },
+  periodTagsReadonlyLabel: {
+    fontSize: 11,
+    fontWeight: '600' as const,
+    color: Colors.textMuted,
+    marginBottom: 6,
+    textTransform: 'uppercase' as const,
+    letterSpacing: 0.5,
+  },
+  periodTagsReadonlyRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+  },
+  periodTagPill: {
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 10,
+    backgroundColor: Colors.surface,
+    borderWidth: 0.5,
+    borderColor: Colors.border,
+  },
+  periodTagPillText: {
+    fontSize: 12,
+    fontWeight: '600' as const,
+    color: Colors.textSecondary,
   },
 });

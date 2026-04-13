@@ -12,7 +12,6 @@ import { useRouter, Redirect, usePathname } from 'expo-router';
 import {
   ArrowRight,
   AlertTriangle,
-  Activity,
   Check,
   CheckCircle2,
   ChevronRight,
@@ -28,24 +27,10 @@ import { useTodayHub } from '../../../features/home/hooks/useTodayHub';
 import { useWizardEngineHook } from '../../../hooks/useWizardEngine';
 import { HomeLoadingSkeleton } from '../../../components/LoadingSkeleton';
 import { getStrictRedirectTarget, resolveCanonicalRoute } from '../../../utils/legacyRoutes';
-import {
-  getCheckInAvailabilityWindow,
-  getCheckInWindowHint,
-  isCheckInPeriodInWindow,
-} from '../../../utils/checkInWindows';
-import type { CheckInTimeOfDay } from '../../../types';
-import type { WizardAction } from '../../../utils/wizardEngine';
-import { mergeTodayCheckInsFromSources } from '../../../utils/mergeProfile';
-import { getLocalDateKey } from '../../../utils/checkInDate';
+import { isCheckInPeriodInWindow } from '../../../utils/checkInWindows';
+import { countLocalCalendarDaysSinceSober } from '../../../utils/checkInDate';
+import { getGuidanceCollapsedFocusIndex, type WizardAction } from '../../../utils/wizardEngine';
 import { TabHeaderActions } from '../../../components/TabHeaderActions';
-// (kept import list clean)
-
-
-const CHECK_IN_PERIODS: { period: CheckInTimeOfDay; title: string }[] = [
-  { period: 'morning', title: 'Morning\nCheck-In' },
-  { period: 'afternoon', title: 'Afternoon\nCheck-In' },
-  { period: 'evening', title: 'Evening\nCheck-In' },
-];
 
 
 function ActionToast({ title, onDone }: { title: string; onDone: () => void }) {
@@ -85,13 +70,7 @@ export default function TodayHubScreen() {
   const { profile, daysSober } = useUser();
   const centralProfile = useAppStore((s) => s.userProfile);
   const centralDailyCheckIns = useAppStore((s) => s.dailyCheckIns);
-  const { todayCheckIns: sliceTodayCheckIns, checkIns } = useCheckin();
-
-
-  const mergedTodayCheckIns = useMemo(() => {
-    const todayStr = getLocalDateKey();
-    return mergeTodayCheckInsFromSources(sliceTodayCheckIns, centralDailyCheckIns, todayStr);
-  }, [sliceTodayCheckIns, centralDailyCheckIns]);
+  const { checkIns } = useCheckin();
 
   const sourceCheckIns = useMemo(
     () => (centralDailyCheckIns.length > 0 ? centralDailyCheckIns : checkIns),
@@ -114,7 +93,6 @@ export default function TodayHubScreen() {
     });
   }, [profile.soberDate]);
 
-  const todayCheckIns = mergedTodayCheckIns;
   const { plan: wizardPlan, recentCompletion, clearRecentCompletion } =
     useWizardEngineHook();
 
@@ -127,6 +105,11 @@ export default function TodayHubScreen() {
   }, []);
 
   const checkInNow = useMemo(() => new Date(), [checkInWindowTick]);
+
+  const recoveryJourneyDaysCompleted = useMemo(
+    () => countLocalCalendarDaysSinceSober(profile.soberDate, checkInNow),
+    [profile.soberDate, checkInNow],
+  );
 
   const [guidanceExpanded, setGuidanceExpanded] = useState(false);
 
@@ -182,17 +165,28 @@ export default function TodayHubScreen() {
 
   const guidanceActions = dailyGuidance.actions;
   const guidanceMultiple = guidanceActions.length > 1;
+  const guidanceFocusIndex = useMemo(
+    () => getGuidanceCollapsedFocusIndex(guidanceActions),
+    [guidanceActions],
+  );
   const guidanceVisibleActions =
     guidanceMultiple && !guidanceExpanded
-      ? guidanceActions.slice(0, 1)
+      ? guidanceActions.slice(guidanceFocusIndex, guidanceFocusIndex + 1)
       : guidanceActions;
 
-  const isPeriodComplete = (period: CheckInTimeOfDay) =>
-    todayCheckIns.some((c) => c.timeOfDay === period);
-
+  const checkInRowLocked = (action: WizardAction): boolean => {
+    const period = action.params?.period;
+    if (period !== 'morning' && period !== 'afternoon' && period !== 'evening') return false;
+    if (action.completed) return false;
+    return !isCheckInPeriodInWindow(period, checkInNow);
+  };
 
   const handleActionPress = (action: WizardAction) => {
     if (action.completed) return;
+    if (checkInRowLocked(action)) {
+      Haptics.selectionAsync();
+      return;
+    }
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     const period = action.params?.period;
     if (period === 'morning' || period === 'afternoon' || period === 'evening') {
@@ -230,7 +224,7 @@ export default function TodayHubScreen() {
         {showRecoveryJourneyCard && (
           <View style={styles.recoveryJourneyCard} testID="todayhub-recovery-journey-card">
             <Text style={styles.recoveryJourneyTitle}>Recovery is one day at a time</Text>
-            <Text style={styles.recoveryJourneyDays}>{daysSober}</Text>
+            <Text style={styles.recoveryJourneyDays}>{recoveryJourneyDaysCompleted}</Text>
             <Text style={styles.recoveryJourneyDaysCaption}>Days Completed</Text>
             <Text style={styles.recoveryJourneySub}>Since {recoveryJourneySinceLabel}</Text>
           </View>
@@ -304,71 +298,6 @@ export default function TodayHubScreen() {
         )}
 
 
-        {/* Time-of-day check-ins */}
-        <Text style={styles.sectionLabel}>Check-ins today</Text>
-        <View style={styles.checkInRow}>
-          {CHECK_IN_PERIODS.map(({ period, title }) => {
-            const done = isPeriodComplete(period);
-            const inWindow = isCheckInPeriodInWindow(period, checkInNow);
-            const locked = !done && !inWindow;
-            const a11yPeriod = title.replace('\n', ' ');
-            return (
-              <Pressable
-                key={period}
-                disabled={locked}
-                accessibilityState={{ disabled: locked }}
-                style={({ pressed }) => [
-                  styles.checkInChip,
-                  done && styles.checkInChipDone,
-                  locked && styles.checkInChipLocked,
-                  pressed && !locked && styles.pressed,
-                ]}
-                onPress={() => {
-                  if (locked) return;
-                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                  router.push({
-                    pathname: '/daily-checkin',
-                    params: { period },
-                  } as any);
-                }}
-                testID={`todayhub-checkin-${period}`}
-                accessibilityLabel={
-                  done
-                    ? `${a11yPeriod} completed`
-                    : locked
-                      ? `${a11yPeriod}, please wait, ${getCheckInWindowHint(period)}`
-                      : a11yPeriod
-                }
-              >
-                <View style={styles.checkInChipIconWrap}>
-                  {done ? (
-                    <Check size={16} color={Colors.primary} />
-                  ) : (
-                    <Activity size={16} color={locked ? Colors.textMuted : Colors.primary} />
-                  )}
-                </View>
-                <Text
-                  style={[
-                    styles.checkInChipLabel,
-                    done && styles.checkInChipLabelDone,
-                    locked && styles.checkInChipLabelLocked,
-                  ]}
-                  numberOfLines={2}
-                >
-                  {title}
-                </Text>
-                <Text style={styles.checkInChipWindow} numberOfLines={1}>
-                  {getCheckInAvailabilityWindow(period)}
-                </Text>
-                <Text style={[styles.checkInChipSub, locked && styles.checkInChipSubLocked]}>
-                  {done ? 'Done' : locked ? 'PLEASE WAIT' : 'Tap'}
-                </Text>
-              </Pressable>
-            );
-          })}
-        </View>
-
-
         {/* Completion card */}
         {dailyGuidance.isComplete && dailyGuidance.completionMessage && (
           <View style={styles.completionCard}>
@@ -421,54 +350,65 @@ export default function TodayHubScreen() {
                 guidanceMultiple ? { marginBottom: 8 } : null,
               ]}
             >
-              {guidanceVisibleActions.map((action) => (
-                <Pressable
-                  key={action.id}
-                  disabled={action.completed}
-                  accessibilityState={{ disabled: action.completed }}
-                  style={({ pressed }) => [
-                    styles.planRow,
-                    action.completed && styles.planRowDone,
-                    pressed && !action.completed && styles.pressed,
-                  ]}
-                  onPress={() => handleActionPress(action)}
-                  testID={`todayhub-action-${action.id}`}
-                >
-                  <View
-                    style={[
-                      styles.planStepBadge,
-                      action.completed && styles.planStepBadgeDone,
+              {guidanceVisibleActions.map((action) => {
+                const locked = checkInRowLocked(action);
+                const rowDisabled = action.completed || locked;
+                return (
+                  <Pressable
+                    key={action.id}
+                    disabled={rowDisabled}
+                    accessibilityState={{ disabled: rowDisabled }}
+                    style={({ pressed }) => [
+                      styles.planRow,
+                      action.completed && styles.planRowDone,
+                      locked && styles.planRowLocked,
+                      pressed && !rowDisabled && styles.pressed,
                     ]}
+                    onPress={() => handleActionPress(action)}
+                    testID={`todayhub-action-${action.id}`}
                   >
-                    {action.completed ? (
-                      <Check size={14} color="#FFF" />
-                    ) : (
-                      <ArrowRight size={14} color={Colors.primary} />
+                    <View
+                      style={[
+                        styles.planStepBadge,
+                        action.completed && styles.planStepBadgeDone,
+                        locked && styles.planStepBadgeLocked,
+                      ]}
+                    >
+                      {action.completed ? (
+                        <Check size={14} color="#FFF" />
+                      ) : (
+                        <ArrowRight
+                          size={14}
+                          color={locked ? Colors.textMuted : Colors.primary}
+                        />
+                      )}
+                    </View>
+                    <View style={styles.planTextWrap}>
+                      <Text
+                        style={[
+                          styles.planRowTitle,
+                          action.completed && styles.planRowTitleDone,
+                          locked && styles.planRowTitleLocked,
+                        ]}
+                      >
+                        {action.title}
+                      </Text>
+                      <Text
+                        style={[
+                          styles.planRowSubtitle,
+                          action.completed && styles.planRowSubtitleDone,
+                          locked && styles.planRowSubtitleLocked,
+                        ]}
+                      >
+                        {action.subtitle}
+                      </Text>
+                    </View>
+                    {!rowDisabled && (
+                      <ChevronRight size={18} color={Colors.textSecondary} />
                     )}
-                  </View>
-                  <View style={styles.planTextWrap}>
-                    <Text
-                      style={[
-                        styles.planRowTitle,
-                        action.completed && styles.planRowTitleDone,
-                      ]}
-                    >
-                      {action.title}
-                    </Text>
-                    <Text
-                      style={[
-                        styles.planRowSubtitle,
-                        action.completed && styles.planRowSubtitleDone,
-                      ]}
-                    >
-                      {action.subtitle}
-                    </Text>
-                  </View>
-                  {!action.completed && (
-                    <ChevronRight size={18} color={Colors.textSecondary} />
-                  )}
-                </Pressable>
-              ))}
+                  </Pressable>
+                );
+              })}
             </View>
             {guidanceMultiple ? (
               <Pressable
@@ -639,14 +579,6 @@ const styles = StyleSheet.create({
     marginTop: 4,
     textAlign: 'center' as const,
   },
-  sectionLabel: {
-    fontSize: 12,
-    fontWeight: '700',
-    color: Colors.textMuted,
-    letterSpacing: 1,
-    marginBottom: 8,
-    textTransform: 'uppercase',
-  },
   devOnboardingBlock: {
     marginTop: 28,
     gap: 8,
@@ -731,72 +663,6 @@ const styles = StyleSheet.create({
     fontSize: 15,
     fontWeight: '700',
     color: Colors.white,
-  },
-  checkInRow: {
-    flexDirection: 'row',
-    gap: 8,
-    marginBottom: 14,
-  },
-  checkInChip: {
-    flex: 1,
-    backgroundColor: Colors.cardBackground,
-    borderRadius: 14,
-    paddingVertical: 12,
-    paddingHorizontal: 6,
-    borderWidth: 1,
-    borderColor: Colors.border,
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 4,
-    minHeight: 102,
-  },
-  checkInChipDone: {
-    borderColor: Colors.primary + '55',
-    backgroundColor: Colors.primary + '08',
-  },
-  checkInChipLocked: {
-    opacity: 0.65,
-    borderStyle: 'dashed',
-    borderColor: Colors.border,
-    backgroundColor: Colors.surface,
-  },
-  checkInChipIconWrap: {
-    width: 28,
-    height: 28,
-    borderRadius: 10,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: Colors.surface,
-  },
-  checkInChipLabel: {
-    fontSize: 11,
-    fontWeight: '700',
-    color: Colors.text,
-    textAlign: 'center',
-    lineHeight: 14,
-  },
-  checkInChipLabelDone: {
-    color: Colors.textSecondary,
-  },
-  checkInChipLabelLocked: {
-    color: Colors.textMuted,
-  },
-  checkInChipWindow: {
-    fontSize: 9,
-    fontWeight: '500',
-    color: Colors.textMuted,
-    textAlign: 'center',
-    lineHeight: 12,
-  },
-  checkInChipSub: {
-    fontSize: 10,
-    fontWeight: '600',
-    color: Colors.textMuted,
-    textTransform: 'uppercase',
-    letterSpacing: 0.6,
-  },
-  checkInChipSubLocked: {
-    color: Colors.textMuted,
   },
   completionCard: {
     flexDirection: 'row',
@@ -893,6 +759,12 @@ const styles = StyleSheet.create({
   planRowDone: {
     opacity: 0.6,
   },
+  planRowLocked: {
+    opacity: 0.72,
+    borderWidth: 1,
+    borderStyle: 'dashed',
+    borderColor: Colors.border,
+  },
   planStepBadge: {
     width: 28,
     height: 28,
@@ -903,6 +775,9 @@ const styles = StyleSheet.create({
   },
   planStepBadgeDone: {
     backgroundColor: Colors.primary,
+  },
+  planStepBadgeLocked: {
+    backgroundColor: Colors.surface,
   },
   planTextWrap: {
     flex: 1,
@@ -915,12 +790,18 @@ const styles = StyleSheet.create({
   planRowTitleDone: {
     color: Colors.textSecondary,
   },
+  planRowTitleLocked: {
+    color: Colors.textMuted,
+  },
   planRowSubtitle: {
     fontSize: 13,
     color: Colors.textSecondary,
     marginTop: 2,
   },
   planRowSubtitleDone: {
+    color: Colors.textMuted,
+  },
+  planRowSubtitleLocked: {
     color: Colors.textMuted,
   },
   warningCard: {

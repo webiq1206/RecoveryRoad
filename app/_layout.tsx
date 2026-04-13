@@ -19,6 +19,7 @@ import { RetentionProvider } from "../providers/RetentionProvider";
 import { NotificationProvider } from "../providers/NotificationProvider";
 import { EnterpriseProvider } from "../providers/EnterpriseProvider";
 import ErrorBoundary from "../components/ErrorBoundary";
+import { CheckInReminderSync } from "../components/CheckInReminderSync";
 import LockScreen from "../components/LockScreen";
 import Colors from "../constants/colors";
 import { useShakeToCrisis } from "../hooks/useShakeToCrisis";
@@ -52,6 +53,7 @@ function RootLayoutNav() {
   useShakeToCrisis();
   return (
     <>
+      <CheckInReminderSync />
       <Stack
         screenOptions={{
           headerBackTitle: "Back",

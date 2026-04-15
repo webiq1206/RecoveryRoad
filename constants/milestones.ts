@@ -18,11 +18,13 @@ export const ADDICTION_TYPES = [
   'Smoking',
   'Vaping',
   'Cannabis',
+  'Drugs',
   'Gambling',
   'Social Media',
   'Sugar',
   'Caffeine',
   'Pornography',
+  'Sex',
   'Shopping',
   'Other',
 ];

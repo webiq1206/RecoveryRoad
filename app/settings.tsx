@@ -73,7 +73,7 @@ export default function SettingsScreen() {
     resumeNotifications,
     isPermissionGranted,
   } = useNotifications();
-  const { providerModeEnabled, setProviderModeEnabled } = useProviderMode();
+  const { providerModeEnabled } = useProviderMode();
 
   const privacyControls = profile.privacyControls ?? {
     isAnonymous: false,
@@ -702,44 +702,6 @@ export default function SettingsScreen() {
             </Pressable>
           </>
         )}
-
-        {/* Professional Mode */}
-        <Text style={[styles.sectionLabel, { marginTop: 28 }]}>
-          PROFESSIONAL MODE
-        </Text>
-        <View style={styles.settingRow}>
-          <View style={styles.settingLeft}>
-            <View
-              style={[
-                styles.settingIcon,
-                { backgroundColor: 'rgba(90,106,122,0.12)' },
-              ]}
-            >
-              <Building2 size={17} color={Colors.textSecondary} />
-            </View>
-            <View>
-              <Text style={styles.settingLabel}>Professional Mode</Text>
-              <Text style={styles.settingValue}>
-                Show provider portal, compliance & enterprise screens
-              </Text>
-            </View>
-          </View>
-          <Switch
-            value={providerModeEnabled}
-            onValueChange={(v) => {
-              Haptics.selectionAsync();
-              setProviderModeEnabled(v);
-            }}
-            trackColor={{
-              false: Colors.border,
-              true: Colors.primary + '80',
-            }}
-            thumbColor={
-              providerModeEnabled ? Colors.primary : Colors.textMuted
-            }
-            testID="provider-mode-toggle"
-          />
-        </View>
 
         {providerModeEnabled && (
           <>

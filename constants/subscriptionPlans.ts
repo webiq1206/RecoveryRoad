@@ -168,12 +168,6 @@ export const TIER_COMPARISON_ROWS: TierComparisonRow[] = [
     premium: true,
   },
   {
-    id: 'therapist_export',
-    label: 'Provider / therapist export & reports',
-    freemium: false,
-    premium: true,
-  },
-  {
     id: 'predictive_analytics',
     label: 'Predictive engine & advanced analytics (full)',
     freemium: false,

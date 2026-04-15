@@ -1,5 +1,18 @@
 import React, { useState, useCallback, useMemo, useRef, useEffect } from 'react';
-import { View, Text, StyleSheet, ScrollView, Pressable, Switch, Alert, Animated, TextInput, Modal } from 'react-native';
+import {
+  View,
+  Text,
+  StyleSheet,
+  ScrollView,
+  Pressable,
+  Switch,
+  Alert,
+  Animated,
+  TextInput,
+  Modal,
+  useWindowDimensions,
+} from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ScreenScrollView } from '../../../components/ScreenScrollView';
 import { User, Shield, Target, TrendingUp, Bell, BellOff, Lock, Unlock, MessageCircle, ChevronRight, Sparkles, Clock, Heart, AlertTriangle, Sun, Moon as MoonIcon, ShieldAlert, Award, Crown, RotateCcw, Calendar, DollarSign, BookOpen, Check, X, Scale, Gauge, PauseCircle, PlayCircle, Activity } from 'lucide-react-native';
 import * as Haptics from 'expo-haptics';
@@ -44,6 +57,9 @@ export default function ProfileScreen() {
   const router = require('expo-router').useRouter();
   const { plan: wizardPlan } = useWizardEngineHook();
   const { setupProgress } = wizardPlan;
+  const insets = useSafeAreaInsets();
+  const { height: windowHeight } = useWindowDimensions();
+  const addictionListMaxHeight = Math.max(200, windowHeight * 0.42);
 
   const [editingField, setEditingField] = useState<string | null>(null);
   const [tempValue, setTempValue] = useState<string>('');
@@ -573,7 +589,7 @@ export default function ProfileScreen() {
         onRequestClose={() => setShowAddictionModal(false)}
       >
         <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
+          <View style={[styles.modalContent, { paddingBottom: 20 + insets.bottom }]}>
             <View style={styles.modalHeader}>
               <Text style={styles.modalTitle}>Select Recovery Types</Text>
               <Pressable onPress={() => setShowAddictionModal(false)} hitSlop={12}>
@@ -581,7 +597,12 @@ export default function ProfileScreen() {
               </Pressable>
             </View>
             <Text style={styles.modalSubtitle}>Select all that apply</Text>
-            <ScrollView style={styles.modalList} showsVerticalScrollIndicator={true}>
+            <ScrollView
+              style={[styles.modalList, { maxHeight: addictionListMaxHeight }]}
+              contentContainerStyle={styles.modalListContent}
+              showsVerticalScrollIndicator={true}
+              nestedScrollEnabled
+            >
               {ADDICTION_TYPES.map((type) => {
                 const isSelected = tempAddictions.includes(type);
                 return (
@@ -623,7 +644,7 @@ export default function ProfileScreen() {
         onRequestClose={() => setShowDateModal(false)}
       >
         <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
+          <View style={[styles.modalContent, { paddingBottom: 20 + insets.bottom }]}>
             <View style={styles.modalHeader}>
               <Text style={styles.modalTitle}>Select Sober Date</Text>
               <Pressable onPress={() => setShowDateModal(false)} hitSlop={12}>
@@ -1223,6 +1244,7 @@ const styles = StyleSheet.create({
     borderTopRightRadius: 24,
     padding: 20,
     maxHeight: '80%',
+    overflow: 'hidden',
   },
   modalHeader: {
     flexDirection: 'row',
@@ -1242,6 +1264,9 @@ const styles = StyleSheet.create({
   },
   modalList: {
     marginBottom: 16,
+  },
+  modalListContent: {
+    paddingBottom: 8,
   },
   modalItem: {
     flexDirection: 'row',

@@ -20,6 +20,7 @@ const STORAGE_KEYS = {
   IS_ANONYMOUS: 'recovery_rooms_anonymous',
   DISPLAY_NAME: 'recovery_rooms_display_name',
   BLOCKED_AUTHORS: 'recovery_rooms_blocked_authors',
+  BLOCKED_AUTHOR_IDS: 'recovery_rooms_blocked_author_ids',
 };
 
 const ANONYMOUS_NAMES = [
@@ -361,6 +362,7 @@ export const [RecoveryRoomsProvider, useRecoveryRooms] = createContextHook(() =>
   const [isAnonymousDefault, setIsAnonymousDefault] = useState<boolean>(false);
   const [displayName, setDisplayName] = useState<string>('');
   const [blockedAuthors, setBlockedAuthors] = useState<string[]>([]);
+  const [blockedUserIds, setBlockedUserIds] = useState<string[]>([]);
   const blockedAuthorsRef = useRef<string[]>([]);
 
   useEffect(() => {
@@ -370,6 +372,7 @@ export const [RecoveryRoomsProvider, useRecoveryRooms] = createContextHook(() =>
   useEffect(() => {
     if (isLiveSocialMode()) return;
     void loadData<string[]>(STORAGE_KEYS.BLOCKED_AUTHORS, []).then(setBlockedAuthors);
+    void loadData<string[]>(STORAGE_KEYS.BLOCKED_AUTHOR_IDS, []).then(setBlockedUserIds);
   }, []);
 
   const liveSessionQuery = useQuery({
@@ -396,7 +399,7 @@ export const [RecoveryRoomsProvider, useRecoveryRooms] = createContextHook(() =>
 
   const liveBlocksQuery = useQuery({
     queryKey: ['liveSocialBlocks'],
-    queryFn: () => liveSocial.listLiveBlockedAuthors(),
+    queryFn: () => liveSocial.listLiveRoomBlocks(),
     enabled: isLiveSocialMode() && liveSessionQuery.isSuccess,
     staleTime: 30_000,
   });
@@ -477,7 +480,10 @@ export const [RecoveryRoomsProvider, useRecoveryRooms] = createContextHook(() =>
 
   useEffect(() => {
     if (!isLiveSocialMode()) return;
-    if (liveBlocksQuery.data) setBlockedAuthors(liveBlocksQuery.data);
+    if (liveBlocksQuery.data) {
+      setBlockedAuthors(liveBlocksQuery.data.blockedAuthorNames ?? []);
+      setBlockedUserIds(liveBlocksQuery.data.blockedUserIds ?? []);
+    }
   }, [liveBlocksQuery.data]);
 
   const saveRoomsMutation = useMutation({
@@ -655,12 +661,14 @@ export const [RecoveryRoomsProvider, useRecoveryRooms] = createContextHook(() =>
       description,
       createdAt: new Date().toISOString(),
       status: 'pending',
+      kind: 'message',
     };
     const updatedReports = [...reports, report];
     saveReportsMutation.mutate(updatedReports);
 
     const updatedRooms = rooms.map(r => {
       if (r.id !== roomId) return r;
+      if (!messageId) return r;
       return {
         ...r,
         messages: r.messages.map(m =>
@@ -671,28 +679,94 @@ export const [RecoveryRoomsProvider, useRecoveryRooms] = createContextHook(() =>
     saveRoomsMutation.mutate(updatedRooms);
   }, [rooms, reports, userId, queryClient, saveReportsMutation, saveRoomsMutation]);
 
-  const blockAuthor = useCallback((authorName: string) => {
-    const name = authorName.trim();
-    if (!name) return;
+  const reportUser = useCallback(
+    (
+      roomId: string,
+      subjectUserId: string,
+      subjectDisplayName: string,
+      reason: RoomReport['reason'],
+      description: string,
+    ) => {
+      if (isLiveSocialMode()) {
+        void (async () => {
+          try {
+            await liveSocial.reportLiveRoomUser({
+              roomId,
+              subjectUserId,
+              subjectDisplayName,
+              reason,
+              description,
+            });
+            await queryClient.invalidateQueries({ queryKey: ['recoveryRooms'] });
+          } catch (e) {
+            console.log('[RecoveryRooms] reportLiveRoomUser failed:', e);
+          }
+        })();
+        return;
+      }
+      const report: RoomReport = {
+        id: 'report_user_' + Date.now().toString(),
+        roomId,
+        messageId: '',
+        reporterId: userId,
+        reason,
+        description,
+        createdAt: new Date().toISOString(),
+        status: 'pending',
+        kind: 'user',
+        subjectUserId,
+        subjectDisplayName,
+      };
+      const updatedReports = [...reports, report];
+      saveReportsMutation.mutate(updatedReports);
+    },
+    [reports, userId, queryClient, saveReportsMutation],
+  );
+
+  const blockUser = useCallback((authorDisplayName: string, authorAccountId?: string) => {
+    const name = authorDisplayName.trim();
+    const aid = authorAccountId?.trim() ?? '';
+    if (!name && !aid) return;
     if (isLiveSocialMode()) {
       void (async () => {
         try {
-          const next = await liveSocial.addLiveBlockedAuthor(name);
-          setBlockedAuthors(next);
+          const next = await liveSocial.addLiveRoomBlock({
+            authorName: name || undefined,
+            authorId: aid || undefined,
+          });
+          setBlockedAuthors(next.blockedAuthorNames ?? []);
+          setBlockedUserIds(next.blockedUserIds ?? []);
           await queryClient.invalidateQueries({ queryKey: ['liveSocialBlocks'] });
         } catch (e) {
-          console.log('[RecoveryRooms] addLiveBlockedAuthor failed:', e);
+          console.log('[RecoveryRooms] addLiveRoomBlock failed:', e);
         }
       })();
       return;
     }
-    setBlockedAuthors((prev) => {
-      if (prev.includes(name)) return prev;
-      const next = [...prev, name];
-      void saveData(STORAGE_KEYS.BLOCKED_AUTHORS, next);
-      return next;
-    });
+    if (name) {
+      setBlockedAuthors((prev) => {
+        if (prev.includes(name)) return prev;
+        const next = [...prev, name];
+        void saveData(STORAGE_KEYS.BLOCKED_AUTHORS, next);
+        return next;
+      });
+    }
+    if (aid) {
+      setBlockedUserIds((prev) => {
+        if (prev.includes(aid)) return prev;
+        const next = [...prev, aid];
+        void saveData(STORAGE_KEYS.BLOCKED_AUTHOR_IDS, next);
+        return next;
+      });
+    }
   }, [queryClient]);
+
+  const blockAuthor = useCallback(
+    (authorName: string) => {
+      blockUser(authorName);
+    },
+    [blockUser],
+  );
 
   const getRoomById = useCallback((roomId: string): RecoveryRoom | undefined => {
     return rooms.find(r => r.id === roomId);
@@ -748,8 +822,11 @@ export const [RecoveryRoomsProvider, useRecoveryRooms] = createContextHook(() =>
     leaveRoom,
     sendMessage,
     reportMessage,
+    reportUser,
+    blockUser,
     blockAuthor,
     blockedAuthors,
+    blockedUserIds,
     getRoomById,
     getUpcomingSessions,
     topicLabels: TOPIC_LABELS,
@@ -757,7 +834,8 @@ export const [RecoveryRoomsProvider, useRecoveryRooms] = createContextHook(() =>
     rooms, joinedRooms, availableRooms, liveRooms, reports,
     userId, displayName, isAnonymousDefault, isLoading, socialMode, refetchRooms,
     setRoomDisplayName, setAnonymousDefault,
-    joinRoom, leaveRoom, sendMessage, reportMessage, blockAuthor, blockedAuthors,
+    joinRoom, leaveRoom, sendMessage, reportMessage, reportUser, blockUser, blockAuthor, blockedAuthors,
+    blockedUserIds,
     getRoomById, getUpcomingSessions,
   ]);
 });

@@ -35,8 +35,8 @@ EXPO_PUBLIC_LIVE_SOCIAL_API_URL=http://192.168.x.x:3847
 
 - Session: `POST /v1/auth/session` (device-scoped user record).
 - Recovery rooms: join, leave, post messages (requires join), **no scripted peer replies**.
-- Blocking: per-account blocked display names.
-- Reporting: `POST /v1/rooms/reports` stores items for admin review.
+- Blocking: `GET/POST /v1/me/blocks` — pass `authorName` and/or `authorId` (at least one required). Returns `blockedAuthorNames` and `blockedUserIds`.
+- Reporting: `POST /v1/rooms/reports` (message) and `POST /v1/rooms/user-reports` (participant) store items for admin review (`GET /v1/admin/reports`).
 - Community: posts, comments, likes, follows, profile registration.
 
 ### What you must add for production

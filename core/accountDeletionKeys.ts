@@ -29,6 +29,7 @@ export const ACCOUNT_DELETION_EXTRA_ASYNC_STORAGE_KEYS: readonly string[] = [
   'recovery_rooms_anonymous',
   'recovery_rooms_display_name',
   'recovery_rooms_blocked_authors',
+  'recovery_rooms_blocked_author_ids',
   'risk_prediction_data',
   'recovery:wizard_behavior',
   'behavioral_notification_state',

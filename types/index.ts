@@ -506,12 +506,19 @@ export type PremiumFeature =
 export interface RoomReport {
   id: string;
   roomId: string;
+  /** Set when the report targets a specific message; empty when reporting a participant without a single message. */
   messageId: string;
   reporterId: string;
   reason: 'inappropriate' | 'harassment' | 'spam' | 'triggering' | 'other';
   description: string;
   createdAt: string;
   status: 'pending' | 'reviewed' | 'resolved';
+  /** Defaults to `message` when omitted (back-compat). */
+  kind?: 'message' | 'user';
+  /** When `kind === 'user'`, the reported participant’s account id when known (live mode). */
+  subjectUserId?: string;
+  /** Display name at time of report (always useful for anonymous or legacy data). */
+  subjectDisplayName?: string;
 }
 
 export type MicroWinCategory = 'consistency' | 'emotional' | 'social' | 'growth' | 'resilience' | 'self_care';

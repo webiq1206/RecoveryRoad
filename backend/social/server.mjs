@@ -26,8 +26,17 @@ const roomMembers = new Map();
 /** @type {Map<string, any[]>} */
 const roomMessages = new Map();
 
-/** @type {Map<string, Set<string>>} */
-const blockedAuthorsByUser = new Map();
+/** @type {Map<string, { names: Set<string>, ids: Set<string> }>} */
+const roomBlocksByUser = new Map();
+
+function getRoomBlocks(userId) {
+  let b = roomBlocksByUser.get(userId);
+  if (!b) {
+    b = { names: new Set(), ids: new Set() };
+    roomBlocksByUser.set(userId, b);
+  }
+  return b;
+}
 
 /** @type {any[]} */
 const communityPosts = [];
@@ -253,21 +262,24 @@ const server = http.createServer(async (req, res) => {
     }
 
     if (path === '/v1/me/blocks' && req.method === 'GET') {
-      const set = blockedAuthorsByUser.get(user.id) || new Set();
-      return json(res, 200, { blockedAuthorNames: [...set] }, origin);
+      const b = getRoomBlocks(user.id);
+      return json(
+        res,
+        200,
+        { blockedAuthorNames: [...b.names], blockedUserIds: [...b.ids] },
+        origin,
+      );
     }
 
     if (path === '/v1/me/blocks' && req.method === 'POST') {
       const body = await readBody(req);
       const name = String(body?.authorName || '').trim();
-      if (!name) return json(res, 400, { error: 'authorName required' }, origin);
-      let set = blockedAuthorsByUser.get(user.id);
-      if (!set) {
-        set = new Set();
-        blockedAuthorsByUser.set(user.id, set);
-      }
-      set.add(name);
-      return json(res, 200, { blockedAuthorNames: [...set] }, origin);
+      const sid = String(body?.authorId || '').trim();
+      if (!name && !sid) return json(res, 400, { error: 'authorName or authorId required' }, origin);
+      const b = getRoomBlocks(user.id);
+      if (name) b.names.add(name);
+      if (sid) b.ids.add(sid);
+      return json(res, 200, { blockedAuthorNames: [...b.names], blockedUserIds: [...b.ids] }, origin);
     }
 
     if (path === '/v1/rooms' && req.method === 'GET') {
@@ -337,6 +349,23 @@ const server = http.createServer(async (req, res) => {
         status: 'pending',
       };
       moderationReports.push({ type: 'room_message', ...rep });
+      return json(res, 201, { ok: true }, origin);
+    }
+
+    if (path === '/v1/rooms/user-reports' && req.method === 'POST') {
+      const body = await readBody(req);
+      const rep = {
+        id: `rep_u_${randomUUID().slice(0, 10)}`,
+        roomId: String(body?.roomId || ''),
+        subjectUserId: String(body?.subjectUserId || ''),
+        subjectDisplayName: String(body?.subjectDisplayName || ''),
+        reporterId: user.id,
+        reason: body?.reason || 'other',
+        description: String(body?.description || ''),
+        createdAt: new Date().toISOString(),
+        status: 'pending',
+      };
+      moderationReports.push({ type: 'room_user', ...rep });
       return json(res, 201, { ok: true }, origin);
     }
 

@@ -11,7 +11,7 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Stack } from 'expo-router';
 import {
   Shield, Clock, Radio, X, Send, EyeOff, Eye,
-  Flag, Users, Calendar, ChevronDown, AlertTriangle,
+  Flag, Users, Calendar, ChevronDown, ChevronRight, AlertTriangle,
   Info, LogOut, MessageSquare, Heart, BookOpen,
 } from 'lucide-react-native';
 import * as Haptics from 'expo-haptics';
@@ -37,12 +37,14 @@ export default function RoomSessionScreen() {
     getRoomById,
     sendMessage,
     reportMessage,
+    reportUser,
     leaveRoom,
     displayName,
     isAnonymousDefault,
     userId,
-    blockAuthor,
+    blockUser,
     blockedAuthors,
+    blockedUserIds,
     socialMode,
     refetchRooms,
   } = useRecoveryRooms();
@@ -51,8 +53,12 @@ export default function RoomSessionScreen() {
 
   const visibleMessages = useMemo(() => {
     if (!room) return [];
-    return room.messages.filter((m) => m.isOwn || !blockedAuthors.includes(m.authorName));
-  }, [room, blockedAuthors]);
+    return room.messages.filter((m) => {
+      if (m.isOwn) return true;
+      if (m.authorId && blockedUserIds.includes(m.authorId)) return false;
+      return !blockedAuthors.includes(m.authorName);
+    });
+  }, [room, blockedAuthors, blockedUserIds]);
 
   const [sessionView, setSessionView] = useState<SessionView>('chat');
   const [messageText, setMessageText] = useState<string>('');
@@ -61,6 +67,11 @@ export default function RoomSessionScreen() {
   const [reportingMessageId, setReportingMessageId] = useState<string>('');
   const [reportReason, setReportReason] = useState<RoomReport['reason']>('inappropriate');
   const [reportDescription, setReportDescription] = useState<string>('');
+  const [showReportUserModal, setShowReportUserModal] = useState<boolean>(false);
+  const [reportingSubject, setReportingSubject] = useState<{ userId: string; displayName: string }>({
+    userId: '',
+    displayName: '',
+  });
   const [showRules, setShowRules] = useState<boolean>(false);
 
   const flatListRef = useRef<FlatList>(null);
@@ -98,25 +109,42 @@ export default function RoomSessionScreen() {
   const handleMessageActions = useCallback(
     (message: RecoveryRoomMessage) => {
       if (message.isOwn || message.isReported) return;
-      const author = message.isAnonymous ? 'Anonymous' : message.authorName;
-      Alert.alert('Message options', `Author: ${author}`, [
+      const authorLabel = message.isAnonymous ? 'Anonymous' : message.authorName;
+      Alert.alert('Safety: this message', `Participant: ${authorLabel}`, [
         { text: 'Cancel', style: 'cancel' },
         {
-          text: 'Report…',
+          text: 'Report message',
           onPress: () => handleReport(message.id),
         },
         {
-          text: 'Block author',
+          text: 'Report user',
+          onPress: () => {
+            setReportingSubject({
+              userId: message.authorId || `anon:${authorLabel}`,
+              displayName: authorLabel,
+            });
+            setReportReason('inappropriate');
+            setReportDescription('');
+            setShowReportUserModal(true);
+          },
+        },
+        {
+          text: 'Block user',
           style: 'destructive',
           onPress: () => {
-            blockAuthor(author);
+            blockUser(authorLabel, message.authorId || undefined);
             Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-            Alert.alert('Blocked', `You will no longer see messages from “${author}” in practice rooms on this device.`);
+            Alert.alert(
+              'User blocked',
+              socialMode === 'live'
+                ? 'You will not see new messages from this participant in recovery rooms while signed in with this account. Blocking is enforced by the app together with the server.'
+                : 'You will not see messages from this display name (and linked account id when available) in recovery rooms on this device.',
+            );
           },
         },
       ]);
     },
-    [handleReport, blockAuthor],
+    [handleReport, blockUser, socialMode],
   );
 
   const handleSubmitReport = useCallback(() => {
@@ -124,11 +152,43 @@ export default function RoomSessionScreen() {
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     reportMessage(roomId, reportingMessageId, reportReason, reportDescription);
     setShowReportModal(false);
+    const live = socialMode === 'live';
     Alert.alert(
-      'Report saved',
-      'Your report is stored on this device. It is not sent to a moderation team unless your organization sets up a separate reporting channel.',
+      'Report received',
+      live
+        ? 'Thank you. Your report was sent to the moderation queue for this app’s backend. We may remove content or restrict accounts that violate the Community Guidelines. You will not receive a personal reply for every report.'
+        : 'Thank you. Your report is saved on this device so you can share it with a sponsor or clinician if you choose. It is not sent to a remote moderation team unless live community is enabled for your build.',
     );
-  }, [roomId, reportingMessageId, reportReason, reportDescription, reportMessage]);
+  }, [roomId, reportingMessageId, reportReason, reportDescription, reportMessage, socialMode]);
+
+  const handleSubmitReportUser = useCallback(() => {
+    if (!roomId || !reportingSubject.displayName) return;
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    reportUser(roomId, reportingSubject.userId, reportingSubject.displayName, reportReason, reportDescription);
+    setShowReportUserModal(false);
+    const live = socialMode === 'live';
+    Alert.alert(
+      'User report received',
+      live
+        ? 'Thank you. This report flags the participant for moderators (not just a single message). Serious or illegal content may be escalated according to our enforcement policy. Emergency: contact local emergency services if you are in immediate danger.'
+        : 'Thank you. This user report is stored on this device. Enable the live community backend so reports can reach a moderation team.',
+    );
+  }, [roomId, reportingSubject, reportReason, reportDescription, reportUser, socialMode]);
+
+  const openSafetyMenu = useCallback(() => {
+    Haptics.selectionAsync();
+    Alert.alert(
+      'Community safety',
+      'Long-press any message from someone else to Report message, Report user, or Block user. Read the full Community Guidelines for conduct rules, enforcement, and escalation.',
+      [
+        { text: 'Close', style: 'cancel' },
+        {
+          text: 'Open guidelines',
+          onPress: () => router.push('/community-guidelines' as any),
+        },
+      ],
+    );
+  }, [router]);
 
   const handleLeaveRoom = useCallback(() => {
     Alert.alert(
@@ -275,14 +335,24 @@ export default function RoomSessionScreen() {
       </View>
 
       <View style={styles.infoSection}>
-        <Text style={styles.infoSectionTitle}>Safety</Text>
+        <Text style={styles.infoSectionTitle}>Safety & moderation</Text>
+        <View style={styles.safetyCard}>
+          <Flag size={20} color={Colors.danger} />
+          <View style={styles.safetyInfo}>
+            <Text style={styles.safetyTitle}>Report abuse</Text>
+            <Text style={styles.safetyDesc}>
+              Long-press a message you did not send to open options: report that message, report the user (flags their
+              account for review), or block the user so you stop seeing their messages.
+            </Text>
+          </View>
+        </View>
         <View style={styles.safetyCard}>
           <Shield size={20} color="#7DC9A0" />
           <View style={styles.safetyInfo}>
-            <Text style={styles.safetyTitle}>Reporting & blocking</Text>
+            <Text style={styles.safetyTitle}>Block users</Text>
             <Text style={styles.safetyDesc}>
-              Long-press a message to report it or block that author on this device. Open Community guidelines from the
-              header for full details.
+              Blocking hides that participant from your recovery rooms. With live community enabled, blocks are stored
+              with your account on the server as well as in the app.
             </Text>
           </View>
         </View>
@@ -298,12 +368,33 @@ export default function RoomSessionScreen() {
         <View style={styles.safetyCard}>
           <Heart size={20} color="#E8917A" />
           <View style={styles.safetyInfo}>
-            <Text style={styles.safetyTitle}>Emotional Safety</Text>
+            <Text style={styles.safetyTitle}>Emotional safety</Text>
             <Text style={styles.safetyDesc}>
-              If content feels triggering, please step away. Your wellbeing comes first.
+              If content feels triggering, step away. This is not a crisis service—use emergency services or a crisis
+              line if you are in immediate danger.
             </Text>
           </View>
         </View>
+        <View style={styles.safetyCard}>
+          <BookOpen size={20} color={Colors.primary} />
+          <View style={styles.safetyInfo}>
+            <Text style={styles.safetyTitle}>Community Guidelines</Text>
+            <Text style={styles.safetyDesc}>
+              The full guidelines explain acceptable content, enforcement, how moderation review works when live
+              community is on, and escalation paths.
+            </Text>
+          </View>
+        </View>
+        <Pressable
+          style={({ pressed }) => [styles.guidelinesCta, pressed && { opacity: 0.88 }]}
+          onPress={() => {
+            Haptics.selectionAsync();
+            router.push('/community-guidelines' as any);
+          }}
+        >
+          <Text style={styles.guidelinesCtaText}>Read Community Guidelines</Text>
+          <ChevronRight size={16} color={Colors.primary} />
+        </Pressable>
       </View>
 
       <Pressable
@@ -369,6 +460,15 @@ export default function RoomSessionScreen() {
         </View>
         <View style={styles.headerRight}>
           <Pressable
+            onPress={openSafetyMenu}
+            hitSlop={10}
+            accessibilityRole="button"
+            accessibilityLabel="Safety and reporting"
+            testID="room-safety-btn"
+          >
+            <Flag size={20} color={Colors.danger} />
+          </Pressable>
+          <Pressable
             onPress={() => {
               Haptics.selectionAsync();
               router.push('/community-guidelines' as any);
@@ -430,6 +530,21 @@ export default function RoomSessionScreen() {
         })}
       </View>
 
+      <Pressable
+        style={({ pressed }) => [styles.safetyBar, pressed && { opacity: 0.88 }]}
+        onPress={() => {
+          Haptics.selectionAsync();
+          router.push('/community-guidelines' as any);
+        }}
+        testID="room-safety-guidelines-bar"
+      >
+        <Shield size={16} color={Colors.primary} />
+        <Text style={styles.safetyBarText} numberOfLines={2}>
+          Guidelines · Report abuse · Block users — long-press a message for options
+        </Text>
+        <ChevronRight size={16} color={Colors.textMuted} />
+      </Pressable>
+
       {sessionView === 'chat' && (
         <KeyboardAvoidingView
           style={styles.chatArea}
@@ -485,10 +600,11 @@ export default function RoomSessionScreen() {
               <View style={styles.chatWelcome}>
                 <Shield size={20} color={Colors.primary} />
                 <Text style={styles.chatWelcomeText}>
-                  Welcome to {room.name}. This is a supportive space. Be kind.
+                  Welcome to {room.name}. Be kind. Long-press someone else’s message to report abuse, report a user, or
+                  block a user. Open the full Community Guidelines from the banner above or the book icon.
                 </Text>
                 <Pressable onPress={() => setShowRules(true)}>
-                  <Text style={styles.chatWelcomeLink}>View guidelines</Text>
+                  <Text style={styles.chatWelcomeLink}>View room rules</Text>
                 </Pressable>
               </View>
             }
@@ -534,18 +650,86 @@ export default function RoomSessionScreen() {
       {sessionView === 'info' && renderInfoView()}
       {sessionView === 'schedule' && renderScheduleView()}
 
+      <Modal visible={showReportUserModal} animationType="fade" transparent>
+        <View style={styles.modalOverlay}>
+          <View style={[styles.reportModal, { paddingBottom: insets.bottom + 20 }]}>
+            <View style={styles.reportHeader}>
+              <AlertTriangle size={20} color={Colors.warning} />
+              <Text style={styles.reportTitle}>Report user</Text>
+              <Pressable onPress={() => setShowReportUserModal(false)} hitSlop={12}>
+                <X size={20} color={Colors.textSecondary} />
+              </Pressable>
+            </View>
+            <Text style={styles.reportSubtext}>
+              Flags this participant for review (not only one message). Include anything moderators should know.
+            </Text>
+            <Text style={styles.reportSubjectLine}>
+              Participant: {reportingSubject.displayName || 'Unknown'}
+            </Text>
+
+            {REPORT_REASONS.map(reason => (
+              <Pressable
+                key={reason.key}
+                style={[
+                  styles.reportReasonItem,
+                  reportReason === reason.key && styles.reportReasonItemActive,
+                ]}
+                onPress={() => setReportReason(reason.key)}
+              >
+                <View style={[
+                  styles.reportRadio,
+                  reportReason === reason.key && styles.reportRadioActive,
+                ]} />
+                <Text style={[
+                  styles.reportReasonText,
+                  reportReason === reason.key && { color: Colors.text },
+                ]}>
+                  {reason.label}
+                </Text>
+              </Pressable>
+            ))}
+
+            <TextInput
+              style={styles.reportInput}
+              placeholder="What happened? (recommended)"
+              placeholderTextColor={Colors.textMuted}
+              value={reportDescription}
+              onChangeText={setReportDescription}
+              multiline
+              maxLength={500}
+            />
+
+            <View style={styles.reportActions}>
+              <Pressable
+                style={styles.reportCancel}
+                onPress={() => setShowReportUserModal(false)}
+              >
+                <Text style={styles.reportCancelText}>Cancel</Text>
+              </Pressable>
+              <Pressable
+                style={styles.reportSubmit}
+                onPress={handleSubmitReportUser}
+              >
+                <Flag size={16} color="#FFFFFF" />
+                <Text style={styles.reportSubmitText}>Submit user report</Text>
+              </Pressable>
+            </View>
+          </View>
+        </View>
+      </Modal>
+
       <Modal visible={showReportModal} animationType="fade" transparent>
         <View style={styles.modalOverlay}>
           <View style={[styles.reportModal, { paddingBottom: insets.bottom + 20 }]}>
             <View style={styles.reportHeader}>
               <AlertTriangle size={20} color={Colors.warning} />
-              <Text style={styles.reportTitle}>Report Message</Text>
+              <Text style={styles.reportTitle}>Report message</Text>
               <Pressable onPress={() => setShowReportModal(false)} hitSlop={12}>
                 <X size={20} color={Colors.textSecondary} />
               </Pressable>
             </View>
             <Text style={styles.reportSubtext}>
-              Help keep this space safe. Select a reason for reporting.
+              Help keep this space safe. Select a reason for reporting this message.
             </Text>
 
             {REPORT_REASONS.map(reason => (
@@ -693,6 +877,43 @@ const styles = StyleSheet.create({
     color: Colors.textMuted,
   },
   viewTabTextActive: {
+    color: Colors.primary,
+  },
+  safetyBar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginHorizontal: 16,
+    marginBottom: 8,
+    paddingVertical: 10,
+    paddingHorizontal: 12,
+    backgroundColor: Colors.cardBackground,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: Colors.border,
+  },
+  safetyBarText: {
+    flex: 1,
+    fontSize: 12,
+    fontWeight: '600' as const,
+    color: Colors.textSecondary,
+    lineHeight: 16,
+  },
+  guidelinesCta: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginTop: 10,
+    paddingVertical: 12,
+    paddingHorizontal: 14,
+    backgroundColor: 'rgba(46,196,182,0.1)',
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: 'rgba(46,196,182,0.25)',
+  },
+  guidelinesCtaText: {
+    fontSize: 14,
+    fontWeight: '700' as const,
     color: Colors.primary,
   },
   chatArea: {
@@ -1103,6 +1324,12 @@ const styles = StyleSheet.create({
     color: Colors.textSecondary,
     marginBottom: 16,
     lineHeight: 19,
+  },
+  reportSubjectLine: {
+    fontSize: 13,
+    fontWeight: '600' as const,
+    color: Colors.text,
+    marginBottom: 12,
   },
   reportReasonItem: {
     flexDirection: 'row',

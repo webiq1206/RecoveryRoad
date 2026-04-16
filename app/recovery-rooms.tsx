@@ -9,7 +9,7 @@ import { useRouter } from 'expo-router';
 import {
   Users, Shield, Clock, Radio, ChevronRight, Lock,
   Eye, EyeOff, Search, X, Calendar, Zap, Heart,
-  MessageSquare, Star, Filter, LogOut,
+  MessageSquare, Star, Filter, LogOut, BookOpen, Flag,
 } from 'lucide-react-native';
 import * as Haptics from 'expo-haptics';
 import Colors from '../constants/colors';
@@ -542,6 +542,24 @@ export default function RecoveryRoomsScreen() {
       </View>
 
       {renderSocialModeBanner()}
+      <Pressable
+        style={({ pressed }) => [styles.guidelinesEntry, pressed && { opacity: 0.88 }]}
+        onPress={() => {
+          Haptics.selectionAsync();
+          router.push('/community-guidelines' as any);
+        }}
+        testID="recovery-rooms-guidelines-entry"
+      >
+        <Flag size={16} color={Colors.danger} />
+        <View style={{ flex: 1 }}>
+          <Text style={styles.guidelinesEntryTitle}>Community Guidelines & safety</Text>
+          <Text style={styles.guidelinesEntrySub} numberOfLines={2}>
+            Report abuse, block users, moderation review, and enforcement — tap to read
+          </Text>
+        </View>
+        <BookOpen size={18} color={Colors.primary} />
+        <ChevronRight size={16} color={Colors.textMuted} />
+      </Pressable>
       {renderLiveBanner()}
       {renderContent()}
 
@@ -720,6 +738,30 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: Colors.text,
     lineHeight: 17,
+  },
+  guidelinesEntry: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    marginHorizontal: 16,
+    marginBottom: 10,
+    paddingVertical: 12,
+    paddingHorizontal: 12,
+    backgroundColor: Colors.cardBackground,
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: Colors.border,
+  },
+  guidelinesEntryTitle: {
+    fontSize: 13,
+    fontWeight: '700' as const,
+    color: Colors.text,
+    marginBottom: 2,
+  },
+  guidelinesEntrySub: {
+    fontSize: 11,
+    color: Colors.textSecondary,
+    lineHeight: 15,
   },
   socialModeBannerLink: {
     fontSize: 12,

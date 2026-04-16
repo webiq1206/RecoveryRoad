@@ -11,7 +11,7 @@ import { useRouter } from 'expo-router';
 import {
   Heart, Shield, MessageCircle, Users, Phone, Plus, X,
   Send, UserPlus, CircleDot, ChevronRight,
-  PhoneCall, Trash2, ToggleLeft, ToggleRight, Radio, BookOpen,
+  PhoneCall, Trash2, ToggleLeft, ToggleRight, Radio, BookOpen, Flag,
 } from 'lucide-react-native';
 import * as Haptics from 'expo-haptics';
 import Colors from '../../../constants/colors';
@@ -175,6 +175,29 @@ export default function ConnectionScreen() {
     setShowNamePrompt(false);
     setNameInput('');
   }, [nameInput, setUserDisplayName]);
+
+  const renderUgcSafetyStrip = useCallback(
+    () => (
+      <Pressable
+        style={({ pressed }) => [styles.ugcSafetyStrip, pressed && { opacity: 0.9 }]}
+        onPress={() => {
+          Haptics.selectionAsync();
+          router.push('/community-guidelines' as any);
+        }}
+        testID="connection-ugc-safety-strip"
+      >
+        <Flag size={16} color={Colors.danger} />
+        <View style={{ flex: 1 }}>
+          <Text style={styles.ugcSafetyStripTitle}>Report abuse · Block users · Guidelines</Text>
+          <Text style={styles.ugcSafetyStripSub} numberOfLines={2}>
+            Tap for Community Guidelines, enforcement, escalation, and how moderation review works.
+          </Text>
+        </View>
+        <ChevronRight size={16} color={Colors.textMuted} />
+      </Pressable>
+    ),
+    [router],
+  );
 
   const activeChat = useMemo(() => {
     if (!activeChatId) return null;
@@ -383,6 +406,7 @@ export default function ConnectionScreen() {
 
   const renderPeersTab = () => (
     <View style={styles.tabContent}>
+      {renderUgcSafetyStrip()}
       <View style={styles.peerHeader}>
         <View style={styles.peerSafeNotice}>
           <Shield size={16} color="#7DC9A0" />
@@ -484,6 +508,7 @@ export default function ConnectionScreen() {
 
   const renderRoomsTab = () => (
     <View style={styles.tabContent}>
+      {renderUgcSafetyStrip()}
       <View style={styles.peerHeader}>
         <View style={styles.peerSafeNotice}>
           <Heart size={16} color="#E8917A" />
@@ -2115,6 +2140,31 @@ const styles = StyleSheet.create({
   btnPressed: {
     opacity: 0.9,
     transform: [{ scale: 0.98 }],
+  },
+  ugcSafetyStrip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    marginHorizontal: 16,
+    marginTop: 8,
+    marginBottom: 6,
+    paddingVertical: 12,
+    paddingHorizontal: 12,
+    backgroundColor: 'rgba(239,83,80,0.08)',
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: 'rgba(239,83,80,0.22)',
+  },
+  ugcSafetyStripTitle: {
+    fontSize: 13,
+    fontWeight: '700' as const,
+    color: Colors.text,
+    marginBottom: 2,
+  },
+  ugcSafetyStripSub: {
+    fontSize: 11,
+    color: Colors.textSecondary,
+    lineHeight: 15,
   },
   recoveryRoomsBanner: {
     flexDirection: 'row',

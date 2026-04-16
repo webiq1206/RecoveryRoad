@@ -154,17 +154,36 @@ export async function reportLiveRoomMessage(payload: {
   });
 }
 
-export async function listLiveBlockedAuthors(): Promise<string[]> {
-  const { blockedAuthorNames } = await api<{ blockedAuthorNames: string[] }>('/v1/me/blocks');
-  return blockedAuthorNames;
+export async function reportLiveRoomUser(payload: {
+  roomId: string;
+  subjectUserId: string;
+  subjectDisplayName: string;
+  reason: RoomReport['reason'];
+  description: string;
+}): Promise<void> {
+  await api('/v1/rooms/user-reports', {
+    method: 'POST',
+    body: JSON.stringify(payload),
+  });
 }
 
-export async function addLiveBlockedAuthor(authorName: string): Promise<string[]> {
-  const { blockedAuthorNames } = await api<{ blockedAuthorNames: string[] }>('/v1/me/blocks', {
+export type LiveRoomBlocks = {
+  blockedAuthorNames: string[];
+  blockedUserIds: string[];
+};
+
+export async function listLiveRoomBlocks(): Promise<LiveRoomBlocks> {
+  return api<LiveRoomBlocks>('/v1/me/blocks');
+}
+
+export async function addLiveRoomBlock(partial: {
+  authorName?: string;
+  authorId?: string;
+}): Promise<LiveRoomBlocks> {
+  return api<LiveRoomBlocks>('/v1/me/blocks', {
     method: 'POST',
-    body: JSON.stringify({ authorName }),
+    body: JSON.stringify(partial),
   });
-  return blockedAuthorNames;
 }
 
 /** --- Community feed --- */

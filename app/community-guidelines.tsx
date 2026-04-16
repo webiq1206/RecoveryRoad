@@ -1,10 +1,13 @@
 import React from 'react';
-import { View, Text, StyleSheet } from 'react-native';
-import { Stack } from 'expo-router';
+import { View, Text, StyleSheet, Pressable } from 'react-native';
+import { Stack, useRouter } from 'expo-router';
+import * as Haptics from 'expo-haptics';
 import { ScreenScrollView } from '../components/ScreenScrollView';
 import Colors from '../constants/colors';
 
 export default function CommunityGuidelinesScreen() {
+  const router = useRouter();
+
   return (
     <View style={styles.wrapper}>
       <Stack.Screen
@@ -87,6 +90,41 @@ export default function CommunityGuidelinesScreen() {
           of reporting and blocking, the <Text style={styles.em}>book</Text> icon for this full document, and the banner
           under the tabs on the room screen. The Connection tab also links here from peer and room areas.
         </Text>
+
+        <Text style={styles.section}>Privacy, terms, and data</Text>
+        <Text style={styles.body}>
+          Community participation is voluntary. Read how data is stored, what stays on your device, and when content may
+          be sent to a backend (for example when live community is enabled).
+        </Text>
+        <View style={styles.relatedLinks}>
+          <Pressable
+            style={({ pressed }) => [styles.relatedPill, pressed && { opacity: 0.85 }]}
+            onPress={() => {
+              Haptics.selectionAsync();
+              router.push('/privacy-policy' as never);
+            }}
+          >
+            <Text style={styles.relatedPillText}>Privacy Policy</Text>
+          </Pressable>
+          <Pressable
+            style={({ pressed }) => [styles.relatedPill, pressed && { opacity: 0.85 }]}
+            onPress={() => {
+              Haptics.selectionAsync();
+              router.push('/terms-of-service' as never);
+            }}
+          >
+            <Text style={styles.relatedPillText}>Terms of Service</Text>
+          </Pressable>
+          <Pressable
+            style={({ pressed }) => [styles.relatedPill, pressed && { opacity: 0.85 }]}
+            onPress={() => {
+              Haptics.selectionAsync();
+              router.push('/data-and-sharing' as never);
+            }}
+          >
+            <Text style={styles.relatedPillText}>Your data & sharing</Text>
+          </Pressable>
+        </View>
       </ScreenScrollView>
     </View>
   );
@@ -115,4 +153,21 @@ const styles = StyleSheet.create({
   em: { fontWeight: '700' as const, color: Colors.text },
   section: { fontSize: 16, fontWeight: '700' as const, color: Colors.text, marginTop: 22, marginBottom: 8 },
   body: { fontSize: 14, lineHeight: 22, color: Colors.textSecondary, marginBottom: 10 },
+  relatedLinks: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    marginTop: 8,
+    marginBottom: 8,
+  },
+  relatedPill: {
+    paddingVertical: 10,
+    paddingHorizontal: 14,
+    borderRadius: 12,
+    backgroundColor: Colors.cardBackground,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    marginRight: 10,
+    marginBottom: 10,
+  },
+  relatedPillText: { fontSize: 14, fontWeight: '600' as const, color: Colors.primary },
 });

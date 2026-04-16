@@ -31,6 +31,10 @@ import {
   Crown,
   Trash2,
   Eraser,
+  FileText,
+  Scale,
+  Share2,
+  Users,
 } from 'lucide-react-native';
 import * as Haptics from 'expo-haptics';
 import Colors from '../constants/colors';
@@ -471,6 +475,89 @@ export default function SettingsScreen() {
               }
             />
           </View>
+        </View>
+
+        <Text style={[styles.sectionLabel, { marginTop: 28 }]}>LEGAL & DATA</Text>
+        <View style={styles.groupCard}>
+          <Pressable
+            style={({ pressed }) => [styles.groupRow, pressed && { opacity: 0.85 }]}
+            onPress={() => {
+              Haptics.selectionAsync();
+              router.push('/privacy-policy' as never);
+            }}
+            testID="settings-privacy-policy"
+          >
+            <View style={styles.groupRowLeft}>
+              <View style={[styles.settingIcon, { backgroundColor: 'rgba(46,196,182,0.12)' }]}>
+                <FileText size={17} color={Colors.primary} />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.settingLabel}>Privacy Policy</Text>
+                <Text style={styles.settingValue}>On-device storage, optional features, contact</Text>
+              </View>
+            </View>
+            <ChevronRight size={16} color={Colors.textMuted} />
+          </Pressable>
+          <View style={styles.groupSeparator} />
+          <Pressable
+            style={({ pressed }) => [styles.groupRow, pressed && { opacity: 0.85 }]}
+            onPress={() => {
+              Haptics.selectionAsync();
+              router.push('/terms-of-service' as never);
+            }}
+            testID="settings-terms"
+          >
+            <View style={styles.groupRowLeft}>
+              <View style={[styles.settingIcon, { backgroundColor: 'rgba(90,106,122,0.12)' }]}>
+                <Scale size={17} color={Colors.textSecondary} />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.settingLabel}>Terms of Service</Text>
+                <Text style={styles.settingValue}>Acceptance, not medical advice, purchases</Text>
+              </View>
+            </View>
+            <ChevronRight size={16} color={Colors.textMuted} />
+          </Pressable>
+          <View style={styles.groupSeparator} />
+          <Pressable
+            style={({ pressed }) => [styles.groupRow, pressed && { opacity: 0.85 }]}
+            onPress={() => {
+              Haptics.selectionAsync();
+              router.push('/data-and-sharing' as never);
+            }}
+            testID="settings-data-sharing"
+          >
+            <View style={styles.groupRowLeft}>
+              <View style={[styles.settingIcon, { backgroundColor: 'rgba(66,165,245,0.12)' }]}>
+                <Share2 size={17} color="#42A5F5" />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.settingLabel}>Your data & sharing</Text>
+                <Text style={styles.settingValue}>Local vs shared, deletion, community consent</Text>
+              </View>
+            </View>
+            <ChevronRight size={16} color={Colors.textMuted} />
+          </Pressable>
+          <View style={styles.groupSeparator} />
+          <Pressable
+            style={({ pressed }) => [styles.groupRow, pressed && { opacity: 0.85 }]}
+            onPress={() => {
+              Haptics.selectionAsync();
+              router.push('/community-guidelines' as never);
+            }}
+            testID="settings-community-guidelines"
+          >
+            <View style={styles.groupRowLeft}>
+              <View style={[styles.settingIcon, { backgroundColor: 'rgba(156,39,176,0.12)' }]}>
+                <Users size={17} color="#9C27B0" />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.settingLabel}>Community Guidelines</Text>
+                <Text style={styles.settingValue}>UGC safety, report & block, moderation</Text>
+              </View>
+            </View>
+            <ChevronRight size={16} color={Colors.textMuted} />
+          </Pressable>
         </View>
 
         {/* Security */}

@@ -30,7 +30,8 @@ export const ONBOARDING_COPY = {
     {
       icon: 'lock' as const,
       title: 'Privacy-First Architecture',
-      description: 'Encrypted, anonymous-capable, and consent-driven. Your data stays yours. Always.',
+      description:
+        'Encrypted, anonymous-capable, and consent-driven. Privacy Policy, Terms, and “Your data & sharing” are available in-app before and after setup.',
     },
   ],
   steps: {

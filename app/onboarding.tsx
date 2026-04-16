@@ -21,6 +21,7 @@ import {
   type OnboardingStepId,
 } from '../utils/wizardSteps';
 import { useAppStore } from '../stores/useAppStore';
+import { LegalDocLinksRow } from '../components/LegalDocLinksRow';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const RECOVERY_STAGES: { value: RecoveryStage; label: string; desc: string; icon: React.ReactNode }[] = [
@@ -730,6 +731,11 @@ export default function OnboardingScreen() {
 
             <View style={styles.privacySection}>
               <Text style={styles.privacySectionTitle}>Privacy Controls</Text>
+              <Text style={styles.privacyExplainer}>
+                These choices apply if you use community or peer features. You can change them anytime in Settings.
+                Review the Privacy Policy, Terms, and how local vs shared data works using the links below.
+              </Text>
+              <LegalDocLinksRow compact />
               <View style={styles.privacyRow}>
                 <Text style={styles.privacyLabel}>Share progress with community</Text>
                 <Switch
@@ -791,6 +797,10 @@ export default function OnboardingScreen() {
               <Text style={styles.trustText}>Anonymous option</Text>
             </View>
           </View>
+          <LegalDocLinksRow compact />
+          <Text style={styles.legalHint}>
+            Tap to read how we handle data, terms for use of the app, and community rules before you continue.
+          </Text>
         </ScreenScrollView>
 
         <View style={[styles.bottomRow, { justifyContent: 'center' }]}>
@@ -967,6 +977,14 @@ const styles = StyleSheet.create({
   trustText: {
     fontSize: 13,
     color: Colors.textSecondary,
+  },
+  legalHint: {
+    fontSize: 12,
+    color: Colors.textMuted,
+    textAlign: 'center' as const,
+    lineHeight: 18,
+    marginTop: 10,
+    paddingHorizontal: 12,
   },
   stepLabel: {
     fontSize: 11,
@@ -1280,6 +1298,12 @@ const styles = StyleSheet.create({
     fontWeight: '700' as const,
     color: Colors.textMuted,
     letterSpacing: 1,
+    marginBottom: 8,
+  },
+  privacyExplainer: {
+    fontSize: 13,
+    lineHeight: 20,
+    color: Colors.textSecondary,
     marginBottom: 12,
   },
   privacyRow: {

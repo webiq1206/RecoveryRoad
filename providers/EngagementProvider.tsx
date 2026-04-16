@@ -27,7 +27,7 @@ const DEFAULT_STREAK: StreakData = {
 };
 
 const DEFAULT_NOTIFICATION_PREFS: NotificationPreferences = {
-  enabled: true,
+  enabled: false,
   morningCheckin: true,
   eveningReflection: true,
   riskBasedAlerts: true,

@@ -1,5 +1,6 @@
 import React, { useMemo } from 'react';
 import { View, Text, StyleSheet, Pressable } from 'react-native';
+import { useNotificationPermissionOfferFromParams } from '../hooks/useNotificationPermissionOfferFromParams';
 import { ScreenScrollView } from '../components/ScreenScrollView';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
@@ -43,6 +44,7 @@ function buildFocusRecommendation(
 export default function RecoverySnapshotScreen() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
+  useNotificationPermissionOfferFromParams();
   useHydrateRecoveryProfileStore();
   const { profile } = useRecoveryProfileStore();
 

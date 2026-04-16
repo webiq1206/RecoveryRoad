@@ -536,20 +536,38 @@ export default function SettingsScreen() {
             </View>
             <Switch
               value={notificationPreferences?.enabled ?? false}
-              onValueChange={async (val) => {
+              onValueChange={(val) => {
                 Haptics.selectionAsync();
-                if (val && Platform.OS !== 'web') {
-                  const ok = await promptForNotificationPermission();
-                  if (!ok) {
-                    Alert.alert(
-                      'Notifications not enabled',
-                      'Reminders need notification permission. You can allow them in system Settings when you are ready.',
-                      [{ text: 'OK' }],
-                    );
-                    return;
-                  }
+                if (!val) {
+                  updateNotificationPrefs({ enabled: false });
+                  return;
                 }
-                updateNotificationPrefs({ enabled: val });
+                if (Platform.OS === 'web') {
+                  updateNotificationPrefs({ enabled: true });
+                  return;
+                }
+                Alert.alert(
+                  'Turn on notifications?',
+                  'Next you will see the system permission prompt. If you allow, you can get check-in reminders and optional wellness nudges. You can turn this off anytime here in Settings.',
+                  [
+                    { text: 'Cancel', style: 'cancel' },
+                    {
+                      text: 'Continue',
+                      onPress: async () => {
+                        const ok = await promptForNotificationPermission();
+                        if (!ok) {
+                          Alert.alert(
+                            'Notifications not enabled',
+                            'Reminders need notification permission. You can allow them in system Settings when you are ready.',
+                            [{ text: 'OK' }],
+                          );
+                          return;
+                        }
+                        updateNotificationPrefs({ enabled: true });
+                      },
+                    },
+                  ],
+                );
               }}
               trackColor={{ false: Colors.surface, true: Colors.primary + '40' }}
               thumbColor={
@@ -720,20 +738,32 @@ export default function SettingsScreen() {
                   styles.frequencyRow,
                   pressed && { opacity: 0.85 },
                 ]}
-                onPress={async () => {
+                onPress={() => {
                   Haptics.selectionAsync();
                   if (Platform.OS === 'web') return;
-                  const ok = await promptForNotificationPermission();
-                  if (!ok) {
-                    Alert.alert(
-                      'Still blocked',
-                      'Open system Settings for this app and turn on notifications.',
-                      [
-                        { text: 'Cancel', style: 'cancel' },
-                        { text: 'Open Settings', onPress: () => void Linking.openSettings() },
-                      ],
-                    );
-                  }
+                  Alert.alert(
+                    'Allow notifications',
+                    'We will show the system prompt next so you can receive reminders in Recovery Companion.',
+                    [
+                      { text: 'Cancel', style: 'cancel' },
+                      {
+                        text: 'Continue',
+                        onPress: async () => {
+                          const ok = await promptForNotificationPermission();
+                          if (!ok) {
+                            Alert.alert(
+                              'Still blocked',
+                              'Open system Settings for this app and turn on notifications.',
+                              [
+                                { text: 'Cancel', style: 'cancel' },
+                                { text: 'Open Settings', onPress: () => void Linking.openSettings() },
+                              ],
+                            );
+                          }
+                        },
+                      },
+                    ],
+                  );
                 }}
               >
                 <Text

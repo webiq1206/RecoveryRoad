@@ -172,7 +172,7 @@ export default function OnboardingScreen() {
     if (hasStarted && remainingSteps.length === 0) {
       updateProfile({ hasCompletedOnboarding: true });
       updateUserState({ hasCompletedOnboarding: true });
-      router.replace('/protection-profile' as any);
+      router.replace('/protection-profile?offerNotifs=1' as any);
     }
   }, [
     devReplayFullOnboarding,
@@ -297,7 +297,7 @@ export default function OnboardingScreen() {
     updateProfile(completedProfile);
     updateUserState(completedProfile);
 
-    router.replace('/recovery-snapshot' as any);
+    router.replace('/recovery-snapshot?offerNotifs=1' as any);
   }, [
     name,
     isAnonymous,

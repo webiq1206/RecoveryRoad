@@ -253,29 +253,16 @@ export const [NotificationProvider, useNotifications] = createContextHook(() => 
     saveMutation.mutate(data);
   }, []);
 
-  useEffect(() => {
-    if (!stateQuery.isSuccess || isExpoGo || Platform.OS === 'web') return;
-    const cached = stateQuery.data;
-    let cancelled = false;
-    void (async () => {
-      const granted = await readNotificationPermissionGranted();
-      if (cancelled) return;
-      if (granted) {
-        await setupNotificationChannel();
-      }
-      if (granted !== cached.isPermissionGranted) {
-        saveMutation.mutate({ ...cached, isPermissionGranted: granted });
-      }
-      console.log('[Notifications] Permission (read-only on launch):', granted ? 'granted' : 'denied');
-    })();
-    return () => {
-      cancelled = true;
-    };
-  }, [stateQuery.isSuccess, stateQuery.data, isExpoGo, saveMutation]);
-
   /** Call when the user explicitly opts in (e.g. Settings → Notifications). */
   const promptForNotificationPermission = useCallback(async (): Promise<boolean> => {
     if (Platform.OS === 'web' || isExpoGo) return false;
+
+    const prior = await readNotificationPermissionGranted();
+    const s0 = stateRef.current;
+    if (prior !== s0.isPermissionGranted) {
+      saveMutation.mutate({ ...s0, isPermissionGranted: prior });
+    }
+
     const granted = await requestPermissions();
     if (granted) {
       await setupNotificationChannel();

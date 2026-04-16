@@ -1,7 +1,7 @@
 import createContextHook from '@nkzw/create-context-hook';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useState, useEffect, useLayoutEffect, useCallback, useMemo } from 'react';
 import { Platform, AppState } from 'react-native';
 import * as Crypto from 'expo-crypto';
 import {
@@ -131,17 +131,21 @@ export const [SecurityProvider, useSecurity] = createContextHook(() => {
     },
   });
 
-  useEffect(() => {
-    if (settingsQuery.data) {
-      setSettings(settingsQuery.data);
-      if (settingsQuery.data.isAuthEnabled) {
-        setIsAuthenticated(false);
-        setIsLocked(true);
-      }
+  // Apply stored security settings before paint so we never mount the main stack “unlocked”
+  // for one frame when PIN/biometrics are enabled (e.g. avoids Check-in Now flashing under the lock UI).
+  useLayoutEffect(() => {
+    if (!settingsQuery.data) return;
+    setSettings(settingsQuery.data);
+    if (settingsQuery.data.isAuthEnabled) {
+      setIsAuthenticated(false);
+      setIsLocked(true);
     }
+  }, [settingsQuery.data]);
+
+  useEffect(() => {
     if (auditQuery.data) setAuditLog(auditQuery.data);
     if (analyticsQuery.data) setAnalyticsEvents(analyticsQuery.data);
-  }, [settingsQuery.data, auditQuery.data, analyticsQuery.data]);
+  }, [auditQuery.data, analyticsQuery.data]);
 
   useEffect(() => {
     checkBiometricAvailability().then(setBiometricAvailable);
@@ -433,6 +437,8 @@ export const [SecurityProvider, useSecurity] = createContextHook(() => {
     biometricAvailable,
     isInitialized,
     isLoading: settingsQuery.isLoading,
+    /** True after security settings have been read from storage at least once (avoids rendering the app unlocked before we know PIN is enabled). */
+    isSecuritySettingsReady: settingsQuery.isFetched,
     remainingLockoutSeconds,
     securitySummary: getSecuritySummary,
     authenticateWithPIN,
@@ -452,7 +458,7 @@ export const [SecurityProvider, useSecurity] = createContextHook(() => {
     clearAnalytics,
   }), [
     settings, isAuthenticated, isLocked, sessionId, auditLog, analyticsEvents,
-    biometricAvailable, isInitialized, settingsQuery.isLoading, remainingLockoutSeconds,
+    biometricAvailable, isInitialized, settingsQuery.isLoading, settingsQuery.isFetched, remainingLockoutSeconds,
     getSecuritySummary, authenticateWithPIN, authenticateBiometric, setupPIN,
     changePIN, disableAuth, toggleBiometric, updateSecurityLevel, toggleEncryption,
     toggleAuditLogging, toggleAnalytics, lockApp, addAuditEntry, trackEvent,

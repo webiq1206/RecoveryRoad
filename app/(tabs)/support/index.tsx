@@ -21,8 +21,13 @@ interface HelpCenter {
   id: string;
   name: string;
   description: string;
+  /** Shown on the call button (may include instructions). */
   phone: string;
+  /** If set, this value is normalized for `tel:` (omit extra words). */
+  dialPhone?: string;
   textLine?: string;
+  /** When set with `textLine`, tapping the text row opens the SMS composer to this number. */
+  textSmsNumber?: string;
   website: string;
   available: string;
   category: 'crisis' | 'substance' | 'mental' | 'specialized';
@@ -43,7 +48,6 @@ const HELP_CENTERS: HelpCenter[] = [
     name: '988 Suicide & Crisis Lifeline',
     description: 'Free and confidential emotional support for people in suicidal crisis or emotional distress.',
     phone: '988',
-    textLine: 'Text HOME to 741741',
     website: 'https://988lifeline.org',
     available: '24/7',
     category: 'crisis',
@@ -53,7 +57,8 @@ const HELP_CENTERS: HelpCenter[] = [
     name: 'Crisis Text Line',
     description: 'Text-based crisis support for anyone in any type of crisis.',
     phone: '',
-    textLine: 'Text HELLO to 741741',
+    textLine: 'Text HOME or HOLA to 741741',
+    textSmsNumber: '741741',
     website: 'https://www.crisistextline.org',
     available: '24/7',
     category: 'crisis',
@@ -80,7 +85,7 @@ const HELP_CENTERS: HelpCenter[] = [
     id: '6',
     name: 'Narcotics Anonymous (NA)',
     description: 'Community-based recovery program for people struggling with drug addiction.',
-    phone: '1-818-773-9999',
+    phone: '',
     website: 'https://www.na.org',
     available: 'Business hours; meetings 24/7',
     category: 'substance',
@@ -90,7 +95,7 @@ const HELP_CENTERS: HelpCenter[] = [
     name: 'National Alliance on Mental Illness (NAMI)',
     description: 'Advocacy, education, support, and public awareness for individuals and families affected by mental illness.',
     phone: '1-800-950-6264',
-    textLine: 'Text NAMI to 741741',
+    textLine: 'Text NAMI to 62640',
     website: 'https://www.nami.org',
     available: 'Mon–Fri, 10am–10pm ET',
     category: 'mental',
@@ -99,7 +104,8 @@ const HELP_CENTERS: HelpCenter[] = [
     id: '8',
     name: 'Veterans Crisis Line',
     description: 'Connects veterans and their families with qualified VA responders.',
-    phone: '1-800-273-8255 (Press 1)',
+    phone: '988 then (Press 1)',
+    dialPhone: '988',
     textLine: 'Text 838255',
     website: 'https://www.veteranscrisisline.net',
     available: '24/7',
@@ -128,7 +134,7 @@ const HELP_CENTERS: HelpCenter[] = [
     id: '11',
     name: 'Partnership to End Addiction',
     description: 'Helpline for parents and caregivers concerned about a child\'s substance use.',
-    phone: '1-855-378-4373',
+    phone: '1-212-841-5200',
     textLine: 'Text CONNECT to 55753',
     website: 'https://drugfree.org',
     available: 'Mon–Fri, 9am–10pm ET; weekends limited',
@@ -139,7 +145,7 @@ const HELP_CENTERS: HelpCenter[] = [
     name: 'National Council on Problem Gambling',
     description: 'Confidential help for problem gamblers and their families.',
     phone: '1-800-522-4700',
-    textLine: 'Text NCPG to 833242',
+    textLine: 'Text 1-800-522-4700',
     website: 'https://www.ncpgambling.org',
     available: '24/7',
     category: 'specialized',
@@ -166,8 +172,7 @@ const HELP_CENTERS: HelpCenter[] = [
     id: '15',
     name: 'National Eating Disorders Association',
     description: 'Support for individuals and families affected by eating disorders.',
-    phone: '1-800-931-2237',
-    textLine: 'Text NEDA to 741741',
+    phone: '1-212-575-6200',
     website: 'https://www.nationaleatingdisorders.org',
     available: 'Mon–Thu, 11am–9pm ET; Fri 11am–5pm ET',
     category: 'specialized',
@@ -211,18 +216,28 @@ const CATEGORY_COLORS: Record<string, string> = {
 export default function SupportScreen() {
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
 
-  const handleCall = useCallback((phone: string) => {
-    const cleaned = phone.replace(/[^0-9+]/g, '');
+  const handleCall = useCallback((dial: string, displayLabel?: string) => {
+    const cleaned = dial.replace(/[^0-9+]/g, '');
     if (!cleaned) return;
     const url = `tel:${cleaned}`;
+    const shown = displayLabel ?? dial;
     Linking.openURL(url).catch(() => {
-      Alert.alert('Unable to Call', `Please dial ${phone} manually.`);
+      Alert.alert('Unable to Call', `Please dial ${shown} manually.`);
     });
   }, []);
 
   const handleWebsite = useCallback((url: string) => {
     Linking.openURL(url).catch(() => {
       Alert.alert('Unable to Open', 'Could not open the website.');
+    });
+  }, []);
+
+  const handleSms = useCallback((number: string) => {
+    const cleaned = number.replace(/[^0-9+]/g, '');
+    if (!cleaned) return;
+    const url = `sms:${cleaned}`;
+    Linking.openURL(url).catch(() => {
+      Alert.alert('Unable to Open Messages', `Please text ${number} manually from your messaging app.`);
     });
   }, []);
 
@@ -248,7 +263,7 @@ export default function SupportScreen() {
           {center.phone ? (
             <TouchableOpacity
               style={[styles.actionBtn, { backgroundColor: Colors.success + '18' }]}
-              onPress={() => handleCall(center.phone)}
+              onPress={() => handleCall(center.dialPhone ?? center.phone, center.phone)}
               activeOpacity={0.7}
               testID={`call-${center.id}`}
             >
@@ -258,10 +273,22 @@ export default function SupportScreen() {
           ) : null}
 
           {center.textLine ? (
-            <View style={[styles.actionBtn, { backgroundColor: Colors.primary + '18' }]}>
-              <MessageCircle size={16} color={Colors.primary} />
-              <Text style={[styles.actionBtnText, { color: Colors.primary }]}>{center.textLine}</Text>
-            </View>
+            center.textSmsNumber ? (
+              <TouchableOpacity
+                style={[styles.actionBtn, { backgroundColor: Colors.primary + '18' }]}
+                onPress={() => handleSms(center.textSmsNumber ?? '')}
+                activeOpacity={0.7}
+                testID={`text-${center.id}`}
+              >
+                <MessageCircle size={16} color={Colors.primary} />
+                <Text style={[styles.actionBtnText, { color: Colors.primary }]}>{center.textLine}</Text>
+              </TouchableOpacity>
+            ) : (
+              <View style={[styles.actionBtn, { backgroundColor: Colors.primary + '18' }]}>
+                <MessageCircle size={16} color={Colors.primary} />
+                <Text style={[styles.actionBtnText, { color: Colors.primary }]}>{center.textLine}</Text>
+              </View>
+            )
           ) : null}
 
           <TouchableOpacity

@@ -2,7 +2,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Stack } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
 import React, { useEffect, useCallback } from "react";
-import { Platform } from "react-native";
+import { ActivityIndicator, Platform, View } from "react-native";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { ConnectionProvider } from "../providers/ConnectionProvider";
 import { RecoveryRoomsProvider } from "../providers/RecoveryRoomsProvider";
@@ -119,11 +119,19 @@ function RootLayoutNav() {
 }
 
 function SecuredApp() {
-  const { isLocked, isAuthenticated, settings } = useSecurity();
+  const { isLocked, isAuthenticated, settings, isSecuritySettingsReady } = useSecurity();
 
   const handleUnlock = useCallback(() => {
     console.log('[Security] App unlocked');
   }, []);
+
+  if (!isSecuritySettingsReady) {
+    return (
+      <View style={{ flex: 1, backgroundColor: Colors.background, justifyContent: 'center', alignItems: 'center' }}>
+        <ActivityIndicator size="large" color={Colors.primary} />
+      </View>
+    );
+  }
 
   if (settings.isAuthEnabled && isLocked && !isAuthenticated) {
     return <LockScreen onUnlock={handleUnlock} mode="unlock" />;

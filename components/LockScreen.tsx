@@ -1,6 +1,7 @@
 import React, { useState, useCallback, useEffect, useRef } from 'react';
-import { View, Text, StyleSheet, Pressable, Animated, Vibration, Platform } from 'react-native';
-import { Shield, Fingerprint, Delete, Lock } from 'lucide-react-native';
+import { View, Text, StyleSheet, Pressable, Animated, Platform } from 'react-native';
+import { Fingerprint, Delete, Lock } from 'lucide-react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import * as Haptics from 'expo-haptics';
 import Colors from '../constants/colors';
 import { useSecurity } from '../providers/SecurityProvider';
@@ -24,6 +25,7 @@ export default React.memo(function LockScreen({
   title,
   subtitle,
 }: LockScreenProps) {
+  const insets = useSafeAreaInsets();
   const { authenticateWithPIN, authenticateBiometric, biometricAvailable, settings, remainingLockoutSeconds } = useSecurity();
   const [pin, setPin] = useState<string>('');
   const [confirmPin, setConfirmPin] = useState<string>('');
@@ -192,8 +194,20 @@ export default React.memo(function LockScreen({
 
   const digits = ['1', '2', '3', '4', '5', '6', '7', '8', '9'];
 
+  const navBarBottom =
+    insets.bottom > 0 ? insets.bottom : Platform.OS === 'android' ? 40 : 0;
+
   return (
-    <Animated.View style={[styles.container, { opacity: fadeAnim }]}>
+    <Animated.View
+      style={[
+        styles.container,
+        {
+          opacity: fadeAnim,
+          paddingTop: Math.max(48, insets.top + 16),
+          paddingBottom: Math.max(32, navBarBottom + 28),
+        },
+      ]}
+    >
       <View style={styles.topSection}>
         <View style={styles.iconContainer}>
           <Lock size={32} color={Colors.primary} />
@@ -282,8 +296,6 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: Colors.background,
     justifyContent: 'space-between',
-    paddingTop: 80,
-    paddingBottom: 40,
   },
   topSection: {
     alignItems: 'center',

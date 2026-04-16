@@ -3,7 +3,7 @@ import { ActivityIndicator, StyleSheet, View } from 'react-native';
 import { Redirect } from 'expo-router';
 import { useUser } from '../core/domains/useUser';
 import { useAppStore } from '../stores/useAppStore';
-import { useCheckInsStore } from '../stores/useCheckInsStore';
+import { useCheckInsStore, useHydrateCheckInsStore } from '../stores/useCheckInsStore';
 import { getFirstTappableCheckInPeriod } from '../utils/getFirstTappableCheckInPeriod';
 import Colors from '../constants/colors';
 
@@ -11,6 +11,7 @@ import Colors from '../constants/colors';
  * Root routing: onboarding → Check-in Now (tappable M/A/E) → Today Hub when none.
  */
 export function AppEntryRedirect() {
+  useHydrateCheckInsStore();
   const { isLoading: userLoading, profile } = useUser();
   const sliceCheckIns = useCheckInsStore.use.checkIns();
   const centralDailyCheckIns = useAppStore((s) => s.dailyCheckIns);

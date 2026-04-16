@@ -43,6 +43,8 @@ export default function RoomSessionScreen() {
     userId,
     blockAuthor,
     blockedAuthors,
+    socialMode,
+    refetchRooms,
   } = useRecoveryRooms();
 
   const room = getRoomById(roomId ?? '');
@@ -183,7 +185,7 @@ export default function RoomSessionScreen() {
   }
 
   const renderMessageItem = ({ item }: { item: RecoveryRoomMessage }) => {
-    const isOwn = item.isOwn;
+    const isOwn = item.isOwn || item.authorId === userId;
     return (
       <View style={[styles.messageRow, isOwn && styles.messageRowOwn]}>
         {!isOwn && (
@@ -435,6 +437,26 @@ export default function RoomSessionScreen() {
           keyboardVerticalOffset={0}
         >
           {renderSessionBanner()}
+
+          {(socialMode === 'live' || socialMode === 'local_demo') && (
+            <View
+              style={[
+                styles.socialStrip,
+                socialMode === 'live' ? styles.socialStripLive : styles.socialStripDemo,
+              ]}
+            >
+              <Text style={styles.socialStripText}>
+                {socialMode === 'live'
+                  ? 'Live chat: long-press a message to report or block. Not monitored 24/7—use crisis services if you are unsafe.'
+                  : 'Development preview: some replies may be simulated on-device, not from live people.'}
+              </Text>
+              {socialMode === 'live' ? (
+                <Pressable onPress={() => refetchRooms()} hitSlop={8}>
+                  <Text style={styles.socialStripLink}>Refresh</Text>
+                </Pressable>
+              ) : null}
+            </View>
+          )}
 
           {showRules && (
             <Pressable style={styles.rulesOverlay} onPress={() => setShowRules(false)}>
@@ -730,6 +752,36 @@ const styles = StyleSheet.create({
   messageListContent: {
     padding: 16,
     paddingBottom: 8,
+  },
+  socialStrip: {
+    marginHorizontal: 16,
+    marginBottom: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 10,
+    borderWidth: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  socialStripLive: {
+    backgroundColor: 'rgba(46,196,182,0.1)',
+    borderColor: 'rgba(46,196,182,0.3)',
+  },
+  socialStripDemo: {
+    backgroundColor: 'rgba(240,199,94,0.1)',
+    borderColor: 'rgba(240,199,94,0.3)',
+  },
+  socialStripText: {
+    flex: 1,
+    fontSize: 11,
+    color: Colors.textSecondary,
+    lineHeight: 15,
+  },
+  socialStripLink: {
+    fontSize: 11,
+    fontWeight: '700' as const,
+    color: Colors.primary,
   },
   chatWelcome: {
     alignItems: 'center',

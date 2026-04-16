@@ -3,6 +3,8 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { CommunityUser, CommunityPost, CommunityComment, PrivateGroup } from '../types';
+import { getSocialPresentationMode, isLiveSocialMode, isLocalSocialDemoEnabled } from '../core/socialLiveConfig';
+import * as liveSocial from '../services/liveSocialClient';
 
 const STORAGE_KEYS = {
   COMMUNITY_USER: 'community_user',
@@ -52,21 +54,43 @@ export const [CommunityProvider, useCommunity] = createContextHook(() => {
   const [comments, setComments] = useState<CommunityComment[]>([]);
   const [groups, setGroups] = useState<PrivateGroup[]>([]);
 
+  const liveFeedQuery = useQuery({
+    queryKey: ['liveSocialCommunityFeed'],
+    queryFn: () => liveSocial.fetchLiveCommunityFeed(),
+    enabled: isLiveSocialMode(),
+    staleTime: 0,
+    refetchInterval: 25_000,
+  });
+
+  useEffect(() => {
+    if (!isLiveSocialMode() || !liveFeedQuery.data) return;
+    const { me, users, posts: p, comments: c, groups: g } = liveFeedQuery.data;
+    setCurrentUser(me);
+    setAllUsers(users);
+    setPosts(p);
+    setComments(c);
+    setGroups(g);
+  }, [liveFeedQuery.data]);
+
   const userQuery = useQuery({
     queryKey: ['communityUser'],
     queryFn: async () => {
       const stored = await AsyncStorage.getItem(STORAGE_KEYS.COMMUNITY_USER);
       return stored ? (JSON.parse(stored) as CommunityUser) : null;
     },
+    enabled: !isLiveSocialMode(),
     staleTime: Infinity,
   });
+
+  const demo = isLocalSocialDemoEnabled();
 
   const usersQuery = useQuery({
     queryKey: ['communityUsers'],
     queryFn: async () => {
       const stored = await AsyncStorage.getItem(STORAGE_KEYS.COMMUNITY_USERS);
-      return stored ? (JSON.parse(stored) as CommunityUser[]) : SAMPLE_USERS;
+      return stored ? (JSON.parse(stored) as CommunityUser[]) : demo ? SAMPLE_USERS : [];
     },
+    enabled: !isLiveSocialMode(),
     staleTime: Infinity,
   });
 
@@ -74,8 +98,9 @@ export const [CommunityProvider, useCommunity] = createContextHook(() => {
     queryKey: ['communityPosts'],
     queryFn: async () => {
       const stored = await AsyncStorage.getItem(STORAGE_KEYS.COMMUNITY_POSTS);
-      return stored ? (JSON.parse(stored) as CommunityPost[]) : SAMPLE_POSTS;
+      return stored ? (JSON.parse(stored) as CommunityPost[]) : demo ? SAMPLE_POSTS : [];
     },
+    enabled: !isLiveSocialMode(),
     staleTime: Infinity,
   });
 
@@ -83,8 +108,9 @@ export const [CommunityProvider, useCommunity] = createContextHook(() => {
     queryKey: ['communityComments'],
     queryFn: async () => {
       const stored = await AsyncStorage.getItem(STORAGE_KEYS.COMMUNITY_COMMENTS);
-      return stored ? (JSON.parse(stored) as CommunityComment[]) : SAMPLE_COMMENTS;
+      return stored ? (JSON.parse(stored) as CommunityComment[]) : demo ? SAMPLE_COMMENTS : [];
     },
+    enabled: !isLiveSocialMode(),
     staleTime: Infinity,
   });
 
@@ -94,14 +120,34 @@ export const [CommunityProvider, useCommunity] = createContextHook(() => {
       const stored = await AsyncStorage.getItem(STORAGE_KEYS.COMMUNITY_GROUPS);
       return stored ? (JSON.parse(stored) as PrivateGroup[]) : [];
     },
+    enabled: !isLiveSocialMode(),
     staleTime: Infinity,
   });
 
-  useEffect(() => { if (userQuery.data !== undefined) setCurrentUser(userQuery.data); }, [userQuery.data]);
-  useEffect(() => { if (usersQuery.data) setAllUsers(usersQuery.data); }, [usersQuery.data]);
-  useEffect(() => { if (postsQuery.data) setPosts(postsQuery.data); }, [postsQuery.data]);
-  useEffect(() => { if (commentsQuery.data) setComments(commentsQuery.data); }, [commentsQuery.data]);
-  useEffect(() => { if (groupsQuery.data) setGroups(groupsQuery.data); }, [groupsQuery.data]);
+  useEffect(() => {
+    if (isLiveSocialMode()) return;
+    if (userQuery.data !== undefined) setCurrentUser(userQuery.data);
+  }, [userQuery.data]);
+
+  useEffect(() => {
+    if (isLiveSocialMode()) return;
+    if (usersQuery.data) setAllUsers(usersQuery.data);
+  }, [usersQuery.data]);
+
+  useEffect(() => {
+    if (isLiveSocialMode()) return;
+    if (postsQuery.data) setPosts(postsQuery.data);
+  }, [postsQuery.data]);
+
+  useEffect(() => {
+    if (isLiveSocialMode()) return;
+    if (commentsQuery.data) setComments(commentsQuery.data);
+  }, [commentsQuery.data]);
+
+  useEffect(() => {
+    if (isLiveSocialMode()) return;
+    if (groupsQuery.data) setGroups(groupsQuery.data);
+  }, [groupsQuery.data]);
 
   const saveUserMutation = useMutation({
     mutationFn: async (user: CommunityUser) => {
@@ -159,6 +205,19 @@ export const [CommunityProvider, useCommunity] = createContextHook(() => {
   });
 
   const setupUser = useCallback((username: string, displayName: string) => {
+    if (isLiveSocialMode()) {
+      void (async () => {
+        try {
+          const { me, users } = await liveSocial.registerLiveCommunityProfile(username, displayName);
+          setCurrentUser(me);
+          setAllUsers(users);
+          await queryClient.invalidateQueries({ queryKey: ['liveSocialCommunityFeed'] });
+        } catch (e) {
+          console.log('[Community] registerLiveCommunityProfile failed:', e);
+        }
+      })();
+      return null;
+    }
     const user: CommunityUser = {
       id: 'user_' + Date.now().toString(),
       username: username.toLowerCase().trim(),
@@ -173,10 +232,26 @@ export const [CommunityProvider, useCommunity] = createContextHook(() => {
     const updatedUsers = [...allUsers, user];
     saveUsersMutation.mutate(updatedUsers);
     return user;
-  }, [allUsers]);
+  }, [allUsers, queryClient, saveUserMutation, saveUsersMutation]);
 
   const createPost = useCallback((content: string, visibility: 'public' | 'private') => {
     if (!currentUser) return;
+    if (isLiveSocialMode()) {
+      void (async () => {
+        try {
+          const { posts: nextPosts, comments: nextComments } = await liveSocial.createLiveCommunityPost(
+            content,
+            visibility,
+          );
+          setPosts(nextPosts);
+          setComments(nextComments);
+          await queryClient.invalidateQueries({ queryKey: ['liveSocialCommunityFeed'] });
+        } catch (e) {
+          console.log('[Community] createLiveCommunityPost failed:', e);
+        }
+      })();
+      return;
+    }
     const post: CommunityPost = {
       id: 'post_' + Date.now().toString(),
       authorId: currentUser.id,
@@ -189,10 +264,26 @@ export const [CommunityProvider, useCommunity] = createContextHook(() => {
     const updated = [post, ...posts];
     setPosts(updated);
     savePostsMutation.mutate(updated);
-  }, [currentUser, posts]);
+  }, [currentUser, posts, queryClient, savePostsMutation]);
 
   const addComment = useCallback((postId: string, content: string) => {
     if (!currentUser) return;
+    if (isLiveSocialMode()) {
+      void (async () => {
+        try {
+          const { posts: nextPosts, comments: nextComments } = await liveSocial.createLiveCommunityComment(
+            postId,
+            content,
+          );
+          setPosts(nextPosts);
+          setComments(nextComments);
+          await queryClient.invalidateQueries({ queryKey: ['liveSocialCommunityFeed'] });
+        } catch (e) {
+          console.log('[Community] createLiveCommunityComment failed:', e);
+        }
+      })();
+      return;
+    }
     const comment: CommunityComment = {
       id: 'comment_' + Date.now().toString(),
       postId,
@@ -209,10 +300,22 @@ export const [CommunityProvider, useCommunity] = createContextHook(() => {
     );
     setPosts(updatedPosts);
     savePostsMutation.mutate(updatedPosts);
-  }, [currentUser, comments, posts]);
+  }, [currentUser, comments, posts, queryClient, saveCommentsMutation, savePostsMutation]);
 
   const toggleLike = useCallback((postId: string) => {
     if (!currentUser) return;
+    if (isLiveSocialMode()) {
+      void (async () => {
+        try {
+          const nextPosts = await liveSocial.toggleLiveCommunityPostLike(postId);
+          setPosts(nextPosts);
+          await queryClient.invalidateQueries({ queryKey: ['liveSocialCommunityFeed'] });
+        } catch (e) {
+          console.log('[Community] toggleLiveCommunityPostLike failed:', e);
+        }
+      })();
+      return;
+    }
     const updatedPosts = posts.map(p => {
       if (p.id !== postId) return p;
       const hasLiked = p.likes.includes(currentUser.id);
@@ -225,10 +328,23 @@ export const [CommunityProvider, useCommunity] = createContextHook(() => {
     });
     setPosts(updatedPosts);
     savePostsMutation.mutate(updatedPosts);
-  }, [currentUser, posts]);
+  }, [currentUser, posts, queryClient, savePostsMutation]);
 
   const toggleFollow = useCallback((targetUserId: string) => {
     if (!currentUser) return;
+    if (isLiveSocialMode()) {
+      void (async () => {
+        try {
+          const { me, users } = await liveSocial.toggleLiveCommunityFollow(targetUserId);
+          setCurrentUser(me);
+          setAllUsers(users);
+          await queryClient.invalidateQueries({ queryKey: ['liveSocialCommunityFeed'] });
+        } catch (e) {
+          console.log('[Community] toggleLiveCommunityFollow failed:', e);
+        }
+      })();
+      return;
+    }
     const isFollowing = currentUser.followingIds.includes(targetUserId);
     const updatedUser = {
       ...currentUser,
@@ -252,10 +368,10 @@ export const [CommunityProvider, useCommunity] = createContextHook(() => {
     });
     setAllUsers(updatedUsers);
     saveUsersMutation.mutate(updatedUsers);
-  }, [currentUser, allUsers]);
+  }, [currentUser, allUsers, queryClient, saveUserMutation, saveUsersMutation]);
 
   const createGroup = useCallback((name: string, memberUsernames: string[]) => {
-    if (!currentUser) return;
+    if (!currentUser || isLiveSocialMode()) return;
     const group: PrivateGroup = {
       id: 'group_' + Date.now().toString(),
       ownerId: currentUser.id,
@@ -266,9 +382,10 @@ export const [CommunityProvider, useCommunity] = createContextHook(() => {
     const updated = [...groups, group];
     setGroups(updated);
     saveGroupsMutation.mutate(updated);
-  }, [currentUser, groups]);
+  }, [currentUser, groups, saveGroupsMutation]);
 
   const addMemberToGroup = useCallback((groupId: string, username: string) => {
+    if (isLiveSocialMode()) return;
     const updated = groups.map(g => {
       if (g.id !== groupId) return g;
       if (g.memberUsernames.includes(username)) return g;
@@ -276,22 +393,24 @@ export const [CommunityProvider, useCommunity] = createContextHook(() => {
     });
     setGroups(updated);
     saveGroupsMutation.mutate(updated);
-  }, [groups]);
+  }, [groups, saveGroupsMutation]);
 
   const removeMemberFromGroup = useCallback((groupId: string, username: string) => {
+    if (isLiveSocialMode()) return;
     const updated = groups.map(g => {
       if (g.id !== groupId) return g;
       return { ...g, memberUsernames: g.memberUsernames.filter(u => u !== username) };
     });
     setGroups(updated);
     saveGroupsMutation.mutate(updated);
-  }, [groups]);
+  }, [groups, saveGroupsMutation]);
 
   const deleteGroup = useCallback((groupId: string) => {
+    if (isLiveSocialMode()) return;
     const updated = groups.filter(g => g.id !== groupId);
     setGroups(updated);
     saveGroupsMutation.mutate(updated);
-  }, [groups]);
+  }, [groups, saveGroupsMutation]);
 
   const getUserById = useCallback((userId: string): CommunityUser | undefined => {
     if (currentUser?.id === userId) return currentUser;
@@ -326,7 +445,19 @@ export const [CommunityProvider, useCommunity] = createContextHook(() => {
     });
   }, [posts, currentUser, groups, allUsers]);
 
-  const isLoading = userQuery.isLoading || postsQuery.isLoading || commentsQuery.isLoading || groupsQuery.isLoading;
+  const isLoading =
+    (isLiveSocialMode() && liveFeedQuery.isLoading) ||
+    (!isLiveSocialMode() && (
+      userQuery.isLoading || postsQuery.isLoading || commentsQuery.isLoading || groupsQuery.isLoading
+    ));
+
+  const socialMode = getSocialPresentationMode();
+
+  const refetchCommunity = useCallback(() => {
+    void queryClient.invalidateQueries({ queryKey: ['liveSocialCommunityFeed'] });
+    void queryClient.invalidateQueries({ queryKey: ['communityUser'] });
+    void queryClient.invalidateQueries({ queryKey: ['communityPosts'] });
+  }, [queryClient]);
 
   return useMemo(() => ({
     currentUser,
@@ -335,6 +466,8 @@ export const [CommunityProvider, useCommunity] = createContextHook(() => {
     comments,
     groups,
     isLoading,
+    socialMode,
+    refetchCommunity,
     setupUser,
     createPost,
     addComment,
@@ -348,7 +481,7 @@ export const [CommunityProvider, useCommunity] = createContextHook(() => {
     getCommentsForPost,
   }), [
     currentUser, allUsers, visiblePosts, comments, groups,
-    isLoading, setupUser, createPost, addComment, toggleLike,
+    isLoading, socialMode, refetchCommunity, setupUser, createPost, addComment, toggleLike,
     toggleFollow, createGroup, addMemberToGroup, removeMemberFromGroup,
     deleteGroup, getUserById, getCommentsForPost,
   ]);

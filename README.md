@@ -17,6 +17,10 @@ Use language like the following in your **store description**, **privacy nutriti
 
 A longer policy draft for legal review lives in [`docs/PRIVACY_POLICY.md`](docs/PRIVACY_POLICY.md).
 
+Subscription release QA (restore, expiry, no dev bypass) is in [`docs/SUBSCRIPTION_RELEASE_QA.md`](docs/SUBSCRIPTION_RELEASE_QA.md).
+
+Live community / recovery rooms backend and modes are documented in [`docs/LIVE_SOCIAL.md`](docs/LIVE_SOCIAL.md).
+
 ## How can I edit this code?
 
 There are several ways of editing your native mobile application.

@@ -9,15 +9,25 @@ const STORAGE_KEY = 'subscription_state';
 const RC_USER_ID_KEY = 'rc_user_id';
 const RC_BASE_URL = 'https://api.revenuecat.com/v1';
 
+/**
+ * Sandbox / test key is only used in __DEV__. Release builds must use store platform keys
+ * so we never ship a path that silently uses RevenueCat test credentials on “production” web or native.
+ */
 function getRCApiKey(): string {
-  if (__DEV__ || Platform.OS === 'web') {
+  if (__DEV__) {
     return process.env.EXPO_PUBLIC_REVENUECAT_TEST_API_KEY ?? '';
   }
-  return Platform.select({
-    ios: process.env.EXPO_PUBLIC_REVENUECAT_IOS_API_KEY ?? '',
-    android: process.env.EXPO_PUBLIC_REVENUECAT_ANDROID_API_KEY ?? '',
-    default: process.env.EXPO_PUBLIC_REVENUECAT_TEST_API_KEY ?? '',
-  }) ?? '';
+  return (
+    Platform.select({
+      ios: process.env.EXPO_PUBLIC_REVENUECAT_IOS_API_KEY ?? '',
+      android: process.env.EXPO_PUBLIC_REVENUECAT_ANDROID_API_KEY ?? '',
+      default: '',
+    }) ?? ''
+  );
+}
+
+function isRevenueCatConfigured(): boolean {
+  return getRCApiKey().length > 0;
 }
 
 function generateUserId(): string {
@@ -66,8 +76,8 @@ const DEFAULT_STATE: SubscriptionState = {
 
 const FREE_FEATURES: Set<PremiumFeature> = new Set([]);
 
-/** Local premium bypass is a store-review risk; only development builds may use it. */
-const CAN_USE_DEV_LOCAL_PREMIUM = __DEV__;
+/** RevenueCat REST “test receipt” checkout is dev-only; release builds must use native store IAP. */
+const CAN_USE_RC_REST_TEST_PURCHASES = __DEV__;
 
 /** All premium-only keys; see `constants/subscriptionPlans.ts` for marketing copy and tier matrix. */
 const FEATURE_LABELS: Record<PremiumFeature, { title: string; description: string }> = {
@@ -183,7 +193,7 @@ function checkEntitlementActive(subscriberInfo: any): { isActive: boolean; expir
 }
 
 async function purchaseProduct(userId: string, productId: string): Promise<any> {
-  if (!__DEV__) {
+  if (!CAN_USE_RC_REST_TEST_PURCHASES) {
     throw new Error(
       'Store purchases are not available through this test path in production. Use native App Store / Play billing (e.g. RevenueCat Purchases SDK).',
     );
@@ -215,6 +225,7 @@ export const [SubscriptionProvider, useSubscription] = createContextHook(() => {
   const queryClient = useQueryClient();
   const [subscription, setSubscription] = useState<SubscriptionState>(DEFAULT_STATE);
   const [rcUserId, setRcUserId] = useState<string>('');
+  const rcConfigured = isRevenueCatConfigured();
 
   const userIdQuery = useQuery({
     queryKey: ['rc_user_id'],
@@ -231,14 +242,14 @@ export const [SubscriptionProvider, useSubscription] = createContextHook(() => {
   const subscriberQuery = useQuery({
     queryKey: ['rc_subscriber', rcUserId],
     queryFn: () => fetchSubscriberInfo(rcUserId),
-    enabled: !!rcUserId,
+    enabled: !!rcUserId && rcConfigured,
     staleTime: 1000 * 60 * 5,
   });
 
   const offeringsQuery = useQuery({
     queryKey: ['rc_offerings', rcUserId],
     queryFn: () => fetchOfferings(rcUserId),
-    enabled: !!rcUserId,
+    enabled: !!rcUserId && rcConfigured,
     staleTime: 1000 * 60 * 30,
   });
 
@@ -305,6 +316,11 @@ export const [SubscriptionProvider, useSubscription] = createContextHook(() => {
 
   const purchaseMutation = useMutation({
     mutationFn: async (productId: string) => {
+      if (!CAN_USE_RC_REST_TEST_PURCHASES) {
+        throw new Error(
+          'Checkout is not enabled in this release build. Premium must be purchased through the App Store or Google Play (integrate native IAP, e.g. RevenueCat Purchases SDK).',
+        );
+      }
       if (!rcUserId) throw new Error('User ID not ready');
       console.log('Attempting purchase for product:', productId);
       await purchaseProduct(rcUserId, productId);
@@ -361,8 +377,8 @@ export const [SubscriptionProvider, useSubscription] = createContextHook(() => {
 
   const activatePremiumMutation = useMutation({
     mutationFn: async () => {
-      if (!CAN_USE_DEV_LOCAL_PREMIUM) {
-        throw new Error('Local premium activation is disabled in production builds.');
+      if (!__DEV__) {
+        throw new Error('Local premium activation is only available in __DEV__ builds.');
       }
       console.log('[Subscription] DEV: Activating premium locally');
       const newState: SubscriptionState = {
@@ -381,7 +397,7 @@ export const [SubscriptionProvider, useSubscription] = createContextHook(() => {
   });
 
   const activatePremium = useCallback(() => {
-    if (!CAN_USE_DEV_LOCAL_PREMIUM) {
+    if (!__DEV__) {
       console.warn('[Subscription] activatePremium is only available in __DEV__');
       return;
     }
@@ -391,7 +407,7 @@ export const [SubscriptionProvider, useSubscription] = createContextHook(() => {
   const upgradeToPremium = useCallback(() => {
     console.log('[Subscription] upgradeToPremium called');
     if (!rcUserId) {
-      if (CAN_USE_DEV_LOCAL_PREMIUM) {
+      if (__DEV__) {
         console.warn('[Subscription] DEV: No RC user ID — using local premium bypass');
         activatePremiumMutation.mutate();
       } else {
@@ -402,8 +418,14 @@ export const [SubscriptionProvider, useSubscription] = createContextHook(() => {
     const currentOfferings = offeringsQuery.data ?? [];
     if (currentOfferings.length > 0 && currentOfferings[0].packages.length > 0) {
       const defaultProduct = currentOfferings[0].packages[0].product.identifier;
-      purchaseMutation.mutate(defaultProduct);
-    } else if (CAN_USE_DEV_LOCAL_PREMIUM) {
+      if (CAN_USE_RC_REST_TEST_PURCHASES) {
+        purchaseMutation.mutate(defaultProduct);
+      } else {
+        console.warn(
+          '[Subscription] Offerings are loaded but REST test checkout is disabled in release. Use native App Store / Google Play billing (e.g. RevenueCat Purchases SDK).',
+        );
+      }
+    } else if (__DEV__) {
       console.warn('[Subscription] DEV: No offerings — using local premium bypass');
       activatePremiumMutation.mutate();
     } else {
@@ -417,8 +439,8 @@ export const [SubscriptionProvider, useSubscription] = createContextHook(() => {
 
   /** Clears cached tier only; production users manage billing in the App Store / Play Console. */
   const cancelSubscription = useCallback(() => {
-    if (!CAN_USE_DEV_LOCAL_PREMIUM) {
-      console.warn('[Subscription] cancelSubscription is only for dev/test builds');
+    if (!__DEV__) {
+      console.warn('[Subscription] cancelSubscription is only for __DEV__ builds');
       return;
     }
     const newState: SubscriptionState = {
@@ -460,7 +482,12 @@ export const [SubscriptionProvider, useSubscription] = createContextHook(() => {
     activatePremium,
     restorePurchase,
     cancelSubscription,
-    canUseDevLocalPremium: CAN_USE_DEV_LOCAL_PREMIUM,
+    /** True only in Metro/dev-client __DEV__; never in App Store / Play release binaries. */
+    canUseDevLocalPremium: __DEV__,
+    /** Dev-only RevenueCat REST “test receipt” checkout; false in release (use native IAP). */
+    canUseRcRestTestPurchases: CAN_USE_RC_REST_TEST_PURCHASES,
+    /** RevenueCat REST is configured (platform keys in release, test key in __DEV__). */
+    revenueCatConfigured: rcConfigured,
     isLoading: subscriptionQuery.isLoading || userIdQuery.isLoading,
     featureLabels: FEATURE_LABELS,
     offerings,
@@ -480,5 +507,6 @@ export const [SubscriptionProvider, useSubscription] = createContextHook(() => {
     offerings, offeringsQuery.isLoading,
     purchase, purchaseStatus, restore, restoreStatus,
     purchaseMutation, restoreMutation, activatePremiumMutation, rcUserId,
+    rcConfigured,
   ]);
 });

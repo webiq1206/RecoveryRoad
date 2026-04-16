@@ -42,6 +42,7 @@ interface PlanOption {
   savings?: string;
 }
 
+/** Dev-only placeholder plans when RevenueCat has no offerings; never shown in release (store-review risk). */
 const FALLBACK_PLANS: PlanOption[] = [
   {
     id: 'monthly',
@@ -169,6 +170,7 @@ export default function PremiumUpgradeScreen() {
     restoreMutation,
     activatePremiumMutation,
     canUseDevLocalPremium,
+    canUseRcRestTestPurchases,
   } = useSubscription();
   const headerAnim = useRef(new Animated.Value(0)).current;
   const crownAnim = useRef(new Animated.Value(0)).current;
@@ -204,10 +206,14 @@ export default function PremiumUpgradeScreen() {
   });
 
   const plans: PlanOption[] = React.useMemo(() => {
-    if (!offerings || offerings.length === 0) return FALLBACK_PLANS;
+    if (!offerings || offerings.length === 0) {
+      return __DEV__ ? FALLBACK_PLANS : [];
+    }
 
     const currentOffering = offerings[0];
-    if (!currentOffering?.packages || currentOffering.packages.length === 0) return FALLBACK_PLANS;
+    if (!currentOffering?.packages || currentOffering.packages.length === 0) {
+      return __DEV__ ? FALLBACK_PLANS : [];
+    }
 
     return currentOffering.packages.map((pkg) => {
       const isMonthly = pkg.identifier === '$rc_monthly';
@@ -260,6 +266,14 @@ export default function PremiumUpgradeScreen() {
 
   const handlePurchase = useCallback(() => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    if (!canUseRcRestTestPurchases) {
+      Alert.alert(
+        'Subscribe in the store',
+        'In-app checkout on this screen is only enabled in development. In release builds, complete purchase through the App Store or Google Play once native billing is integrated, then use Restore if needed.',
+        [{ text: 'OK' }],
+      );
+      return;
+    }
     const plan = plans.find(p => p.id === selectedPlan);
     if (!plan) return;
 
@@ -308,7 +322,15 @@ export default function PremiumUpgradeScreen() {
         },
       ]
     );
-  }, [selectedPlan, plans, purchaseMutation, activatePremiumMutation, router, canUseDevLocalPremium]);
+  }, [
+    selectedPlan,
+    plans,
+    purchaseMutation,
+    activatePremiumMutation,
+    router,
+    canUseDevLocalPremium,
+    canUseRcRestTestPurchases,
+  ]);
 
   const handleRestore = useCallback(() => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
@@ -426,6 +448,15 @@ export default function PremiumUpgradeScreen() {
               <ActivityIndicator size="small" color="#D4A574" />
               <Text style={styles.loadingText}>Loading plans...</Text>
             </View>
+          ) : plans.length === 0 ? (
+            <View style={styles.releaseBillingNotice}>
+              <Text style={styles.releaseBillingNoticeTitle}>Subscriptions</Text>
+              <Text style={styles.releaseBillingNoticeBody}>
+                No store plans are available in this build yet. Premium unlocks only through a real App Store or
+                Google Play purchase once native billing is connected. You can still use Restore if you already
+                subscribed with the same store account.
+              </Text>
+            </View>
           ) : (
             plans.map((plan) => (
               <PlanCard
@@ -442,10 +473,10 @@ export default function PremiumUpgradeScreen() {
           style={({ pressed }) => [
             styles.upgradeBtn,
             pressed && styles.upgradeBtnPressed,
-            isPurchasing && styles.upgradeBtnDisabled,
+            (isPurchasing || plans.length === 0 || !canUseRcRestTestPurchases) && styles.upgradeBtnDisabled,
           ]}
           onPress={handlePurchase}
-          disabled={isPurchasing}
+          disabled={isPurchasing || plans.length === 0 || !canUseRcRestTestPurchases}
           testID="upgrade-button"
         >
           {isPurchasing ? (
@@ -457,6 +488,13 @@ export default function PremiumUpgradeScreen() {
             </>
           )}
         </Pressable>
+
+        {!canUseRcRestTestPurchases && plans.length > 0 ? (
+          <Text style={styles.releaseCheckoutHint}>
+            App Store / Google Play checkout will replace this button once native in-app purchases are enabled in
+            a release build.
+          </Text>
+        ) : null}
 
         <Text style={styles.termsText}>
           Cancel anytime. Your recovery data is always yours.
@@ -556,6 +594,24 @@ const styles = StyleSheet.create({
     marginHorizontal: 20,
     marginBottom: 20,
     gap: 10,
+  },
+  releaseBillingNotice: {
+    backgroundColor: Colors.cardBackground,
+    borderRadius: 16,
+    padding: 18,
+    borderWidth: 1,
+    borderColor: Colors.border,
+  },
+  releaseBillingNoticeTitle: {
+    fontSize: 15,
+    fontWeight: '700' as const,
+    color: Colors.text,
+    marginBottom: 8,
+  },
+  releaseBillingNoticeBody: {
+    fontSize: 14,
+    color: Colors.textSecondary,
+    lineHeight: 21,
   },
   loadingPlans: {
     flexDirection: 'row',
@@ -685,6 +741,14 @@ const styles = StyleSheet.create({
     fontSize: 17,
     fontWeight: '700' as const,
     color: Colors.background,
+  },
+  releaseCheckoutHint: {
+    fontSize: 12,
+    color: Colors.textMuted,
+    textAlign: 'center',
+    lineHeight: 17,
+    marginHorizontal: 28,
+    marginBottom: 8,
   },
   termsText: {
     fontSize: 12,

@@ -54,6 +54,8 @@ export default function RecoveryRoomsScreen() {
     displayName, isAnonymousDefault,
     setRoomDisplayName, setAnonymousDefault,
     joinRoom, leaveRoom, getUpcomingSessions, topicLabels,
+    socialMode,
+    refetchRooms,
   } = useRecoveryRooms();
 
   const [viewMode, setViewMode] = useState<ViewMode>('rooms');
@@ -173,8 +175,48 @@ export default function RecoveryRoomsScreen() {
     return date.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
   }, []);
 
+  const renderSocialModeBanner = () => {
+    if (socialMode === 'live') {
+      return (
+        <View style={[styles.socialModeBanner, styles.socialModeBannerLive]}>
+          <Radio size={14} color="#FFFFFF" />
+          <Text style={styles.socialModeBannerTextLive}>
+            Live backend: messages come from real participants. Use Report for abuse. This is not crisis care and
+            availability depends on who is online.
+          </Text>
+          <Pressable
+            onPress={() => {
+              Haptics.selectionAsync();
+              refetchRooms();
+            }}
+            hitSlop={8}
+          >
+            <Text style={styles.socialModeBannerLink}>Refresh</Text>
+          </Pressable>
+        </View>
+      );
+    }
+    if (socialMode === 'local_demo') {
+      return (
+        <View style={[styles.socialModeBanner, styles.socialModeBannerDemo]}>
+          <Text style={styles.socialModeBannerText}>
+            Development preview only: sample rooms and simulated replies are not live peer support.
+          </Text>
+        </View>
+      );
+    }
+    return (
+      <View style={[styles.socialModeBanner, styles.socialModeBannerOffline]}>
+        <Text style={styles.socialModeBannerText}>
+          Live community is not configured for this build. Set EXPO_PUBLIC_LIVE_SOCIAL_API_URL to enable real rooms
+          (see docs/LIVE_SOCIAL.md).
+        </Text>
+      </View>
+    );
+  };
+
   const renderLiveBanner = () => {
-    if (liveRooms.length === 0) return null;
+    if (socialMode !== 'live' || liveRooms.length === 0) return null;
     return (
       <View style={styles.liveBanner}>
         <View style={styles.liveDotContainer}>
@@ -499,6 +541,7 @@ export default function RecoveryRoomsScreen() {
         })}
       </View>
 
+      {renderSocialModeBanner()}
       {renderLiveBanner()}
       {renderContent()}
 
@@ -640,6 +683,46 @@ const styles = StyleSheet.create({
   },
   modeBadgeText: {
     fontSize: 11,
+    fontWeight: '700' as const,
+    color: Colors.primary,
+  },
+  socialModeBanner: {
+    marginHorizontal: 16,
+    marginBottom: 10,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    borderRadius: 12,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    borderWidth: 1,
+  },
+  socialModeBannerLive: {
+    backgroundColor: 'rgba(46,196,182,0.15)',
+    borderColor: 'rgba(46,196,182,0.35)',
+  },
+  socialModeBannerDemo: {
+    backgroundColor: 'rgba(240,199,94,0.12)',
+    borderColor: 'rgba(240,199,94,0.35)',
+  },
+  socialModeBannerOffline: {
+    backgroundColor: 'rgba(90,106,122,0.08)',
+    borderColor: Colors.border,
+  },
+  socialModeBannerText: {
+    flex: 1,
+    fontSize: 12,
+    color: Colors.textSecondary,
+    lineHeight: 17,
+  },
+  socialModeBannerTextLive: {
+    flex: 1,
+    fontSize: 12,
+    color: Colors.text,
+    lineHeight: 17,
+  },
+  socialModeBannerLink: {
+    fontSize: 12,
     fontWeight: '700' as const,
     color: Colors.primary,
   },

@@ -8,6 +8,8 @@ export const ACCOUNT_DELETION_EXTRA_ASYNC_STORAGE_KEYS: readonly string[] = [
   'recovery-app-store',
   'subscription_state',
   'rc_user_id',
+  'live_social_access_token',
+  'live_social_device_id',
   'connection_trusted_contacts',
   'connection_peer_chats',
   'connection_safe_rooms',

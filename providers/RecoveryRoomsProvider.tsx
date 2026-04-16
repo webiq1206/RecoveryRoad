@@ -9,6 +9,9 @@ import {
   RoomReport,
   RecoveryRoomTopic,
 } from '../types';
+import { getSocialPresentationMode, isLiveSocialMode, isLocalSocialDemoEnabled } from '../core/socialLiveConfig';
+import type { LiveSocialSession } from '../services/liveSocialClient';
+import * as liveSocial from '../services/liveSocialClient';
 
 const STORAGE_KEYS = {
   ROOMS: 'recovery_rooms_data',
@@ -278,8 +281,8 @@ for (const room of SAMPLE_ROOMS) {
 }
 
 /** Normalizes recovery room objects loaded from AsyncStorage (supports prior storage shapes). */
-function migrateRecoveryRoomsFromStorage(data: unknown): RecoveryRoom[] {
-  if (!Array.isArray(data)) return SAMPLE_ROOMS;
+function migrateRecoveryRoomsFromStorage(data: unknown, allowDemoFallback: boolean): RecoveryRoom[] {
+  if (!Array.isArray(data)) return allowDemoFallback ? SAMPLE_ROOMS : [];
   return data.map((entry: unknown) => {
     const r = entry as Record<string, unknown>;
     const rawMessages = Array.isArray(r.messages) ? r.messages : [];
@@ -365,21 +368,43 @@ export const [RecoveryRoomsProvider, useRecoveryRooms] = createContextHook(() =>
   }, [blockedAuthors]);
 
   useEffect(() => {
+    if (isLiveSocialMode()) return;
     void loadData<string[]>(STORAGE_KEYS.BLOCKED_AUTHORS, []).then(setBlockedAuthors);
   }, []);
+
+  const liveSessionQuery = useQuery({
+    queryKey: ['liveSocialSession'],
+    queryFn: () => liveSocial.ensureLiveSocialSession(),
+    enabled: isLiveSocialMode(),
+    staleTime: Infinity,
+  });
 
   const roomsQuery = useQuery({
     queryKey: ['recoveryRooms'],
     queryFn: async () => {
-      const raw = await loadData<unknown>(STORAGE_KEYS.ROOMS, SAMPLE_ROOMS);
-      return migrateRecoveryRoomsFromStorage(raw);
+      if (isLiveSocialMode()) {
+        return liveSocial.listLiveRooms();
+      }
+      const demo = isLocalSocialDemoEnabled();
+      const raw = await loadData<unknown>(STORAGE_KEYS.ROOMS, demo ? SAMPLE_ROOMS : []);
+      return migrateRecoveryRoomsFromStorage(raw, demo);
     },
-    staleTime: Infinity,
+    enabled: !isLiveSocialMode() || liveSessionQuery.isSuccess,
+    staleTime: isLiveSocialMode() ? 0 : Infinity,
+    refetchInterval: isLiveSocialMode() ? 22_000 : false,
+  });
+
+  const liveBlocksQuery = useQuery({
+    queryKey: ['liveSocialBlocks'],
+    queryFn: () => liveSocial.listLiveBlockedAuthors(),
+    enabled: isLiveSocialMode() && liveSessionQuery.isSuccess,
+    staleTime: 30_000,
   });
 
   const reportsQuery = useQuery({
     queryKey: ['recoveryRoomReports'],
     queryFn: () => loadData<RoomReport[]>(STORAGE_KEYS.REPORTS, []),
+    enabled: !isLiveSocialMode(),
     staleTime: Infinity,
   });
 
@@ -392,6 +417,7 @@ export const [RecoveryRoomsProvider, useRecoveryRooms] = createContextHook(() =>
       await AsyncStorage.setItem(STORAGE_KEYS.USER_ID, newId);
       return newId;
     },
+    enabled: !isLiveSocialMode(),
     staleTime: Infinity,
   });
 
@@ -410,14 +436,49 @@ export const [RecoveryRoomsProvider, useRecoveryRooms] = createContextHook(() =>
       const stored = await AsyncStorage.getItem(STORAGE_KEYS.DISPLAY_NAME);
       return stored ?? '';
     },
+    enabled: !isLiveSocialMode(),
     staleTime: Infinity,
   });
 
-  useEffect(() => { if (roomsQuery.data) setRooms(roomsQuery.data); }, [roomsQuery.data]);
-  useEffect(() => { if (reportsQuery.data) setReports(reportsQuery.data); }, [reportsQuery.data]);
-  useEffect(() => { if (userIdQuery.data) setUserId(userIdQuery.data); }, [userIdQuery.data]);
-  useEffect(() => { if (anonQuery.data !== undefined) setIsAnonymousDefault(anonQuery.data); }, [anonQuery.data]);
-  useEffect(() => { if (nameQuery.data !== undefined) setDisplayName(nameQuery.data); }, [nameQuery.data]);
+  useEffect(() => {
+    if (roomsQuery.data) setRooms(roomsQuery.data);
+  }, [roomsQuery.data]);
+
+  useEffect(() => {
+    if (isLiveSocialMode()) {
+      setReports([]);
+      return;
+    }
+    if (reportsQuery.data) setReports(reportsQuery.data);
+  }, [reportsQuery.data]);
+
+  useEffect(() => {
+    if (isLiveSocialMode()) return;
+    if (userIdQuery.data) setUserId(userIdQuery.data);
+  }, [userIdQuery.data]);
+
+  useEffect(() => {
+    if (anonQuery.data !== undefined) setIsAnonymousDefault(anonQuery.data);
+  }, [anonQuery.data]);
+
+  useEffect(() => {
+    if (isLiveSocialMode()) return;
+    if (nameQuery.data !== undefined) setDisplayName(nameQuery.data);
+  }, [nameQuery.data]);
+
+  useEffect(() => {
+    if (!isLiveSocialMode()) return;
+    const u = liveSessionQuery.data?.user;
+    if (u) {
+      setUserId(u.id);
+      if (u.displayName) setDisplayName(u.displayName);
+    }
+  }, [liveSessionQuery.data]);
+
+  useEffect(() => {
+    if (!isLiveSocialMode()) return;
+    if (liveBlocksQuery.data) setBlockedAuthors(liveBlocksQuery.data);
+  }, [liveBlocksQuery.data]);
 
   const saveRoomsMutation = useMutation({
     mutationFn: (data: RecoveryRoom[]) => saveData(STORAGE_KEYS.ROOMS, data),
@@ -436,9 +497,25 @@ export const [RecoveryRoomsProvider, useRecoveryRooms] = createContextHook(() =>
   });
 
   const setRoomDisplayName = useCallback((name: string) => {
-    setDisplayName(name);
-    AsyncStorage.setItem(STORAGE_KEYS.DISPLAY_NAME, name);
-    queryClient.setQueryData(['recoveryRoomName'], name);
+    const trimmed = name.trim();
+    setDisplayName(trimmed);
+    if (isLiveSocialMode()) {
+      void (async () => {
+        try {
+          const u = await liveSocial.updateLiveProfile({ displayName: trimmed });
+          setDisplayName(u.displayName ?? trimmed);
+          queryClient.setQueryData(['liveSocialSession'], (prev: LiveSocialSession | undefined) =>
+            prev ? { ...prev, user: u } : prev,
+          );
+          await queryClient.invalidateQueries({ queryKey: ['recoveryRooms'] });
+        } catch (e) {
+          console.log('[RecoveryRooms] updateLiveProfile failed:', e);
+        }
+      })();
+      return;
+    }
+    void AsyncStorage.setItem(STORAGE_KEYS.DISPLAY_NAME, trimmed);
+    queryClient.setQueryData(['recoveryRoomName'], trimmed);
   }, [queryClient]);
 
   const setAnonymousDefault = useCallback((val: boolean) => {
@@ -448,23 +525,59 @@ export const [RecoveryRoomsProvider, useRecoveryRooms] = createContextHook(() =>
   }, [queryClient]);
 
   const joinRoom = useCallback((roomId: string) => {
+    if (isLiveSocialMode()) {
+      void (async () => {
+        try {
+          const next = await liveSocial.joinLiveRoom(roomId);
+          setRooms(next);
+          queryClient.setQueryData(['recoveryRooms'], next);
+        } catch (e) {
+          console.log('[RecoveryRooms] joinLiveRoom failed:', e);
+        }
+      })();
+      return;
+    }
     const updated = rooms.map(r => {
       if (r.id !== roomId) return r;
       if (r.memberCount >= r.maxMembers) return r;
       return { ...r, isJoined: true, memberCount: r.memberCount + 1 };
     });
     saveRoomsMutation.mutate(updated);
-  }, [rooms]);
+  }, [rooms, queryClient, saveRoomsMutation]);
 
   const leaveRoom = useCallback((roomId: string) => {
+    if (isLiveSocialMode()) {
+      void (async () => {
+        try {
+          const next = await liveSocial.leaveLiveRoom(roomId);
+          setRooms(next);
+          queryClient.setQueryData(['recoveryRooms'], next);
+        } catch (e) {
+          console.log('[RecoveryRooms] leaveLiveRoom failed:', e);
+        }
+      })();
+      return;
+    }
     const updated = rooms.map(r => {
       if (r.id !== roomId) return r;
       return { ...r, isJoined: false, memberCount: Math.max(0, r.memberCount - 1) };
     });
     saveRoomsMutation.mutate(updated);
-  }, [rooms]);
+  }, [rooms, queryClient, saveRoomsMutation]);
 
   const sendMessage = useCallback((roomId: string, content: string, anonymous: boolean) => {
+    if (isLiveSocialMode()) {
+      void (async () => {
+        try {
+          const next = await liveSocial.sendLiveRoomMessage(roomId, content, anonymous);
+          setRooms(next);
+          queryClient.setQueryData(['recoveryRooms'], next);
+        } catch (e) {
+          console.log('[RecoveryRooms] sendLiveRoomMessage failed:', e);
+        }
+      })();
+      return;
+    }
     const authorName = anonymous ? 'Anonymous' : (displayName || 'You');
     const message: RecoveryRoomMessage = {
       id: 'rrm_' + Date.now().toString(),
@@ -484,7 +597,10 @@ export const [RecoveryRoomsProvider, useRecoveryRooms] = createContextHook(() =>
     });
     saveRoomsMutation.mutate(updated);
 
-    // On-device practice reply (not live peer chat). Skipped if the sampled author is blocked.
+    if (!isLocalSocialDemoEnabled()) {
+      return;
+    }
+    // On-device practice reply only in local demo mode (never in production or live API).
     setTimeout(() => {
       let randomAuthor = ANONYMOUS_NAMES[Math.floor(Math.random() * ANONYMOUS_NAMES.length)];
       let tries = 0;
@@ -516,9 +632,20 @@ export const [RecoveryRoomsProvider, useRecoveryRooms] = createContextHook(() =>
         return newRooms;
       });
     }, 2500 + Math.random() * 3500);
-  }, [rooms, displayName, userId]);
+  }, [rooms, displayName, userId, saveRoomsMutation]);
 
   const reportMessage = useCallback((roomId: string, messageId: string, reason: RoomReport['reason'], description: string) => {
+    if (isLiveSocialMode()) {
+      void (async () => {
+        try {
+          await liveSocial.reportLiveRoomMessage({ roomId, messageId, reason, description });
+          await queryClient.invalidateQueries({ queryKey: ['recoveryRooms'] });
+        } catch (e) {
+          console.log('[RecoveryRooms] reportLiveRoomMessage failed:', e);
+        }
+      })();
+      return;
+    }
     const report: RoomReport = {
       id: 'report_' + Date.now().toString(),
       roomId,
@@ -542,18 +669,30 @@ export const [RecoveryRoomsProvider, useRecoveryRooms] = createContextHook(() =>
       };
     });
     saveRoomsMutation.mutate(updatedRooms);
-  }, [rooms, reports, userId]);
+  }, [rooms, reports, userId, queryClient, saveReportsMutation, saveRoomsMutation]);
 
   const blockAuthor = useCallback((authorName: string) => {
     const name = authorName.trim();
     if (!name) return;
+    if (isLiveSocialMode()) {
+      void (async () => {
+        try {
+          const next = await liveSocial.addLiveBlockedAuthor(name);
+          setBlockedAuthors(next);
+          await queryClient.invalidateQueries({ queryKey: ['liveSocialBlocks'] });
+        } catch (e) {
+          console.log('[RecoveryRooms] addLiveBlockedAuthor failed:', e);
+        }
+      })();
+      return;
+    }
     setBlockedAuthors((prev) => {
       if (prev.includes(name)) return prev;
       const next = [...prev, name];
       void saveData(STORAGE_KEYS.BLOCKED_AUTHORS, next);
       return next;
     });
-  }, []);
+  }, [queryClient]);
 
   const getRoomById = useCallback((roomId: string): RecoveryRoom | undefined => {
     return rooms.find(r => r.id === roomId);
@@ -577,7 +716,19 @@ export const [RecoveryRoomsProvider, useRecoveryRooms] = createContextHook(() =>
   const availableRooms = rooms.filter(r => !r.isJoined);
   const liveRooms = rooms.filter(r => r.isLive);
 
-  const isLoading = roomsQuery.isLoading || userIdQuery.isLoading;
+  const isLoading =
+    roomsQuery.isLoading ||
+    (!isLiveSocialMode() && userIdQuery.isLoading) ||
+    (isLiveSocialMode() && liveSessionQuery.isLoading);
+
+  const socialMode = getSocialPresentationMode();
+
+  const refetchRooms = useCallback(() => {
+    void queryClient.invalidateQueries({ queryKey: ['recoveryRooms'] });
+    if (isLiveSocialMode()) {
+      void queryClient.invalidateQueries({ queryKey: ['liveSocialBlocks'] });
+    }
+  }, [queryClient]);
 
   return useMemo(() => ({
     rooms,
@@ -589,6 +740,8 @@ export const [RecoveryRoomsProvider, useRecoveryRooms] = createContextHook(() =>
     displayName,
     isAnonymousDefault,
     isLoading,
+    socialMode,
+    refetchRooms,
     setRoomDisplayName,
     setAnonymousDefault,
     joinRoom,
@@ -602,7 +755,7 @@ export const [RecoveryRoomsProvider, useRecoveryRooms] = createContextHook(() =>
     topicLabels: TOPIC_LABELS,
   }), [
     rooms, joinedRooms, availableRooms, liveRooms, reports,
-    userId, displayName, isAnonymousDefault, isLoading,
+    userId, displayName, isAnonymousDefault, isLoading, socialMode, refetchRooms,
     setRoomDisplayName, setAnonymousDefault,
     joinRoom, leaveRoom, sendMessage, reportMessage, blockAuthor, blockedAuthors,
     getRoomById, getUpcomingSessions,

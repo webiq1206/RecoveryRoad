@@ -27,7 +27,7 @@ export const PATH_DEMO_ROOMS: Record<RecoveryPathId, readonly DemoRoom[]> = {
     },
     {
       id: "stabilize-dawn-overflow",
-      name: "Dawn check-in (overflow)",
+      name: "Dawn check-in · Room 2",
       description: "Same rhythm as the main room when it’s at capacity.",
       activeUsers: 9,
       status: "open",
@@ -58,7 +58,7 @@ export const PATH_DEMO_ROOMS: Record<RecoveryPathId, readonly DemoRoom[]> = {
     },
     {
       id: "build-pattern-overflow",
-      name: "Pattern review (overflow)",
+      name: "Pattern review · Room 2",
       description: "Overflow space when the main review room is full.",
       activeUsers: 6,
       status: "open",
@@ -91,7 +91,7 @@ export const PATH_DEMO_ROOMS: Record<RecoveryPathId, readonly DemoRoom[]> = {
     },
     {
       id: "deep-nervous-overflow",
-      name: "Nervous system (overflow)",
+      name: "Nervous system circle · Room 2",
       description: "Parallel circle when the main room reaches capacity.",
       activeUsers: 12,
       status: "open",
@@ -124,7 +124,7 @@ export const PATH_DEMO_ROOMS: Record<RecoveryPathId, readonly DemoRoom[]> = {
     },
     {
       id: "give-mentor-overflow",
-      name: "Mentor guild (overflow)",
+      name: "Mentor guild · Room 2",
       description: "Overflow mentor space with the same agreements.",
       activeUsers: 4,
       status: "open",
@@ -155,4 +155,29 @@ export function findDemoRoomById(roomId: string | undefined): DemoRoom | null {
 
 export function isRoomFull(room: DemoRoom): boolean {
   return room.activeUsers >= MAX_ROOM_USERS;
+}
+
+export function isAtCapacity(activeUsers: number): boolean {
+  return activeUsers >= MAX_ROOM_USERS;
+}
+
+/** Baseline occupancy from demo catalog (used to reset mock state). */
+export function getCatalogOccupancyByRoomId(): Record<string, number> {
+  const out: Record<string, number> = {};
+  for (const path of Object.keys(PATH_DEMO_ROOMS) as RecoveryPathId[]) {
+    for (const r of PATH_DEMO_ROOMS[path]) {
+      out[r.id] = r.activeUsers;
+    }
+  }
+  return out;
+}
+
+/** Primary room that overflows into `overflowRoomId`, if any */
+export function findPrimaryRoomForOverflow(overflowRoomId: string): DemoRoom | null {
+  for (const path of Object.keys(PATH_DEMO_ROOMS) as RecoveryPathId[]) {
+    for (const r of PATH_DEMO_ROOMS[path]) {
+      if (r.overflowRoomId === overflowRoomId) return r;
+    }
+  }
+  return null;
 }

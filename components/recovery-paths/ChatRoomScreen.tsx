@@ -10,11 +10,16 @@ import {
   View,
   type ListRenderItem,
 } from "react-native";
-import { useLocalSearchParams, useNavigation } from "expo-router";
+import { useLocalSearchParams, useNavigation, useRouter } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Send, X } from "lucide-react-native";
 import * as Haptics from "expo-haptics";
-import { findDemoRoomById } from "../../constants/recoveryPathRooms";
+import {
+  findDemoRoomById,
+  findPrimaryRoomForOverflow,
+  MAX_ROOM_USERS,
+} from "../../constants/recoveryPathRooms";
+import { useMockRoomCapacityStore } from "../../stores/useMockRoomCapacityStore";
 
 const PREMIUM = {
   bg: "#0b0d0f",
@@ -436,15 +441,36 @@ function RoomThreadRow({
 export default function ChatRoomScreen() {
   const insets = useSafeAreaInsets();
   const navigation = useNavigation();
+  const router = useRouter();
   const raw = useLocalSearchParams<{ roomId?: string | string[] }>();
   const roomId = Array.isArray(raw.roomId) ? raw.roomId[0] : raw.roomId;
   const room = useMemo(() => findDemoRoomById(roomId), [roomId]);
+  const isOverflowRoom = useMemo(() => (roomId ? !!findPrimaryRoomForOverflow(roomId) : false), [roomId]);
+  const liveCount = useMockRoomCapacityStore((s) => (roomId ? s.countsByRoomId[roomId] ?? 0 : 0));
   const messageSeed = useMemo(() => buildSeedMessages(room?.name), [room?.name, roomId]);
   const [messages, setMessages] = useState<RoomChatMessage[]>(messageSeed);
   const [input, setInput] = useState("");
   const [reactionBarMessageId, setReactionBarMessageId] = useState<string | null>(null);
   const [replyDraftParentId, setReplyDraftParentId] = useState<string | null>(null);
   const [expandedThreads, setExpandedThreads] = useState<Record<string, boolean>>({});
+  const [joinDenied, setJoinDenied] = useState(false);
+
+  useEffect(() => {
+    if (!roomId) {
+      setJoinDenied(false);
+      return;
+    }
+    setJoinDenied(false);
+    const { enterRoom, leaveRoom } = useMockRoomCapacityStore.getState();
+    const ok = enterRoom(roomId);
+    if (!ok) {
+      setJoinDenied(true);
+      return;
+    }
+    return () => {
+      leaveRoom(roomId);
+    };
+  }, [roomId]);
 
   useEffect(() => {
     setMessages(messageSeed);
@@ -550,22 +576,52 @@ export default function ChatRoomScreen() {
       behavior={Platform.OS === "ios" ? "padding" : undefined}
       keyboardVerticalOffset={keyboardOffset}
     >
-      <FlatList
-        data={threadGroups}
-        keyExtractor={(g) => g.rootId}
-        renderItem={renderItem}
-        inverted
-        keyboardShouldPersistTaps="handled"
-        onScrollBeginDrag={() => {
-          setReactionBarMessageId(null);
-        }}
-        showsVerticalScrollIndicator={false}
-        contentContainerStyle={[
-          styles.listContent,
-          { paddingTop: 10 + insets.bottom, paddingBottom: 8 },
-        ]}
-      />
-      {replyPreview ? (
+      {joinDenied ? (
+        <View style={styles.joinDeniedWrap}>
+          <Text style={styles.joinDeniedTitle}>This room is at capacity</Text>
+          <Text style={styles.joinDeniedBody}>
+            {room?.overflowRoomId
+              ? "The main room is full. Use “Join Overflow Room” from the list when available."
+              : "Choose another room from the list."}
+          </Text>
+          <Pressable
+            onPress={() => router.back()}
+            style={({ pressed }) => [styles.joinDeniedBtn, pressed && { opacity: 0.85 }]}
+            accessibilityRole="button"
+            accessibilityLabel="Go back"
+          >
+            <Text style={styles.joinDeniedBtnText}>Go back</Text>
+          </Pressable>
+        </View>
+      ) : (
+        <>
+          {roomId && room ? (
+            <View style={styles.capacityStrip}>
+              <Text style={styles.capacityText}>
+                {liveCount} / {MAX_ROOM_USERS} in room
+                {isOverflowRoom ? " · Room 2" : ""}
+              </Text>
+            </View>
+          ) : null}
+          <FlatList
+            style={styles.chatList}
+            data={threadGroups}
+            keyExtractor={(g) => g.rootId}
+            renderItem={renderItem}
+            inverted
+            keyboardShouldPersistTaps="handled"
+            onScrollBeginDrag={() => {
+              setReactionBarMessageId(null);
+            }}
+            showsVerticalScrollIndicator={false}
+            contentContainerStyle={[
+              styles.listContent,
+              { paddingTop: 10 + insets.bottom, paddingBottom: 8 },
+            ]}
+          />
+        </>
+      )}
+      {!joinDenied && replyPreview ? (
         <View style={styles.replyBanner}>
           <View style={{ flex: 1 }}>
             <Text style={styles.replyBannerLabel}>Replying to {replyPreview.userTag}</Text>
@@ -583,33 +639,35 @@ export default function ChatRoomScreen() {
           </Pressable>
         </View>
       ) : null}
-      <View style={[styles.inputBar, { paddingBottom: Math.max(insets.bottom, 10) }]}>
-        <TextInput
-          style={styles.input}
-          placeholder={replyPreview ? "Write a reply…" : "Message"}
-          placeholderTextColor={PREMIUM.muted}
-          value={input}
-          onChangeText={setInput}
-          onFocus={() => setReactionBarMessageId(null)}
-          multiline
-          maxLength={2000}
-          testID="recovery-room-chat-input"
-        />
-        <Pressable
-          onPress={onSend}
-          disabled={!input.trim()}
-          style={({ pressed }) => [
-            styles.sendBtn,
-            !input.trim() && styles.sendBtnDisabled,
-            pressed && !!input.trim() && styles.sendBtnPressed,
-          ]}
-          accessibilityRole="button"
-          accessibilityLabel="Send message"
-          testID="recovery-room-chat-send"
-        >
-          <Send size={22} color={input.trim() ? PREMIUM.text : PREMIUM.sendDisabled} />
-        </Pressable>
-      </View>
+      {!joinDenied ? (
+        <View style={[styles.inputBar, { paddingBottom: Math.max(insets.bottom, 10) }]}>
+          <TextInput
+            style={styles.input}
+            placeholder={replyPreview ? "Write a reply…" : "Message"}
+            placeholderTextColor={PREMIUM.muted}
+            value={input}
+            onChangeText={setInput}
+            onFocus={() => setReactionBarMessageId(null)}
+            multiline
+            maxLength={2000}
+            testID="recovery-room-chat-input"
+          />
+          <Pressable
+            onPress={onSend}
+            disabled={!input.trim()}
+            style={({ pressed }) => [
+              styles.sendBtn,
+              !input.trim() && styles.sendBtnDisabled,
+              pressed && !!input.trim() && styles.sendBtnPressed,
+            ]}
+            accessibilityRole="button"
+            accessibilityLabel="Send message"
+            testID="recovery-room-chat-send"
+          >
+            <Send size={22} color={input.trim() ? PREMIUM.text : PREMIUM.sendDisabled} />
+          </Pressable>
+        </View>
+      ) : null}
     </KeyboardAvoidingView>
   );
 }
@@ -618,6 +676,53 @@ const styles = StyleSheet.create({
   root: {
     flex: 1,
     backgroundColor: PREMIUM.bg,
+  },
+  chatList: {
+    flex: 1,
+  },
+  capacityStrip: {
+    paddingVertical: 8,
+    paddingHorizontal: 14,
+    backgroundColor: "#12151a",
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: PREMIUM.border,
+  },
+  capacityText: {
+    fontSize: 12,
+    fontWeight: "600",
+    color: PREMIUM.muted,
+    letterSpacing: 0.2,
+  },
+  joinDeniedWrap: {
+    flex: 1,
+    paddingHorizontal: 24,
+    justifyContent: "center",
+    gap: 14,
+  },
+  joinDeniedTitle: {
+    fontSize: 18,
+    fontWeight: "700",
+    color: PREMIUM.text,
+  },
+  joinDeniedBody: {
+    fontSize: 15,
+    lineHeight: 22,
+    color: PREMIUM.muted,
+  },
+  joinDeniedBtn: {
+    alignSelf: "flex-start",
+    marginTop: 4,
+    paddingVertical: 10,
+    paddingHorizontal: 18,
+    borderRadius: 12,
+    backgroundColor: "rgba(46,196,182,0.2)",
+    borderWidth: 1,
+    borderColor: "rgba(46,196,182,0.45)",
+  },
+  joinDeniedBtnText: {
+    fontSize: 15,
+    fontWeight: "700",
+    color: PREMIUM.accent,
   },
   listContent: {
     paddingHorizontal: 12,

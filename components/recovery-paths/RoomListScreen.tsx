@@ -7,10 +7,11 @@ import { ScreenScrollView } from "../ScreenScrollView";
 import { getRecoveryPathById } from "../../constants/recoveryPaths";
 import {
   getDemoRoomsForPath,
-  isRoomFull,
+  isAtCapacity,
   MAX_ROOM_USERS,
   type DemoRoom,
 } from "../../constants/recoveryPathRooms";
+import { useMockRoomCapacityStore } from "../../stores/useMockRoomCapacityStore";
 
 const PREMIUM = {
   bg: "#0b0d0f",
@@ -33,6 +34,7 @@ export default function RoomListScreen() {
   const pathIdRaw = Array.isArray(raw.pathId) ? raw.pathId[0] : raw.pathId;
   const path = useMemo(() => getRecoveryPathById(pathIdRaw), [pathIdRaw]);
   const rooms = useMemo(() => getDemoRoomsForPath(path?.id ?? null), [path?.id]);
+  const countsByRoomId = useMockRoomCapacityStore((s) => s.countsByRoomId);
 
   useLayoutEffect(() => {
     navigation.setOptions({
@@ -64,7 +66,12 @@ export default function RoomListScreen() {
             <Text style={styles.sectionLabel}>Rooms</Text>
             <View style={styles.list}>
               {rooms.map((room) => (
-                <RoomCard key={room.id} room={room} onOpenRoom={openChat} />
+                <RoomCard
+                  key={room.id}
+                  room={room}
+                  liveCount={countsByRoomId[room.id] ?? room.activeUsers}
+                  onOpenRoom={openChat}
+                />
               ))}
             </View>
           </>
@@ -76,17 +83,32 @@ export default function RoomListScreen() {
   );
 }
 
-function RoomCard({ room, onOpenRoom }: { room: DemoRoom; onOpenRoom: (roomId: string) => void }) {
-  const full = isRoomFull(room);
-  const showOverflow = full && room.overflowRoomId;
+function RoomCard({
+  room,
+  liveCount,
+  onOpenRoom,
+}: {
+  room: DemoRoom;
+  liveCount: number;
+  onOpenRoom: (roomId: string) => void;
+}) {
+  const full = isAtCapacity(liveCount);
+  const showOverflowCta = full && room.overflowRoomId;
+  const joinDisabled = full;
 
   return (
     <View style={styles.card}>
       <Pressable
         accessibilityRole="button"
         accessibilityLabel={`${room.name}. ${room.description}`}
+        accessibilityState={{ disabled: joinDisabled }}
+        disabled={joinDisabled}
         onPress={() => onOpenRoom(room.id)}
-        style={({ pressed }) => [styles.cardMain, pressed && styles.cardPressed]}
+        style={({ pressed }) => [
+          styles.cardMain,
+          joinDisabled && styles.cardMainDisabled,
+          pressed && !joinDisabled && styles.cardPressed,
+        ]}
       >
         <View style={styles.cardHeader}>
           <Text style={styles.roomName}>{room.name}</Text>
@@ -103,10 +125,13 @@ function RoomCard({ room, onOpenRoom }: { room: DemoRoom; onOpenRoom: (roomId: s
         </View>
         <Text style={styles.roomDescription}>{room.description}</Text>
         <Text style={styles.activeLine}>
-          {room.activeUsers} / {MAX_ROOM_USERS} active
+          {liveCount} / {MAX_ROOM_USERS} active
         </Text>
+        {joinDisabled ? (
+          <Text style={styles.joinHint}>{showOverflowCta ? "Main room is at capacity." : "This room is at capacity."}</Text>
+        ) : null}
       </Pressable>
-      {showOverflow ? (
+      {showOverflowCta ? (
         <Pressable
           accessibilityRole="button"
           accessibilityLabel="Join overflow room"
@@ -163,6 +188,9 @@ const styles = StyleSheet.create({
   cardMain: {
     paddingVertical: 16,
     paddingHorizontal: 16,
+  },
+  cardMainDisabled: {
+    opacity: 0.52,
   },
   cardPressed: {
     opacity: 0.88,
@@ -228,6 +256,12 @@ const styles = StyleSheet.create({
     color: PREMIUM.muted,
     fontSize: 13,
     fontWeight: "500",
+  },
+  joinHint: {
+    marginTop: 10,
+    fontSize: 12,
+    color: PREMIUM.muted,
+    lineHeight: 16,
   },
   overflowCta: {
     borderTopWidth: 1,

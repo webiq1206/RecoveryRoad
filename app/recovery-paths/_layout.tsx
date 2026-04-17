@@ -29,6 +29,12 @@ export default function RecoveryPathsLayout() {
           title: "Rooms",
         }}
       />
+      <Stack.Screen
+        name="chat-room"
+        options={{
+          title: "Room",
+        }}
+      />
     </Stack>
   );
 }

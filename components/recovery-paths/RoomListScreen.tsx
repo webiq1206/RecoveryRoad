@@ -1,9 +1,16 @@
-import React, { useLayoutEffect, useMemo } from "react";
-import { StyleSheet, Text, View } from "react-native";
-import { useLocalSearchParams, useNavigation } from "expo-router";
+import React, { useCallback, useLayoutEffect, useMemo } from "react";
+import { Pressable, StyleSheet, Text, View } from "react-native";
+import { useLocalSearchParams, useNavigation, useRouter } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import * as Haptics from "expo-haptics";
 import { ScreenScrollView } from "../ScreenScrollView";
 import { getRecoveryPathById } from "../../constants/recoveryPaths";
+import {
+  getDemoRoomsForPath,
+  isRoomFull,
+  MAX_ROOM_USERS,
+  type DemoRoom,
+} from "../../constants/recoveryPathRooms";
 
 const PREMIUM = {
   bg: "#0b0d0f",
@@ -12,26 +19,37 @@ const PREMIUM = {
   text: "#F2F3F5",
   muted: "#8B919A",
   accent: "#2EC4B6",
+  live: "rgba(46,196,182,0.2)",
+  open: "rgba(255,255,255,0.08)",
+  full: "rgba(239,83,80,0.2)",
+  fullText: "#F2A6A6",
 } as const;
-
-const PLACEHOLDER_ROOMS = [
-  "Morning grounding",
-  "Urge skills lab",
-  "Evening check-in",
-] as const;
 
 export default function RoomListScreen() {
   const insets = useSafeAreaInsets();
   const navigation = useNavigation();
+  const router = useRouter();
   const raw = useLocalSearchParams<{ pathId?: string | string[] }>();
-  const pathId = Array.isArray(raw.pathId) ? raw.pathId[0] : raw.pathId;
-  const path = useMemo(() => getRecoveryPathById(pathId), [pathId]);
+  const pathIdRaw = Array.isArray(raw.pathId) ? raw.pathId[0] : raw.pathId;
+  const path = useMemo(() => getRecoveryPathById(pathIdRaw), [pathIdRaw]);
+  const rooms = useMemo(() => getDemoRoomsForPath(path?.id ?? null), [path?.id]);
 
   useLayoutEffect(() => {
     navigation.setOptions({
       title: path ? path.title : "Rooms",
     });
   }, [navigation, path]);
+
+  const openChat = useCallback(
+    (roomId: string) => {
+      void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+      router.push({
+        pathname: "/recovery-paths/chat-room",
+        params: { roomId },
+      });
+    },
+    [router],
+  );
 
   return (
     <View style={[styles.root, { paddingTop: 8 }]}>
@@ -43,19 +61,61 @@ export default function RoomListScreen() {
           <>
             <Text style={styles.phase}>{path.phase}</Text>
             <Text style={styles.lead}>{path.description}</Text>
-            <Text style={styles.sectionLabel}>Along this path</Text>
-            {PLACEHOLDER_ROOMS.map((label) => (
-              <View key={label} style={styles.roomRow}>
-                <View style={styles.dot} />
-                <Text style={styles.roomTitle}>{label}</Text>
-              </View>
-            ))}
-            <Text style={styles.hint}>Live room directory will connect here.</Text>
+            <Text style={styles.sectionLabel}>Rooms</Text>
+            <View style={styles.list}>
+              {rooms.map((room) => (
+                <RoomCard key={room.id} room={room} onOpenRoom={openChat} />
+              ))}
+            </View>
           </>
         ) : (
           <Text style={styles.lead}>Select a recovery path to see matched rooms.</Text>
         )}
       </ScreenScrollView>
+    </View>
+  );
+}
+
+function RoomCard({ room, onOpenRoom }: { room: DemoRoom; onOpenRoom: (roomId: string) => void }) {
+  const full = isRoomFull(room);
+  const showOverflow = full && room.overflowRoomId;
+
+  return (
+    <View style={styles.card}>
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel={`${room.name}. ${room.description}`}
+        onPress={() => onOpenRoom(room.id)}
+        style={({ pressed }) => [styles.cardMain, pressed && styles.cardPressed]}
+      >
+        <View style={styles.cardHeader}>
+          <Text style={styles.roomName}>{room.name}</Text>
+          <View style={styles.badgeRow}>
+            <View style={[styles.statusBadge, room.status === "live" ? styles.statusLive : styles.statusOpen]}>
+              <Text style={styles.statusBadgeText}>{room.status === "live" ? "Live" : "Open"}</Text>
+            </View>
+            {full ? (
+              <View style={styles.fullBadge}>
+                <Text style={styles.fullBadgeText}>Full</Text>
+              </View>
+            ) : null}
+          </View>
+        </View>
+        <Text style={styles.roomDescription}>{room.description}</Text>
+        <Text style={styles.activeLine}>
+          {room.activeUsers} / {MAX_ROOM_USERS} active
+        </Text>
+      </Pressable>
+      {showOverflow ? (
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel="Join overflow room"
+          onPress={() => onOpenRoom(room.overflowRoomId!)}
+          style={({ pressed }) => [styles.overflowCta, pressed && styles.overflowPressed]}
+        >
+          <Text style={styles.overflowCtaText}>Join Overflow Room</Text>
+        </Pressable>
+      ) : null}
     </View>
   );
 }
@@ -81,7 +141,7 @@ const styles = StyleSheet.create({
     color: PREMIUM.muted,
     fontSize: 15,
     lineHeight: 22,
-    marginBottom: 28,
+    marginBottom: 22,
   },
   sectionLabel: {
     color: PREMIUM.text,
@@ -90,34 +150,99 @@ const styles = StyleSheet.create({
     marginBottom: 12,
     letterSpacing: 0.2,
   },
-  roomRow: {
-    flexDirection: "row",
-    alignItems: "center",
+  list: {
     gap: 12,
+  },
+  card: {
     backgroundColor: PREMIUM.card,
-    borderRadius: 14,
+    borderRadius: 16,
     borderWidth: 1,
     borderColor: PREMIUM.border,
+    overflow: "hidden",
+  },
+  cardMain: {
     paddingVertical: 16,
     paddingHorizontal: 16,
+  },
+  cardPressed: {
+    opacity: 0.88,
+  },
+  cardHeader: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    justifyContent: "space-between",
+    gap: 12,
+    marginBottom: 8,
+  },
+  roomName: {
+    flex: 1,
+    color: PREMIUM.text,
+    fontSize: 17,
+    fontWeight: "700",
+    letterSpacing: -0.2,
+  },
+  badgeRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    flexShrink: 0,
+  },
+  statusBadge: {
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 6,
+  },
+  statusLive: {
+    backgroundColor: PREMIUM.live,
+  },
+  statusOpen: {
+    backgroundColor: PREMIUM.open,
+  },
+  statusBadgeText: {
+    color: PREMIUM.text,
+    fontSize: 11,
+    fontWeight: "700",
+    letterSpacing: 0.6,
+    textTransform: "uppercase",
+  },
+  fullBadge: {
+    paddingHorizontal: 7,
+    paddingVertical: 3,
+    borderRadius: 6,
+    backgroundColor: PREMIUM.full,
+  },
+  fullBadgeText: {
+    color: PREMIUM.fullText,
+    fontSize: 11,
+    fontWeight: "700",
+    letterSpacing: 0.4,
+    textTransform: "uppercase",
+  },
+  roomDescription: {
+    color: PREMIUM.muted,
+    fontSize: 14,
+    lineHeight: 20,
     marginBottom: 10,
   },
-  dot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    backgroundColor: PREMIUM.accent,
-    opacity: 0.7,
-  },
-  roomTitle: {
-    color: PREMIUM.text,
-    fontSize: 16,
-    fontWeight: "600",
-  },
-  hint: {
-    marginTop: 18,
+  activeLine: {
     color: PREMIUM.muted,
     fontSize: 13,
-    lineHeight: 18,
+    fontWeight: "500",
+  },
+  overflowCta: {
+    borderTopWidth: 1,
+    borderTopColor: PREMIUM.border,
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    alignItems: "center",
+  },
+  overflowPressed: {
+    opacity: 0.85,
+  },
+  overflowCtaText: {
+    color: PREMIUM.accent,
+    fontSize: 14,
+    fontWeight: "700",
+    letterSpacing: 0.2,
   },
 });

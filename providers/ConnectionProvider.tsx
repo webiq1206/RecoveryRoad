@@ -14,6 +14,12 @@ import {
   UserProfile,
 } from '../types';
 import { arePeerPracticeFeaturesEnabled } from '../core/socialLiveConfig';
+import {
+  ANONYMOUS_CHAT_IDENTITY_QUERY_KEY,
+  formatAnonymousIdentityLabel,
+  generateRandomIdentityLabel,
+  loadOrCreateAnonymousIdentity,
+} from '../core/anonymousIdentity';
 
 const STORAGE_KEYS = {
   TRUSTED_CONTACTS: 'connection_trusted_contacts',
@@ -35,12 +41,6 @@ export type ConnectionLocalUgcReport = {
   createdAt: string;
 };
 
-const ANONYMOUS_NAMES = [
-  'Gentle Oak', 'Quiet River', 'Warm Breeze', 'Still Water',
-  'Soft Light', 'Calm Shore', 'Kind Heart', 'Safe Harbor',
-  'Bright Path', 'Steady Ground', 'Open Sky', 'Deep Roots',
-];
-
 const SAMPLE_ROOMS: SafeRoom[] = [
   {
     id: 'room_1',
@@ -53,9 +53,9 @@ const SAMPLE_ROOMS: SafeRoom[] = [
     createdAt: '2026-02-10T08:00:00.000Z',
     lastActivity: '2026-02-16T07:30:00.000Z',
     messages: [
-      { id: 'rm_1', roomId: 'room_1', authorName: 'Quiet River', content: 'Good morning everyone. Day 45 here. Feeling grateful today.', timestamp: '2026-02-16T07:15:00.000Z', isOwn: false },
-      { id: 'rm_2', roomId: 'room_1', authorName: 'Warm Breeze', content: 'Morning! Had a rough night but showing up anyway. That counts right?', timestamp: '2026-02-16T07:20:00.000Z', isOwn: false },
-      { id: 'rm_3', roomId: 'room_1', authorName: 'Gentle Oak', content: 'It absolutely counts. Showing up is everything.', timestamp: '2026-02-16T07:25:00.000Z', isOwn: false },
+      { id: 'rm_1', roomId: 'room_1', authorName: 'Day 45 · Active', content: 'Good morning everyone. Day 45 here. Feeling grateful today.', timestamp: '2026-02-16T07:15:00.000Z', isOwn: false },
+      { id: 'rm_2', roomId: 'room_1', authorName: 'Day 8 · New', content: 'Morning! Had a rough night but showing up anyway. That counts right?', timestamp: '2026-02-16T07:20:00.000Z', isOwn: false },
+      { id: 'rm_3', roomId: 'room_1', authorName: 'Day 112 · Mentor', content: 'It absolutely counts. Showing up is everything.', timestamp: '2026-02-16T07:25:00.000Z', isOwn: false },
     ],
   },
   {
@@ -69,8 +69,8 @@ const SAMPLE_ROOMS: SafeRoom[] = [
     createdAt: '2026-02-08T10:00:00.000Z',
     lastActivity: '2026-02-16T06:00:00.000Z',
     messages: [
-      { id: 'rm_4', roomId: 'room_2', authorName: 'Still Water', content: 'Having a hard moment right now. Trying to breathe through it.', timestamp: '2026-02-16T05:45:00.000Z', isOwn: false },
-      { id: 'rm_5', roomId: 'room_2', authorName: 'Safe Harbor', content: 'You are not alone. This will pass. Focus on the next 5 minutes.', timestamp: '2026-02-16T05:50:00.000Z', isOwn: false },
+      { id: 'rm_4', roomId: 'room_2', authorName: 'Day 19 · New', content: 'Having a hard moment right now. Trying to breathe through it.', timestamp: '2026-02-16T05:45:00.000Z', isOwn: false },
+      { id: 'rm_5', roomId: 'room_2', authorName: 'Day 64 · Mentor', content: 'You are not alone. This will pass. Focus on the next 5 minutes.', timestamp: '2026-02-16T05:50:00.000Z', isOwn: false },
     ],
   },
   {
@@ -84,8 +84,8 @@ const SAMPLE_ROOMS: SafeRoom[] = [
     createdAt: '2026-02-09T20:00:00.000Z',
     lastActivity: '2026-02-15T21:30:00.000Z',
     messages: [
-      { id: 'rm_6', roomId: 'room_3', authorName: 'Kind Heart', content: 'Made it through another day. Sending strength to everyone here.', timestamp: '2026-02-15T21:00:00.000Z', isOwn: false },
-      { id: 'rm_7', roomId: 'room_3', authorName: 'Bright Path', content: 'Grateful for this space. Sleep well everyone.', timestamp: '2026-02-15T21:25:00.000Z', isOwn: false },
+      { id: 'rm_6', roomId: 'room_3', authorName: 'Day 33 · Active', content: 'Made it through another day. Sending strength to everyone here.', timestamp: '2026-02-15T21:00:00.000Z', isOwn: false },
+      { id: 'rm_7', roomId: 'room_3', authorName: 'Day 270', content: 'Grateful for this space. Sleep well everyone.', timestamp: '2026-02-15T21:25:00.000Z', isOwn: false },
     ],
   },
   {
@@ -99,8 +99,8 @@ const SAMPLE_ROOMS: SafeRoom[] = [
     createdAt: '2026-02-12T12:00:00.000Z',
     lastActivity: '2026-02-16T04:00:00.000Z',
     messages: [
-      { id: 'rm_8', roomId: 'room_4', authorName: 'Deep Roots', content: 'Day 3 here. Hardest thing I have ever done but I am trying.', timestamp: '2026-02-16T03:45:00.000Z', isOwn: false },
-      { id: 'rm_9', roomId: 'room_4', authorName: 'Open Sky', content: 'Day 3 is huge. You are doing incredible work just being here.', timestamp: '2026-02-16T03:55:00.000Z', isOwn: false },
+      { id: 'rm_8', roomId: 'room_4', authorName: 'Day 3 · New', content: 'Day 3 here. Hardest thing I have ever done but I am trying.', timestamp: '2026-02-16T03:45:00.000Z', isOwn: false },
+      { id: 'rm_9', roomId: 'room_4', authorName: 'Day 41 · Active', content: 'Day 3 is huge. You are doing incredible work just being here.', timestamp: '2026-02-16T03:55:00.000Z', isOwn: false },
     ],
   },
 ];
@@ -108,7 +108,7 @@ const SAMPLE_ROOMS: SafeRoom[] = [
 const SAMPLE_PEER_CHATS: PeerChat[] = [
   {
     id: 'peer_1',
-    anonymousName: 'Calm Shore',
+    anonymousName: 'Day 55 · Active',
     messages: [
       { id: 'pm_1', chatId: 'peer_1', content: 'Hey, just wanted to check in. How are you holding up?', isOwn: false, timestamp: '2026-02-15T14:00:00.000Z' },
       { id: 'pm_2', chatId: 'peer_1', content: 'Better today than yesterday. Thanks for asking.', isOwn: true, timestamp: '2026-02-15T14:05:00.000Z' },
@@ -207,6 +207,16 @@ export const [ConnectionProvider, useConnection] = createContextHook(() => {
     },
     staleTime: Infinity,
   });
+
+  const chatIdentityQuery = useQuery({
+    queryKey: ANONYMOUS_CHAT_IDENTITY_QUERY_KEY,
+    queryFn: loadOrCreateAnonymousIdentity,
+    staleTime: Infinity,
+  });
+
+  const chatIdentityLabel = chatIdentityQuery.data
+    ? formatAnonymousIdentityLabel(chatIdentityQuery.data)
+    : '';
 
   const blockedPeerNamesQuery = useQuery({
     queryKey: ['connectionBlockedPeerNames'],
@@ -325,9 +335,12 @@ export const [ConnectionProvider, useConnection] = createContextHook(() => {
 
   const startPeerChat = useCallback((topic: string) => {
     const blockedPeers = queryClient.getQueryData<string[]>(['connectionBlockedPeerNames']) ?? [];
-    const pool = ANONYMOUS_NAMES.filter(n => !blockedPeers.includes(n));
-    const pickFrom = pool.length ? pool : ANONYMOUS_NAMES;
-    const randomName = pickFrom[Math.floor(Math.random() * pickFrom.length)];
+    let randomName = generateRandomIdentityLabel();
+    let tries = 0;
+    while (blockedPeers.includes(randomName) && tries < 24) {
+      randomName = generateRandomIdentityLabel();
+      tries += 1;
+    }
     const chatId = 'peer_' + Date.now().toString();
     const newChat: PeerChat = {
       id: chatId,
@@ -512,7 +525,7 @@ export const [ConnectionProvider, useConnection] = createContextHook(() => {
       );
       return;
     }
-    const name = displayName || 'You';
+    const name = chatIdentityLabel || displayName || 'You';
     const message: RoomMessage = {
       id: 'rm_' + Date.now().toString(),
       roomId,
@@ -536,9 +549,12 @@ export const [ConnectionProvider, useConnection] = createContextHook(() => {
         'That really resonates with me. Thank you.',
       ];
       const blockedAuthors = queryClient.getQueryData<string[]>(['connectionBlockedRoomAuthors']) ?? [];
-      const authorPool = ANONYMOUS_NAMES.filter(n => !blockedAuthors.includes(n));
-      const pickAuthors = authorPool.length ? authorPool : ANONYMOUS_NAMES;
-      const randomAuthor = pickAuthors[Math.floor(Math.random() * pickAuthors.length)];
+      let randomAuthor = generateRandomIdentityLabel();
+      let tries = 0;
+      while (blockedAuthors.includes(randomAuthor) && tries < 24) {
+        randomAuthor = generateRandomIdentityLabel();
+        tries += 1;
+      }
       const response: RoomMessage = {
         id: 'rm_r_' + Date.now().toString(),
         roomId,
@@ -556,7 +572,7 @@ export const [ConnectionProvider, useConnection] = createContextHook(() => {
         return newRooms;
       });
     }, 3000 + Math.random() * 4000);
-  }, [safeRooms, displayName, queryClient]);
+  }, [safeRooms, displayName, chatIdentityLabel, queryClient]);
 
   const requestSponsorPairing = useCallback(async () => {
     let userAddictions: string[] = [];
@@ -676,7 +692,11 @@ export const [ConnectionProvider, useConnection] = createContextHook(() => {
     }, 2000 + Math.random() * 3000);
   }, [sponsorPairing]);
 
-  const isLoading = contactsQuery.isLoading || chatsQuery.isLoading || roomsQuery.isLoading;
+  const isLoading =
+    contactsQuery.isLoading ||
+    chatsQuery.isLoading ||
+    roomsQuery.isLoading ||
+    chatIdentityQuery.isLoading;
 
   const blockedPeerNames = blockedPeerNamesQuery.data ?? [];
   const blockedRoomAuthors = blockedRoomAuthorsQuery.data ?? [];
@@ -687,6 +707,7 @@ export const [ConnectionProvider, useConnection] = createContextHook(() => {
     safeRooms,
     sponsorPairing,
     displayName,
+    chatIdentityLabel,
     blockedPeerNames,
     blockedRoomAuthors,
     isLoading,
@@ -710,7 +731,7 @@ export const [ConnectionProvider, useConnection] = createContextHook(() => {
     sendSponsorMessage,
   }), [
     trustedContacts, peerChats, safeRooms, sponsorPairing,
-    displayName, blockedPeerNames, blockedRoomAuthors, isLoading, setUserDisplayName,
+    displayName, chatIdentityLabel, blockedPeerNames, blockedRoomAuthors, isLoading, setUserDisplayName,
     addTrustedContact, removeTrustedContact, updateContactAvailability,
     startPeerChat, sendPeerMessage, togglePeerMessageReaction, endPeerChat, blockPeerPartner,
     blockConnectionRoomAuthor, recordLocalUgcReport,

@@ -13,7 +13,7 @@ import {
 } from 'lucide-react-native';
 import * as Haptics from 'expo-haptics';
 import Colors from '../constants/colors';
-import { arePeerPracticeFeaturesEnabled } from '../core/socialLiveConfig';
+import { arePeerPracticeFeaturesEnabled, isCommunityEnabled } from '../core/socialLiveConfig';
 import { getSupportEmail, getSupportUrl, hasConfiguredSupportContact } from '../core/supportContact';
 import { useRecoveryRooms, TOPIC_LABELS } from '../providers/RecoveryRoomsProvider';
 import { useSubscription } from '../providers/SubscriptionProvider';
@@ -53,7 +53,7 @@ export default function RecoveryRoomsScreen() {
   const { hasFeature } = useSubscription();
   const {
     rooms, joinedRooms, availableRooms, liveRooms,
-    displayName, isAnonymousDefault,
+    displayName, chatIdentityLabel, isAnonymousDefault,
     setRoomDisplayName, setAnonymousDefault,
     joinRoom, leaveRoom, topicLabels,
     socialMode,
@@ -98,15 +98,18 @@ export default function RecoveryRoomsScreen() {
       Alert.alert('Room Full', 'This room has reached its member limit. Try again later.');
       return;
     }
-    if (!displayName && !isAnonymousDefault) {
+    if (isCommunityEnabled() && !displayName && !isAnonymousDefault) {
       setPendingRoomId(room.id);
       setShowNameSetup(true);
+      return;
+    }
+    if (!isCommunityEnabled() && !isAnonymousDefault && !chatIdentityLabel) {
       return;
     }
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     joinRoom(room.id);
     router.push({ pathname: '/room-session' as any, params: { roomId: room.id } });
-  }, [displayName, isAnonymousDefault, joinRoom, router]);
+  }, [displayName, chatIdentityLabel, isAnonymousDefault, joinRoom, router]);
 
   const handleEnterRoom = useCallback((room: RecoveryRoom) => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);

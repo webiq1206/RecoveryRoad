@@ -54,7 +54,7 @@ export default function ConnectionScreen() {
   useHydrateToolUsageStore();
   const logToolUsage = useToolUsageStore.use.logToolUsage();
   const {
-    trustedContacts, peerChats, safeRooms, displayName,
+    trustedContacts, peerChats, safeRooms, displayName, chatIdentityLabel,
     blockedPeerNames, blockedRoomAuthors,
     isLoading, setUserDisplayName,
     addTrustedContact, removeTrustedContact, updateContactAvailability,
@@ -137,7 +137,7 @@ export default function ConnectionScreen() {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
 
     const cleaned = phone.replace(/[^0-9+]/g, '');
-    const fromName = displayName || 'Me';
+    const fromName = chatIdentityLabel || displayName || 'Me';
     const message = encodeURIComponent(`Hi - it's ${fromName}. Just checking in. Could use a little support right now.`);
     const separator = Platform.OS === 'ios' ? '&' : '?';
 
@@ -151,7 +151,7 @@ export default function ConnectionScreen() {
     Linking.openURL(`sms:${cleaned}${separator}body=${message}`).catch(() => {
       Alert.alert('Unable to Text', `Please text ${phone} manually.`);
     });
-  }, [displayName, logToolUsage]);
+  }, [chatIdentityLabel, displayName, logToolUsage]);
 
   const handleRemoveContact = useCallback((id: string, name: string) => {
     Alert.alert('Remove Contact', `Remove ${name} from your trusted circle?`, [
@@ -167,14 +167,14 @@ export default function ConnectionScreen() {
   }, [removeTrustedContact]);
 
   const handleStartChat = useCallback(() => {
-    if (!displayName) {
+    if (!chatIdentityLabel && !displayName) {
       setShowNamePrompt(true);
       return;
     }
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     const newChatId = startPeerChat('general');
     router.push(`/(tabs)/connection/peer-chat/${newChatId}` as never);
-  }, [displayName, startPeerChat, router]);
+  }, [chatIdentityLabel, displayName, startPeerChat, router]);
 
   const handleSendMessage = useCallback(() => {
     if (!messageText.trim()) return;
@@ -454,7 +454,7 @@ export default function ConnectionScreen() {
         onPress={() => {
           Haptics.selectionAsync();
           if (!item.isJoined) {
-            if (!displayName) {
+            if (!chatIdentityLabel && !displayName) {
               setShowNamePrompt(true);
               return;
             }
@@ -497,7 +497,7 @@ export default function ConnectionScreen() {
         )}
       </Pressable>
     );
-  }, [displayName, joinRoom]);
+  }, [chatIdentityLabel, displayName, joinRoom]);
 
   const renderRoomsTab = () => (
     <View style={styles.tabContent}>

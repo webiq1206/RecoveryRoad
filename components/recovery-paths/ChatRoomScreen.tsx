@@ -29,7 +29,23 @@ const PREMIUM = {
   timeOther: "rgba(138,145,154,0.9)",
   inputBg: "#101217",
   sendDisabled: "#5A626C",
+  reactionBar: "#1c2129",
+  chip: "rgba(255,255,255,0.08)",
 } as const;
+
+/** Reactions: emoji → distinct mock user ids (no duplicate user per emoji) */
+export type MessageReactions = Record<string, string[]>;
+
+export const REACTION_EMOJIS = ["👍", "❤️", "🔥", "🙏", "💯"] as const;
+
+/** Logged-in user for mock dedupe */
+export const ROOM_CHAT_CURRENT_USER_ID = "u-you";
+
+/** Other simulated members in the room */
+const MOCK_USER_MENTOR = "u-mentor";
+const MOCK_USER_D12 = "u-day12";
+const MOCK_USER_D4 = "u-day4";
+const MOCK_USER_R7 = "u-day7";
 
 export type RoomChatMessage = {
   id: string;
@@ -37,6 +53,7 @@ export type RoomChatMessage = {
   text: string;
   createdAt: number;
   isOwn: boolean;
+  reactions: MessageReactions;
 };
 
 function formatMessageTime(ts: number): string {
@@ -53,6 +70,10 @@ function buildSeedMessages(roomName: string | undefined): RoomChatMessage[] {
       text: `Welcome to ${label}. Keep it kind, specific, and one-day-at-a-time.`,
       createdAt: t - 1000 * 60 * 12,
       isOwn: false,
+      reactions: {
+        "👍": [MOCK_USER_D12, MOCK_USER_D4],
+        "🙏": [MOCK_USER_R7],
+      },
     },
     {
       id: "seed-2",
@@ -60,6 +81,10 @@ function buildSeedMessages(roomName: string | undefined): RoomChatMessage[] {
       text: "First time speaking here. Rough morning but I didn’t use.",
       createdAt: t - 1000 * 60 * 9,
       isOwn: false,
+      reactions: {
+        "❤️": [MOCK_USER_MENTOR, MOCK_USER_D4],
+        "🔥": [MOCK_USER_D12],
+      },
     },
     {
       id: "seed-3",
@@ -67,6 +92,9 @@ function buildSeedMessages(roomName: string | undefined): RoomChatMessage[] {
       text: "Proud of you for showing up. What helped most the first hour?",
       createdAt: t - 1000 * 60 * 8,
       isOwn: false,
+      reactions: {
+        "👍": [MOCK_USER_D12],
+      },
     },
     {
       id: "seed-4",
@@ -74,12 +102,115 @@ function buildSeedMessages(roomName: string | undefined): RoomChatMessage[] {
       text: "Checking in—sleep was better after the wind-down thread.",
       createdAt: t - 1000 * 60 * 5,
       isOwn: true,
+      reactions: {
+        "💯": [MOCK_USER_MENTOR, MOCK_USER_D4, MOCK_USER_D12],
+      },
     },
   ];
 }
 
 function nextMessageId(): string {
   return `local-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
+}
+
+function emptyReactions(): MessageReactions {
+  return {};
+}
+
+function mergeUserReaction(prev: MessageReactions, emoji: string, userId: string): MessageReactions {
+  const existing = prev[emoji] ?? [];
+  if (existing.includes(userId)) {
+    return prev;
+  }
+  return { ...prev, [emoji]: [...existing, userId] };
+}
+
+function reactionSummary(reactions: MessageReactions): { emoji: string; count: number }[] {
+  return Object.entries(reactions)
+    .map(([emoji, users]) => ({ emoji, count: users.length }))
+    .filter((r) => r.count > 0)
+    .sort((a, b) => b.count - a.count || a.emoji.localeCompare(b.emoji));
+}
+
+type MessageRowProps = {
+  item: RoomChatMessage;
+  showReactionBar: boolean;
+  onLongPress: () => void;
+  onPickReaction: (emoji: string) => void;
+  currentUserReacted: (emoji: string) => boolean;
+};
+
+function RoomMessageRow({
+  item,
+  showReactionBar,
+  onLongPress,
+  onPickReaction,
+  currentUserReacted,
+}: MessageRowProps) {
+  const summary = useMemo(() => reactionSummary(item.reactions), [item.reactions]);
+
+  return (
+    <View style={[styles.msgRow, item.isOwn ? styles.msgRowOwn : styles.msgRowOther]}>
+      <View style={[styles.msgBlock, item.isOwn ? styles.msgBlockOwn : styles.msgBlockOther]}>
+        <Text style={styles.userTag}>{item.userTag}</Text>
+        <Pressable
+          onLongPress={onLongPress}
+          delayLongPress={380}
+          style={({ pressed }) => [pressed && styles.bubblePressed]}
+        >
+          <View style={[styles.bubble, item.isOwn ? styles.bubbleOwn : styles.bubbleOther]}>
+            <Text style={styles.bubbleText} selectable>
+              {item.text}
+            </Text>
+            <Text style={[styles.timeText, item.isOwn ? styles.timeOwn : styles.timeOther]}>
+              {formatMessageTime(item.createdAt)}
+            </Text>
+          </View>
+        </Pressable>
+        {summary.length > 0 ? (
+          <View
+            style={[styles.reactionChips, item.isOwn ? styles.reactionChipsOwn : styles.reactionChipsOther]}
+            accessibilityLabel="Reactions"
+          >
+            {summary.map(({ emoji, count }) => (
+              <View key={emoji} style={styles.reactionChip}>
+                <Text style={styles.reactionChipText}>
+                  {emoji} {count}
+                </Text>
+              </View>
+            ))}
+          </View>
+        ) : null}
+        {showReactionBar ? (
+          <View
+            style={[styles.reactionBar, item.isOwn ? styles.reactionBarOwn : styles.reactionBarOther]}
+            accessibilityRole="toolbar"
+            accessibilityLabel="Emoji reactions"
+          >
+            {REACTION_EMOJIS.map((emoji) => {
+              const already = currentUserReacted(emoji);
+              return (
+                <Pressable
+                  key={emoji}
+                  onPress={() => onPickReaction(emoji)}
+                  disabled={already}
+                  style={({ pressed }) => [
+                    styles.reactionHit,
+                    already && styles.reactionHitDisabled,
+                    pressed && !already && styles.reactionHitPressed,
+                  ]}
+                  accessibilityLabel={`React with ${emoji}`}
+                  accessibilityState={{ disabled: already }}
+                >
+                  <Text style={[styles.reactionEmoji, already && styles.reactionEmojiMuted]}>{emoji}</Text>
+                </Pressable>
+              );
+            })}
+          </View>
+        ) : null}
+      </View>
+    </View>
+  );
 }
 
 export default function ChatRoomScreen() {
@@ -91,9 +222,11 @@ export default function ChatRoomScreen() {
   const messageSeed = useMemo(() => buildSeedMessages(room?.name), [room?.name, roomId]);
   const [messages, setMessages] = useState<RoomChatMessage[]>(messageSeed);
   const [input, setInput] = useState("");
+  const [reactionBarMessageId, setReactionBarMessageId] = useState<string | null>(null);
 
   useEffect(() => {
     setMessages(messageSeed);
+    setReactionBarMessageId(null);
   }, [messageSeed]);
 
   useLayoutEffect(() => {
@@ -102,8 +235,44 @@ export default function ChatRoomScreen() {
     });
   }, [navigation, room?.name]);
 
-  /** Newest first for inverted FlatList */
   const listData = useMemo(() => [...messages].reverse(), [messages]);
+
+  const openReactionBar = useCallback((messageId: string) => {
+    void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    setReactionBarMessageId((id) => (id === messageId ? null : messageId));
+  }, []);
+
+  const applyReaction = useCallback((messageId: string, emoji: string) => {
+    void Haptics.selectionAsync();
+    setMessages((prev) =>
+      prev.map((m) => {
+        if (m.id !== messageId) return m;
+        const next = mergeUserReaction(m.reactions, emoji, ROOM_CHAT_CURRENT_USER_ID);
+        if (next === m.reactions) return m;
+        return { ...m, reactions: next };
+      }),
+    );
+  }, []);
+
+  const currentUserReactedOnMessage = useCallback(
+    (message: RoomChatMessage, emoji: string) => {
+      return (message.reactions[emoji] ?? []).includes(ROOM_CHAT_CURRENT_USER_ID);
+    },
+    [],
+  );
+
+  const renderItem = useCallback<ListRenderItem<RoomChatMessage>>(
+    ({ item }) => (
+      <RoomMessageRow
+        item={item}
+        showReactionBar={reactionBarMessageId === item.id}
+        onLongPress={() => openReactionBar(item.id)}
+        onPickReaction={(emoji) => applyReaction(item.id, emoji)}
+        currentUserReacted={(emoji) => currentUserReactedOnMessage(item, emoji)}
+      />
+    ),
+    [reactionBarMessageId, openReactionBar, applyReaction, currentUserReactedOnMessage],
+  );
 
   const onSend = useCallback(() => {
     const text = input.trim();
@@ -115,30 +284,13 @@ export default function ChatRoomScreen() {
       text,
       createdAt: Date.now(),
       isOwn: true,
+      reactions: emptyReactions(),
     };
     setMessages((prev) => [...prev, msg]);
     setInput("");
+    setReactionBarMessageId(null);
   }, [input]);
 
-  const renderItem = useCallback<ListRenderItem<RoomChatMessage>>(({ item }) => {
-    return (
-      <View style={[styles.msgRow, item.isOwn ? styles.msgRowOwn : styles.msgRowOther]}>
-        <View style={[styles.msgBlock, item.isOwn ? styles.msgBlockOwn : styles.msgBlockOther]}>
-          <Text style={styles.userTag}>{item.userTag}</Text>
-          <View style={[styles.bubble, item.isOwn ? styles.bubbleOwn : styles.bubbleOther]}>
-            <Text style={styles.bubbleText} selectable>
-              {item.text}
-            </Text>
-            <Text style={[styles.timeText, item.isOwn ? styles.timeOwn : styles.timeOther]}>
-              {formatMessageTime(item.createdAt)}
-            </Text>
-          </View>
-        </View>
-      </View>
-    );
-  }, []);
-
-  /** Stack header + status bar — aligns composer above keyboard on iOS */
   const keyboardOffset = Platform.OS === "ios" ? insets.top + 52 : 0;
 
   return (
@@ -153,6 +305,7 @@ export default function ChatRoomScreen() {
         renderItem={renderItem}
         inverted
         keyboardShouldPersistTaps="handled"
+        onScrollBeginDrag={() => setReactionBarMessageId(null)}
         showsVerticalScrollIndicator={false}
         contentContainerStyle={[
           styles.listContent,
@@ -166,6 +319,7 @@ export default function ChatRoomScreen() {
           placeholderTextColor={PREMIUM.muted}
           value={input}
           onChangeText={setInput}
+          onFocus={() => setReactionBarMessageId(null)}
           multiline
           maxLength={2000}
           testID="recovery-room-chat-input"
@@ -225,6 +379,9 @@ const styles = StyleSheet.create({
     marginBottom: 4,
     marginHorizontal: 2,
   },
+  bubblePressed: {
+    opacity: 0.92,
+  },
   bubble: {
     borderRadius: 18,
     paddingHorizontal: 14,
@@ -255,6 +412,67 @@ const styles = StyleSheet.create({
   },
   timeOther: {
     color: PREMIUM.timeOther,
+  },
+  reactionChips: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 6,
+    marginTop: 6,
+    maxWidth: 280,
+  },
+  reactionChipsOwn: {
+    justifyContent: "flex-end",
+  },
+  reactionChipsOther: {
+    justifyContent: "flex-start",
+  },
+  reactionChip: {
+    backgroundColor: PREMIUM.chip,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: PREMIUM.border,
+  },
+  reactionChipText: {
+    color: PREMIUM.text,
+    fontSize: 13,
+    fontWeight: "600",
+  },
+  reactionBar: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginTop: 8,
+    paddingVertical: 6,
+    paddingHorizontal: 4,
+    borderRadius: 14,
+    backgroundColor: PREMIUM.reactionBar,
+    borderWidth: 1,
+    borderColor: PREMIUM.border,
+    gap: 2,
+  },
+  reactionBarOwn: {
+    alignSelf: "flex-end",
+  },
+  reactionBarOther: {
+    alignSelf: "flex-start",
+  },
+  reactionHit: {
+    paddingHorizontal: 8,
+    paddingVertical: 6,
+    borderRadius: 10,
+  },
+  reactionHitPressed: {
+    backgroundColor: "rgba(46,196,182,0.15)",
+  },
+  reactionHitDisabled: {
+    opacity: 0.45,
+  },
+  reactionEmoji: {
+    fontSize: 22,
+  },
+  reactionEmojiMuted: {
+    opacity: 0.55,
   },
   inputBar: {
     flexDirection: "row",

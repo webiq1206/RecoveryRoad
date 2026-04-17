@@ -107,10 +107,10 @@ const FEATURE_LABELS: Record<PremiumFeature, { title: string; description: strin
     title: 'Life Rebuild Programs',
     description: 'Structured programs for habit replacement, routine building, and identity reconstruction.',
   },
-  therapist_export: {
+    therapist_export: {
     title: 'Care-circle summaries',
     description:
-      'Optional summaries you choose to share with people you trust. Internal / workspace builds only; not a medical record.',
+      'Optional summaries you choose to share with people you trust. Available only in builds that include care-partner tools; not a medical record.',
   },
   recovery_rooms: {
     title: 'Recovery Rooms',

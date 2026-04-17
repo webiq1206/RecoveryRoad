@@ -141,7 +141,7 @@ export const IDENTITY_MODULES: IdentityModule[] = [
       },
       {
         id: 'w5-e3',
-        title: 'Purpose Statement Draft',
+        title: 'Purpose statement (in progress)',
         prompt: 'Try writing a simple purpose statement: "I want to _____ so that _____." It doesn\'t have to be perfect. Just honest.',
         type: 'writing',
       },

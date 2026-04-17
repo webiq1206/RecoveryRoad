@@ -34,14 +34,14 @@ Use **Expo Go** or a **development build** on device; this project uses native c
 
 ## Documentation
 
-- Privacy policy (keep in sync with in-app Settings → Privacy Policy): [`docs/PRIVACY_POLICY.md`](docs/PRIVACY_POLICY.md)
+- Privacy policy (keep in sync with in-app Settings → Privacy Policy): [`docs/PRIVACY_POLICY.md`](docs/PRIVACY_POLICY.md); static web export: [`public/privacy-policy.html`](public/privacy-policy.html) (host at your public `https://` URL; set `EXPO_PUBLIC_PRIVACY_POLICY_URL` in production builds for the in-app browser link)
 - Subscription release QA: [`docs/SUBSCRIPTION_RELEASE_QA.md`](docs/SUBSCRIPTION_RELEASE_QA.md)
 - Live community / recovery rooms: [`docs/LIVE_SOCIAL.md`](docs/LIVE_SOCIAL.md)
 - Strict IA redirect smoke checklist: [`docs/ia-strict-redirect-smoke.md`](docs/ia-strict-redirect-smoke.md)
 
 ## App Store and Google Play disclosure (accounts and data)
 
-The canonical policy is **in-app Settings → Privacy Policy** (and [`docs/PRIVACY_POLICY.md`](docs/PRIVACY_POLICY.md)). **App Store Connect → App Privacy** must match that policy for the same binary (especially purchases, optional live social, and on-device-only wellness data).
+The canonical policy text lives in **`constants/legalInAppCopy.ts`** (`PRIVACY_POLICY_SECTIONS`), surfaced in **Settings → Privacy Policy**, mirrored in [`docs/PRIVACY_POLICY.md`](docs/PRIVACY_POLICY.md) and [`public/privacy-policy.html`](public/privacy-policy.html). **App Store Connect → App Privacy** must match that policy for the same binary (see [`docs/APP_STORE_PRIVACY_LABELS.md`](docs/APP_STORE_PRIVACY_LABELS.md)).
 
 - **No Recovery Companion cloud account:** The app does not create a separate server-side user account or hosted profile for you to sign into for core features.
 - **Data on your device:** Recovery information and preferences are stored on the device; deleting your “account” in Settings means **permanently erasing locally stored app data** on that device (see in-app delete confirmation for the full list).

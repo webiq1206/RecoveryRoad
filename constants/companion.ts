@@ -295,7 +295,7 @@ const RUMINATION_RESPONSES: Record<RecoveryStage, string[]> = {
   ],
   thriving: [
     "Occasional replays are normal. They don't have the power they used to. Notice, acknowledge, release.",
-    "You've already rewritten that chapter. Let the old draft go.",
+    "You've already rewritten that chapter. Let the old version go.",
   ],
 };
 

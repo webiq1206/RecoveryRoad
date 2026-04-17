@@ -9,8 +9,8 @@ import type { AppRouter } from "../backend/trpc/app-router";
  *
  * **Shipping Recovery Companion screens do not call this client today**, so no HTTP
  * traffic is sent to `EXPO_PUBLIC_API_BASE_URL` from the UI. If you wire procedures in
- * the app, set the env var and update App Store privacy answers + `constants/legalInAppCopy.ts`
- * to describe what leaves the device.
+ * the app, set the env var and update App Store privacy answers, `docs/PRIVACY_POLICY.md`,
+ * `constants/legalInAppCopy.ts`, and `public/privacy-policy.html` to describe what leaves the device.
  */
 export const trpc = createTRPCReact<AppRouter>();
 

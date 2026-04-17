@@ -483,7 +483,7 @@ export default function SettingsScreen() {
               </View>
               <View style={{ flex: 1 }}>
                 <Text style={styles.settingLabel}>Privacy Policy</Text>
-                <Text style={styles.settingValue}>On-device storage, optional features, contact</Text>
+                <Text style={styles.settingValue}>Full policy: what we collect, store, share, and your rights</Text>
               </View>
             </View>
             <ChevronRight size={16} color={Colors.textMuted} />

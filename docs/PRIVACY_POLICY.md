@@ -2,154 +2,174 @@
 
 **Last updated:** April 16, 2026
 
-The in-app **Settings → Privacy Policy** screen reads from `constants/legalInAppCopy.ts` (`PRIVACY_POLICY_SECTIONS`). **Edit that file first**, then update this markdown so web-hosted and in-app text stay identical. Keep both aligned with **App Store Connect → App Privacy** whenever you change SDKs, backends, or data practices.
+This document is the same Privacy Policy shown inside the Recovery Companion app (Settings → Privacy Policy). The canonical text for the shipped app is maintained in `constants/legalInAppCopy.ts` (`PRIVACY_POLICY_SECTIONS`) so the in-app screen, this file, and the hosted HTML export stay aligned. After edits, update the **Last updated** date in `constants/legalInAppCopy.ts` and republish the web copy.
+
+**Public URL (App Store Connect):** Host `public/privacy-policy.html` (or equivalent) at a stable `https://` URL and set `EXPO_PUBLIC_PRIVACY_POLICY_URL` in your production build so the in-app Privacy Policy screen can offer “Open published policy in browser.” Use the same URL in App Store Connect.
 
 ---
 
-## Who we are and scope
+## Who we are
 
-This Privacy Policy describes how Recovery Companion (the app publisher shown on your Apple App Store or Google Play listing) collects, uses, stores, shares, retains, and deletes information when you use the mobile application (“App”).
+This Privacy Policy (“Policy”) describes how Recovery Companion (the publisher identified on your Apple App Store or Google Play download page) handles information when you use the Recovery Companion mobile application (“App”).
 
-By using the App, you acknowledge this Policy. If you do not agree, do not use the App.
+By downloading or using the App, you agree to this Policy. If you do not agree, please uninstall the App and do not use it.
 
-## Wellness tool; not medical or crisis care
+## Wellness support only
 
-Recovery Companion is a self-help and wellness support tool. It is not a medical device, clinical service, therapist, or crisis response service. Nothing in this Policy changes that.
+Recovery Companion is a self-help and wellness support tool. It is not medical advice, diagnosis, or treatment; not a medical device; not psychotherapy, telehealth, or crisis care; and not a substitute for qualified professionals or emergency services.
 
-Do not use the App as a substitute for professional care or emergency services.
+Nothing in this Policy changes the nature of the App.
 
-## No Recovery Companion cloud account
+## Accounts and where your recovery data lives
 
-The App does not create a separate Recovery Companion “cloud account,” hosted recovery profile, or central login database operated by us for routine use of core features.
+For everyday use, the App does not create a Recovery Companion–hosted cloud login, hosted recovery profile, or central account database operated by us.
 
-Your recovery content and preferences are stored on your device unless an optional feature (below) transmits specific information elsewhere. The in-app “Delete account” flow permanently erases locally stored App data on this device; it is the practical equivalent of account deletion for this product. Categories removed are listed in the delete-account confirmation in Settings.
+Your recovery-related content (such as check-ins, journal entries, plans, and preferences) is stored on your device unless a feature you actively use sends specific information elsewhere, as described below.
+
+**Delete account:** Settings includes a flow labeled “Delete account.” That action permanently erases the categories of locally stored App data listed in the confirmation dialog on this device. It is how you remove your App data from the device; it is not a remote server “account deletion” for core journaling because those records are not stored on our servers by default.
+
+Apple, Google, and (when enabled) RevenueCat may still retain purchase and billing records under your store account or pseudonymous billing identifier, as described in the Data sharing section.
 
 ## Information we collect
 
-We collect and process the following categories, depending on how you use the App:
+Depending on how you use the App, we process the following categories of information:
 
-- **Profile and recovery inputs** you choose to enter (for example display name, goals, sober date, triggers, support context, workbook answers, rebuild plans, accountability details, and similar fields).
+**Account and profile information.** Information you choose to enter, such as display name, goals, sobriety or milestone dates, triggers, support contacts, privacy preferences, and similar profile fields.
 
-- **Daily check-ins**, mood and stability-related metrics you log, near-miss events, timeline and relapse-related entries, journal content, pledges, media you attach, and emergency or support contacts you save in the App.
+**Recovery and wellness content.** Daily check-ins, mood or stability-related inputs you log, journal text, pledges, workbook answers, rebuild or accountability program data, timeline or relapse-related notes, media you attach within the App, and emergency or support contacts you save.
 
-- **App settings and preferences** (including privacy toggles, notification intensity, engagement preferences, security settings, optional PIN or biometric lock configuration, and on-device audit log entries).
+**App usage and preferences.** Settings such as notification preferences, engagement or streak data stored for reminders, optional security preferences, optional app lock (PIN or biometric) configuration, and related app state.
 
-- **Subscription state** cached on-device after validation through the app stores.
+**Device and session identifiers (limited contexts).**
 
-- A **pseudonymous app-user identifier** generated on-device for subscription services when store billing is enabled (see Purchases).
+- A pseudonymous app user identifier is created and stored on your device for native in-app purchases when the subscription SDK is configured. It is used with Apple, Google, and RevenueCat as described in the Data sharing section.
+- If live community or recovery rooms are enabled for your build, the App uses a stable per-install identifier stored in the device keychain (or equivalent secure storage) and a session token stored on-device to communicate with that service. Optional linking may send the same pseudonymous purchase identifier to that service so sessions can be re-associated after reinstall, as documented for operators.
 
-- If **optional live community or recovery rooms** are enabled for your build, a device identifier and session token used with that service, plus content you submit (posts, comments, room messages, reports, and profile fields supported by that API).
+**Subscription and purchase data.** Product identifiers, prices shown at purchase, entitlement state, and renewal timing as returned by the app stores and (when configured) RevenueCat, cached on your device so the App can unlock features.
 
-- **Optional on-device “anonymized analytics” buffer** (security-related event metadata) when you turn it on under Security settings; it is stored only in protected on-device storage and is **not uploaded** by this app.
+**Optional on-device security diagnostics.** If you turn on the “anonymized analytics buffer” in Security settings, the App stores security-related event metadata only on your device in protected storage. The App does not upload that buffer to us.
 
-- Short bursts of **device motion** (accelerometer) processed only on-device to detect an optional shake gesture that opens crisis resources; motion values are not stored or sent to our servers.
+**Motion data (shake gesture).** The App may read short accelerometer samples on the device to detect an optional shake gesture that opens crisis resources. Those samples are used transiently for gesture detection; they are not written to your journal and are not sent to our servers by this App.
 
-- Builds may ship with an **optional operator API URL** for future or enterprise features; current store UI does **not** send recovery data to that HTTP API. If you enable such integrations, treat them as a separate disclosure in App Store Connect.
+**Information you deliberately send elsewhere.** If you use your device Share sheet, copy to clipboard, or similar flows from supported screens, information goes only to the destination you choose.
 
-## How we use information
+## Information we do not collect (by default)
 
-We use the information above to operate the App, personalize your experience, power reminders and local notifications you request, enforce optional security controls, validate subscriptions, provide optional community or room features when configured, improve reliability of on-device features, and comply with law where required.
+In the standard consumer configuration:
 
-We do not sell your personal information as a commodity. We do use service providers and platform APIs as described under Sharing.
+- We do not operate third-party advertising analytics (such as ad networks) inside this App.
+- We do not use your recovery journal or check-ins for cross-app advertising “tracking” on behalf of advertisers.
+- We do not upload your recovery journal or check-in text to a Recovery Companion–operated cloud database for core features. (Optional online community or recovery-room features, when enabled in a given build, send only the content you submit to that feature to the configured operator’s servers.)
+- The App does not currently call a separate Recovery Companion HTTP API for syncing your journal; optional backend code may exist for future or custom integrations—if you enable such an integration, treat it as a separate disclosure.
 
-## Storage, security, and backups
+If your organization ships a custom build with additional backends, those practices must be disclosed separately.
 
-Most data is stored locally in the application sandbox on your device and, where implemented, in the operating system’s protected secure storage for sensitive values such as an optional PIN.
+## How we use your information
 
-Platform backup systems (such as iCloud Backup, Android backup, or computer backups) may copy App data according to your device and operating-system settings. We do not control those backups.
+We use the information above only as needed to:
 
-No method of storage or transmission is completely secure. You are responsible for device passcodes, OS updates, and physical access to your device.
+- Provide app functionality, including saving your entries locally, showing progress views, and running reminders you request.
+- Personalize prompts, reminders, and on-device insights based on your stored preferences and history.
+- Operate security features you enable, such as app lock, audit logging, and the optional on-device diagnostics buffer.
+- Validate subscriptions and unlock paid features through Apple, Google, and (when configured) RevenueCat.
+- Deliver optional community or recovery-room features when that mode is enabled, including moderation and safety workflows run by the configured API operator.
+- Comply with law if we reasonably believe we must, for information actually in our possession (most journal content remains on your device unless you transmitted it to a third party or optional backend).
 
-## Optional live community and recovery rooms
+We do not sell your personal information as a product.
 
-When the App is shipped with an optional live community server configured, community feeds, recovery rooms, moderation reports, and related actions are sent over HTTPS to that server’s API base URL (who operates it depends on your build and deployment). That server receives content you submit, identifiers needed for sessions, and moderation payloads described in the App and in technical documentation supplied to operators.
+## Data storage and location
 
-When live social is not configured, production store builds do not transmit recovery-room or community content to that backend; offline or demo behavior is described in-app and in product documentation.
+**On your device.** Most App data—including journal entries, check-ins, profile fields, and engagement history—is stored in the application sandbox (AsyncStorage or equivalent) on your phone or tablet. Some sensitive values (such as optional PIN-related material and parts of security diagnostics) use the operating system’s secure storage (for example iOS Keychain / Android Keystore) where supported. Certain values may additionally be encrypted at the application layer before being written to local storage.
 
-Retention on any such server follows the operator’s policy for that deployment—you should obtain that policy from the operator if you did not deploy the server yourself.
+**On servers.** By default, your full recovery journal is not stored on servers we operate for routine personal use of the App.
 
-## Purchases, app stores, and RevenueCat
+When live community or recovery rooms are enabled for the version of the App you are using (the publisher configures this at release), posts, comments, room messages, moderation reports, and related profile fields you submit are transmitted over HTTPS to and stored by that service’s operator under their infrastructure and retention rules.
 
-Purchases and subscriptions are processed by Apple and/or Google through their in-app purchase systems. We receive entitlement results so we can unlock features.
-
-When the RevenueCat subscription SDK is configured with a public SDK key, RevenueCat receives transaction-related data and the pseudonymous app user identifier the App generates and stores locally (it is not your recovery journal). RevenueCat’s own privacy practices apply in addition to this Policy. Apple and Google retain purchase history under your store account regardless of App deletion.
-
-If RevenueCat is not configured, subscription UI may be limited and fewer identifiers are transmitted for billing.
+**Platform backups.** iCloud Backup, Google backup, or computer backups may copy App data according to your device settings. We do not control those backups.
 
 ## Notifications
 
-The App schedules **local** notifications on your device for reminders you enable. Granting notification permission allows the operating system to deliver those scheduled messages. We do not operate a separate marketing push-notification service for core reminders described here.
+The App schedules **local** notifications on your device for reminders you enable (for example check-in nudges). Granting notification permission allows the operating system to display those scheduled messages.
 
-## Sharing and processors
+We do not operate a separate marketing push-notification service for those core wellness reminders.
 
-We share data only as needed to run the App:
+## Data sharing
 
-- **Apple and Google:** in-app purchases, receipts, and platform services.
+We disclose information only as described here:
 
-- **RevenueCat:** subscription validation and customer entitlement state when enabled.
+**Apple and Google.** In-app purchases, receipts, and platform services are processed by Apple and/or Google. They receive billing and account information under their own policies.
 
-- **When you use a Share sheet or “open in” flow** (for example a care-circle or enterprise report), content goes only to the app or destination you choose; we do not receive a copy.
+**RevenueCat, Inc.** When the App is built with a RevenueCat SDK key, RevenueCat receives subscription-related data (such as product identifiers and transaction status) and the pseudonymous on-device app user ID used to tie entitlements across installs. RevenueCat does not receive your recovery journal text from us as part of that integration.
 
-- **Optional live social API operator:** community and room traffic when that API is configured in the build.
+**Optional live social API operator.** When live community or recovery rooms are enabled, the operator of the configured API receives the content you submit, session tokens, identifiers needed for moderation and safety, and related technical metadata sent over HTTPS.
 
-- **Law enforcement or regulators:** when we reasonably believe disclosure is required by applicable law, subpoena, or court order (for data in our possession; most recovery journal content remains on your device unless you sent it to a backend).
+**Share sheet and clipboard.** When you export or share content, it goes to the app or person you select; we do not receive a hidden copy on our servers.
+
+**Legal requests.** We may disclose information we hold if required by applicable law, regulation, legal process, or governmental request, where permitted.
 
 We do not intentionally disclose your on-device recovery journal to advertisers.
 
-## Retention
+## Data retention
 
-On-device data remains until you delete it, delete the App, use the in-app delete flow, or overwrite it through normal use.
+**On-device data** remains until you delete it, overwrite it, use the in-app delete flow, or remove the App (subject to platform backups as noted above).
 
-Store purchase records and RevenueCat records may be retained according to Apple, Google, and RevenueCat policies even after you erase local App data.
+**Optional on-device diagnostics** can be cleared from Security settings without deleting your journal; the confirmation dialog describes scope.
 
-Optional backend content retains according to the operator’s retention schedule for that deployment.
+**Purchase records** may be retained by Apple, Google, and RevenueCat according to their retention policies even after you erase local App data.
 
-## Your choices, access, and deletion
+**Live social server content** is retained according to the operator’s policy for that deployment.
 
-You may review and update most information inside the App. Privacy toggles under Settings and onboarding control optional presentation of progress or mood signals to peers and related options where implemented.
+## Your rights and controls
 
-**Settings → Delete account** permanently removes the categories listed in the delete confirmation on this device, including cached subscription state (you may restore purchases later with the same store account).
+- **Access and correction:** You can review and update most information inside the App.
+- **Privacy toggles:** Where implemented, Settings and onboarding include controls (for example around peer visibility or community participation).
+- **Deletion:** Use Settings → Delete account to erase locally stored App data on this device as described in the confirmation list. You may reinstall later; Apple/Google/RevenueCat purchase history may still allow “Restore purchases.”
+- **Uninstalling the App** removes the application and its sandbox data from the device in the usual way your platform handles uninstall; backups may persist until rotated by your backup settings.
+- **Store- and processor-held data:** For data held only by Apple, Google, or RevenueCat, use their account tools and privacy portals.
+- **Live social data:** For data on the optional community server, contact that operator’s support or use in-app reporting tools they provide.
 
-A separate action clears local diagnostics caches without deleting your recovery journal; its scope is described in that confirmation.
+## Security
 
-For privacy requests that involve data held by Apple, Google, or RevenueCat, you may also use the tools those companies provide. For anything else, contact us using the support channel on your store listing.
+We use reasonable technical measures appropriate to a consumer wellness app, including local sandboxing, OS secure storage for sensitive items where available, HTTPS for any optional networked features, and optional app lock.
 
-## Children
+Some persisted values may be encrypted at the application layer using a key stored in secure storage before being written to general local storage, depending on platform and feature.
 
-The App is not directed to children under 13 (or the minimum age required in your region). Do not use the App or provide personal information if you are below that age. If you believe a child has provided information to us through a channel we control, contact us via the store listing support link.
+No method of storage or transmission is completely secure. You are responsible for device passcodes, OS updates, and physical access to your device.
+
+## Children’s privacy
+
+The App is not directed to children under 13 (or the minimum age required in your jurisdiction for consent without a parent). Do not use the App or provide personal information if you are below that age.
+
+If you are a parent or guardian and believe we have inadvertently received personal information from a child through a channel we control, contact us using the information in the Contact us section and we will take appropriate steps to delete it where required by law.
+
+## Third-party services
+
+The App relies on standard platform and vendor components, including:
+
+- **Apple App Store / Google Play** — distribution, payments, and platform APIs.
+- **RevenueCat** — subscription status and entitlements when a RevenueCat API key is configured in the build.
+- **Expo / React Native ecosystem** — runtime, notifications, secure storage, sensors, and related modules required for the App to function.
+- **Optional live social backend** — only when explicitly enabled for the build.
+
+Each provider’s own privacy policy also applies to data they process. See Apple Privacy Policy, Google Privacy Policy, and RevenueCat Privacy Policy on their websites.
 
 ## International users
 
-If you use the App from outside the United States, your information may be processed in the United States or other countries where service providers operate, which may have different data-protection laws than your home country.
+If you use the App from outside the United States, your information may be processed in the United States or other countries where Apple, Google, RevenueCat, or an optional API operator processes data, which may have different data protection laws than your home country.
 
-## Changes to this Policy
+## Changes to this policy
 
-We may update this Policy from time to time. We will adjust the “Last updated” date above and, where appropriate, provide additional notice in the App or stores. Continued use after the effective date means you accept the updated Policy.
+We may update this Policy from time to time. We will change the “Last updated” date shown with this Policy and, when appropriate, provide additional notice in the App or on the store listing. Continued use after the effective date means you accept the updated Policy.
 
-## Contact
+## Contact us
 
-For privacy questions or to exercise rights offered by applicable law, contact the support channel shown on your App Store or Google Play listing for Recovery Companion.
+For privacy questions or requests regarding information we hold, contact us using:
 
-## Apple App Store — privacy nutrition labels (align App Store Connect)
+- The support email or support website shown in the App’s Contact support entry when your publisher has configured them; and/or
+- The App Support link on the Recovery Companion page in the Apple App Store or Google Play.
 
-App Store Connect asks you to declare data collected “off device.” Mirror the following **when it matches your shipping configuration** so the listing matches this Policy and the in-app Privacy Policy:
-
-- **Purchases:** Collected for app functionality; linked to identity via your store account and, when RevenueCat is enabled, linked to the pseudonymous app user ID sent to RevenueCat.
-
-- **Identifiers:** If live social is enabled in the binary, a device identifier used for session creation is collected by that API for app functionality.
-
-- **User content:** If live social is enabled, posts, comments, room messages, and reports you submit are collected by that API for app functionality and moderation.
-
-- **Health & Fitness** (or other categories Apple offers for wellness journaling, if you select them): Recovery-related content you type into the App is processed on-device; declare off-device collection only if you enable a backend that receives that content.
-
-- **Contact info:** Names or phone numbers you store for support contacts remain on-device unless you enable a feature that transmits them.
-
-- **Usage / diagnostics:** The optional anonymized analytics buffer stays on-device only—declare **Data Not Collected** for off-device Usage Data / Analytics unless you add code that uploads it.
-
-- **Device motion:** Shake-to-crisis uses accelerometer samples on-device only—declare **Data Not Collected** for off-device motion unless you transmit it.
-
-Update App Store Connect whenever you change backends, SDKs, or data practices so disclosures stay identical to this Policy.
+Publishers should ensure a working support email or website appears on the store listing and, when possible, inside the App’s Contact support entry so users can reach a real person or team.
 
 ---
 
-Independent legal review is recommended before publication. This Policy does not create contractual rights in jurisdictions that require different wording.
+For **App Store Connect → App Privacy** (nutrition labels), use [`docs/APP_STORE_PRIVACY_LABELS.md`](./APP_STORE_PRIVACY_LABELS.md) so the questionnaire matches this Policy for each release configuration.

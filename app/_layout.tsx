@@ -109,7 +109,7 @@ function RootLayoutNav() {
         <Stack.Screen name="wizard" options={{ title: 'Guided Wizard', animation: defaultAnimation }} />
         <Stack.Screen name="settings" options={{ title: 'Settings', animation: defaultAnimation }} />
         <Stack.Screen name="tools" options={{ title: 'Quick Coping Tools', animation: defaultAnimation }} />
-        <Stack.Screen name="community-guidelines" options={{ title: 'Community guidelines', animation: defaultAnimation }} />
+        <Stack.Screen name="community-guidelines" options={{ title: 'Connect safety', animation: defaultAnimation }} />
         <Stack.Screen name="privacy-policy" options={{ title: 'Privacy Policy', animation: defaultAnimation }} />
         <Stack.Screen name="terms-of-service" options={{ title: 'Terms of Service', animation: defaultAnimation }} />
         <Stack.Screen name="data-and-sharing" options={{ title: 'Your data & sharing', animation: defaultAnimation }} />

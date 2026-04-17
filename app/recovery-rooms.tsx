@@ -201,19 +201,12 @@ export default function RecoveryRoomsScreen() {
       return (
         <View style={[styles.socialModeBanner, styles.socialModeBannerDemo]}>
           <Text style={styles.socialModeBannerText}>
-            Development preview only: sample rooms and simulated replies are not live peer support.
+            Development preview only: sample rooms and simulated replies are not live moderated support.
           </Text>
         </View>
       );
     }
-    return (
-      <View style={[styles.socialModeBanner, styles.socialModeBannerOffline]}>
-        <Text style={styles.socialModeBannerText}>
-          Live community is not configured for this build. Set EXPO_PUBLIC_LIVE_SOCIAL_API_URL to enable real rooms
-          (see docs/LIVE_SOCIAL.md).
-        </Text>
-      </View>
-    );
+    return null;
   };
 
   const renderLiveBanner = () => {

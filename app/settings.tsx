@@ -37,6 +37,7 @@ import {
 } from 'lucide-react-native';
 import * as Haptics from 'expo-haptics';
 import Colors from '../constants/colors';
+import { arePeerPracticeFeaturesEnabled } from '../core/socialLiveConfig';
 import { useUser } from '../core/domains/useUser';
 import { useAppMeta } from '../core/domains/useAppMeta';
 import { useEngagement } from '../providers/EngagementProvider';
@@ -521,31 +522,39 @@ export default function SettingsScreen() {
               </View>
               <View style={{ flex: 1 }}>
                 <Text style={styles.settingLabel}>Your data & sharing</Text>
-                <Text style={styles.settingValue}>Local vs shared, deletion, community consent</Text>
+                <Text style={styles.settingValue}>
+                  {arePeerPracticeFeaturesEnabled()
+                    ? 'Local vs shared, deletion, Connect consent'
+                    : 'Local storage, deletion, and optional sharing controls'}
+                </Text>
               </View>
             </View>
             <ChevronRight size={16} color={Colors.textMuted} />
           </Pressable>
-          <View style={styles.groupSeparator} />
-          <Pressable
-            style={({ pressed }) => [styles.groupRow, pressed && { opacity: 0.85 }]}
-            onPress={() => {
-              Haptics.selectionAsync();
-              router.push('/community-guidelines' as never);
-            }}
-            testID="settings-community-guidelines"
-          >
-            <View style={styles.groupRowLeft}>
-              <View style={[styles.settingIcon, { backgroundColor: 'rgba(156,39,176,0.12)' }]}>
-                <Users size={17} color="#9C27B0" />
-              </View>
-              <View style={{ flex: 1 }}>
-                <Text style={styles.settingLabel}>Community Guidelines</Text>
-                <Text style={styles.settingValue}>UGC safety, report & block, moderation</Text>
-              </View>
-            </View>
-            <ChevronRight size={16} color={Colors.textMuted} />
-          </Pressable>
+          {arePeerPracticeFeaturesEnabled() ? (
+            <>
+              <View style={styles.groupSeparator} />
+              <Pressable
+                style={({ pressed }) => [styles.groupRow, pressed && { opacity: 0.85 }]}
+                onPress={() => {
+                  Haptics.selectionAsync();
+                  router.push('/community-guidelines' as never);
+                }}
+                testID="settings-community-guidelines"
+              >
+                <View style={styles.groupRowLeft}>
+                  <View style={[styles.settingIcon, { backgroundColor: 'rgba(156,39,176,0.12)' }]}>
+                    <Users size={17} color="#9C27B0" />
+                  </View>
+                  <View style={{ flex: 1 }}>
+                    <Text style={styles.settingLabel}>Connect safety guidelines</Text>
+                    <Text style={styles.settingValue}>UGC safety, report & block, moderation</Text>
+                  </View>
+                </View>
+                <ChevronRight size={16} color={Colors.textMuted} />
+              </Pressable>
+            </>
+          ) : null}
         </View>
 
         {/* Security */}

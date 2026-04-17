@@ -15,7 +15,7 @@ import {
 } from 'lucide-react-native';
 import * as Haptics from 'expo-haptics';
 import Colors from '../../../constants/colors';
-import { arePeerPracticeFeaturesEnabled, isLiveSocialMode } from '../../../core/socialLiveConfig';
+import { arePeerPracticeFeaturesEnabled, isCommunityEnabled } from '../../../core/socialLiveConfig';
 import { useConnection } from '../../../providers/ConnectionProvider';
 import { TrustedContact, PeerChat, SafeRoom, PeerMessage, RoomMessage } from '../../../types';
 import { useHydrateToolUsageStore, useToolUsageStore } from '../../../features/tools/state/useToolUsageStore';
@@ -59,7 +59,7 @@ export default function ConnectionScreen() {
   );
 
   const peerPracticeEnabled = arePeerPracticeFeaturesEnabled();
-  const liveRecoveryRooms = isLiveSocialMode();
+  const liveRecoveryRooms = isCommunityEnabled();
   const [activeTab, setActiveTab] = useState<ConnectionTab>('circle');
 
   React.useEffect(() => {
@@ -199,7 +199,7 @@ export default function ConnectionScreen() {
         <View style={{ flex: 1 }}>
           <Text style={styles.ugcSafetyStripTitle}>Report abuse · Block users · Guidelines</Text>
           <Text style={styles.ugcSafetyStripSub} numberOfLines={2}>
-            Tap for Community Guidelines, enforcement, escalation, and how moderation review works.
+            Tap for Connect safety guidelines, enforcement, escalation, and how moderation review works.
           </Text>
         </View>
         <ChevronRight size={16} color={Colors.textMuted} />
@@ -555,7 +555,7 @@ export default function ConnectionScreen() {
         }}
       >
         <BookOpen size={16} color={Colors.primary} />
-        <Text style={styles.guidelinesLinkText}>Community guidelines & reporting</Text>
+        <Text style={styles.guidelinesLinkText}>Connect safety & reporting</Text>
         <ChevronRight size={16} color={Colors.textMuted} />
       </Pressable>
       <ScreenFlatList

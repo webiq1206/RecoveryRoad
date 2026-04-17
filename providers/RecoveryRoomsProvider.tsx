@@ -10,7 +10,7 @@ import {
   RoomReport,
   RecoveryRoomTopic,
 } from '../types';
-import { getSocialPresentationMode, isLiveSocialMode, isLocalSocialDemoEnabled } from '../core/socialLiveConfig';
+import { getSocialPresentationMode, isCommunityEnabled, isLocalSocialDemoEnabled } from '../core/socialLiveConfig';
 import type { LiveSocialSession } from '../services/liveSocialClient';
 import { LiveSocialApiError } from '../services/liveSocialClient';
 import * as liveSocial from '../services/liveSocialClient';
@@ -384,7 +384,7 @@ export const [RecoveryRoomsProvider, useRecoveryRooms] = createContextHook(() =>
   }, [blockedAuthors]);
 
   useEffect(() => {
-    if (isLiveSocialMode()) return;
+    if (isCommunityEnabled()) return;
     void loadData<string[]>(STORAGE_KEYS.BLOCKED_AUTHORS, []).then(setBlockedAuthors);
     void loadData<string[]>(STORAGE_KEYS.BLOCKED_AUTHOR_IDS, []).then(setBlockedUserIds);
   }, []);
@@ -392,36 +392,36 @@ export const [RecoveryRoomsProvider, useRecoveryRooms] = createContextHook(() =>
   const liveSessionQuery = useQuery({
     queryKey: ['liveSocialSession'],
     queryFn: () => liveSocial.ensureLiveSocialSession(),
-    enabled: isLiveSocialMode(),
+    enabled: isCommunityEnabled(),
     staleTime: Infinity,
   });
 
   const roomsQuery = useQuery({
     queryKey: ['recoveryRooms'],
     queryFn: async () => {
-      if (isLiveSocialMode()) {
+      if (isCommunityEnabled()) {
         return liveSocial.listLiveRooms();
       }
       const demo = isLocalSocialDemoEnabled();
       const raw = await loadData<unknown>(STORAGE_KEYS.ROOMS, demo ? SAMPLE_ROOMS : []);
       return migrateRecoveryRoomsFromStorage(raw, demo);
     },
-    enabled: !isLiveSocialMode() || liveSessionQuery.isSuccess,
-    staleTime: isLiveSocialMode() ? 0 : Infinity,
-    refetchInterval: isLiveSocialMode() ? 22_000 : false,
+    enabled: !isCommunityEnabled() || liveSessionQuery.isSuccess,
+    staleTime: isCommunityEnabled() ? 0 : Infinity,
+    refetchInterval: isCommunityEnabled() ? 22_000 : false,
   });
 
   const liveBlocksQuery = useQuery({
     queryKey: ['liveSocialBlocks'],
     queryFn: () => liveSocial.listLiveRoomBlocks(),
-    enabled: isLiveSocialMode() && liveSessionQuery.isSuccess,
+    enabled: isCommunityEnabled() && liveSessionQuery.isSuccess,
     staleTime: 30_000,
   });
 
   const reportsQuery = useQuery({
     queryKey: ['recoveryRoomReports'],
     queryFn: () => loadData<RoomReport[]>(STORAGE_KEYS.REPORTS, []),
-    enabled: !isLiveSocialMode(),
+    enabled: !isCommunityEnabled(),
     staleTime: Infinity,
   });
 
@@ -434,7 +434,7 @@ export const [RecoveryRoomsProvider, useRecoveryRooms] = createContextHook(() =>
       await AsyncStorage.setItem(STORAGE_KEYS.USER_ID, newId);
       return newId;
     },
-    enabled: !isLiveSocialMode(),
+    enabled: !isCommunityEnabled(),
     staleTime: Infinity,
   });
 
@@ -453,7 +453,7 @@ export const [RecoveryRoomsProvider, useRecoveryRooms] = createContextHook(() =>
       const stored = await AsyncStorage.getItem(STORAGE_KEYS.DISPLAY_NAME);
       return stored ?? '';
     },
-    enabled: !isLiveSocialMode(),
+    enabled: !isCommunityEnabled(),
     staleTime: Infinity,
   });
 
@@ -462,7 +462,7 @@ export const [RecoveryRoomsProvider, useRecoveryRooms] = createContextHook(() =>
   }, [roomsQuery.data]);
 
   useEffect(() => {
-    if (isLiveSocialMode()) {
+    if (isCommunityEnabled()) {
       setReports([]);
       return;
     }
@@ -470,7 +470,7 @@ export const [RecoveryRoomsProvider, useRecoveryRooms] = createContextHook(() =>
   }, [reportsQuery.data]);
 
   useEffect(() => {
-    if (isLiveSocialMode()) return;
+    if (isCommunityEnabled()) return;
     if (userIdQuery.data) setUserId(userIdQuery.data);
   }, [userIdQuery.data]);
 
@@ -479,12 +479,12 @@ export const [RecoveryRoomsProvider, useRecoveryRooms] = createContextHook(() =>
   }, [anonQuery.data]);
 
   useEffect(() => {
-    if (isLiveSocialMode()) return;
+    if (isCommunityEnabled()) return;
     if (nameQuery.data !== undefined) setDisplayName(nameQuery.data);
   }, [nameQuery.data]);
 
   useEffect(() => {
-    if (!isLiveSocialMode()) return;
+    if (!isCommunityEnabled()) return;
     const u = liveSessionQuery.data?.user;
     if (u) {
       setUserId(u.id);
@@ -493,7 +493,7 @@ export const [RecoveryRoomsProvider, useRecoveryRooms] = createContextHook(() =>
   }, [liveSessionQuery.data]);
 
   useEffect(() => {
-    if (!isLiveSocialMode()) return;
+    if (!isCommunityEnabled()) return;
     if (liveBlocksQuery.data) {
       setBlockedAuthors(liveBlocksQuery.data.blockedAuthorNames ?? []);
       setBlockedUserIds(liveBlocksQuery.data.blockedUserIds ?? []);
@@ -519,7 +519,7 @@ export const [RecoveryRoomsProvider, useRecoveryRooms] = createContextHook(() =>
   const setRoomDisplayName = useCallback((name: string) => {
     const trimmed = name.trim();
     setDisplayName(trimmed);
-    if (isLiveSocialMode()) {
+    if (isCommunityEnabled()) {
       void (async () => {
         try {
           const u = await liveSocial.updateLiveProfile({ displayName: trimmed });
@@ -545,7 +545,7 @@ export const [RecoveryRoomsProvider, useRecoveryRooms] = createContextHook(() =>
   }, [queryClient]);
 
   const joinRoom = useCallback((roomId: string) => {
-    if (isLiveSocialMode()) {
+    if (isCommunityEnabled()) {
       void (async () => {
         try {
           const next = await liveSocial.joinLiveRoom(roomId);
@@ -566,7 +566,7 @@ export const [RecoveryRoomsProvider, useRecoveryRooms] = createContextHook(() =>
   }, [rooms, queryClient, saveRoomsMutation]);
 
   const leaveRoom = useCallback((roomId: string) => {
-    if (isLiveSocialMode()) {
+    if (isCommunityEnabled()) {
       void (async () => {
         try {
           const next = await liveSocial.leaveLiveRoom(roomId);
@@ -586,7 +586,7 @@ export const [RecoveryRoomsProvider, useRecoveryRooms] = createContextHook(() =>
   }, [rooms, queryClient, saveRoomsMutation]);
 
   const sendMessage = useCallback((roomId: string, content: string, anonymous: boolean) => {
-    if (isLiveSocialMode()) {
+    if (isCommunityEnabled()) {
       void (async () => {
         try {
           const next = await liveSocial.sendLiveRoomMessage(roomId, content, anonymous);
@@ -655,7 +655,7 @@ export const [RecoveryRoomsProvider, useRecoveryRooms] = createContextHook(() =>
   }, [rooms, displayName, userId, saveRoomsMutation]);
 
   const reportMessage = useCallback((roomId: string, messageId: string, reason: RoomReport['reason'], description: string) => {
-    if (isLiveSocialMode()) {
+    if (isCommunityEnabled()) {
       void (async () => {
         try {
           await liveSocial.reportLiveRoomMessage({ roomId, messageId, reason, description });
@@ -701,7 +701,7 @@ export const [RecoveryRoomsProvider, useRecoveryRooms] = createContextHook(() =>
       reason: RoomReport['reason'],
       description: string,
     ) => {
-      if (isLiveSocialMode()) {
+      if (isCommunityEnabled()) {
         void (async () => {
           try {
             await liveSocial.reportLiveRoomUser({
@@ -741,7 +741,7 @@ export const [RecoveryRoomsProvider, useRecoveryRooms] = createContextHook(() =>
     const name = authorDisplayName.trim();
     const aid = authorAccountId?.trim() ?? '';
     if (!name && !aid) return;
-    if (isLiveSocialMode()) {
+    if (isCommunityEnabled()) {
       void (async () => {
         try {
           const next = await liveSocial.addLiveRoomBlock({
@@ -806,14 +806,14 @@ export const [RecoveryRoomsProvider, useRecoveryRooms] = createContextHook(() =>
 
   const isLoading =
     roomsQuery.isLoading ||
-    (!isLiveSocialMode() && userIdQuery.isLoading) ||
-    (isLiveSocialMode() && liveSessionQuery.isLoading);
+    (!isCommunityEnabled() && userIdQuery.isLoading) ||
+    (isCommunityEnabled() && liveSessionQuery.isLoading);
 
   const socialMode = getSocialPresentationMode();
 
   const refetchRooms = useCallback(() => {
     void queryClient.invalidateQueries({ queryKey: ['recoveryRooms'] });
-    if (isLiveSocialMode()) {
+    if (isCommunityEnabled()) {
       void queryClient.invalidateQueries({ queryKey: ['liveSocialBlocks'] });
     }
   }, [queryClient]);

@@ -190,7 +190,7 @@ export default function ProfileScreen() {
   const handleClearData = useCallback(() => {
     Alert.alert(
       'Delete all data on this device?',
-      'There is no separate cloud account—this removes everything stored in the app on this device (profile, check-ins, journal, contacts, practice community data, subscription cache, reminders, security). You will start onboarding again. This cannot be undone.',
+      'There is no separate cloud account—this removes everything stored in the app on this device (profile, check-ins, journal, contacts, Connect-related local data if any, subscription cache, reminders, security). You will start onboarding again. This cannot be undone.',
       [
         { text: 'Cancel', style: 'cancel' },
         {

@@ -3,12 +3,12 @@ import { View, Text, Pressable, StyleSheet } from 'react-native';
 import { useRouter } from 'expo-router';
 import * as Haptics from 'expo-haptics';
 import Colors from '../constants/colors';
+import { arePeerPracticeFeaturesEnabled } from '../core/socialLiveConfig';
 
-const LINKS: { label: string; href: `/${string}` }[] = [
+const BASE_LINKS: { label: string; href: `/${string}` }[] = [
   { label: 'Privacy Policy', href: '/privacy-policy' },
   { label: 'Terms', href: '/terms-of-service' },
   { label: 'Data & sharing', href: '/data-and-sharing' },
-  { label: 'Community', href: '/community-guidelines' },
 ];
 
 type Props = {
@@ -18,10 +18,13 @@ type Props = {
 
 export function LegalDocLinksRow({ compact }: Props) {
   const router = useRouter();
+  const links = arePeerPracticeFeaturesEnabled()
+    ? [...BASE_LINKS, { label: 'Community guidelines', href: '/community-guidelines' as const }]
+    : BASE_LINKS;
 
   return (
     <View style={[styles.row, compact && styles.rowCompact]}>
-      {LINKS.map((item, i) => (
+      {links.map((item, i) => (
         <View key={item.href} style={styles.itemWrap}>
           {i > 0 ? <Text style={styles.sep}>·</Text> : null}
           <Pressable

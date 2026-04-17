@@ -122,12 +122,12 @@ const STAGE_CONFIGS: Record<RecoveryStage, StageConfig> = {
       durationDays: 60,
       weeklyObjectives: [
         'Maintain recovery routines with flexibility, not pressure',
-        'Strengthen connection and give-back in community',
+        'Strengthen connection with people who support your recovery',
         'Keep an eye on subtle early warning signs',
       ],
       recommendedExercises: [
         'Review routines and adjust for current season of life',
-        'Engage in community or support room at least weekly',
+        'Schedule meaningful connection with your support circle weekly',
         'Do a quick scan for stress, sleep, and isolation shifts',
       ],
       dailyPractices: [

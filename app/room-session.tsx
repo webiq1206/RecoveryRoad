@@ -156,7 +156,7 @@ export default function RoomSessionScreen() {
     Alert.alert(
       'Report received',
       live
-        ? 'Thank you. Your report was sent to the app’s backend for moderator review. We may remove content or restrict accounts that violate the Community Guidelines. You will not receive a personal reply for every report.'
+        ? 'Thank you. Your report was sent to the app’s backend for moderator review. We may remove content or restrict accounts that violate the Connect safety guidelines. You will not receive a personal reply for every report.'
         : 'Thank you. Your report is saved on this device so you can share it with a sponsor or clinician if you choose. It is only sent for staff review when this build is connected to your organization’s social backend.',
     );
   }, [roomId, reportingMessageId, reportReason, reportDescription, reportMessage, socialMode]);
@@ -178,8 +178,8 @@ export default function RoomSessionScreen() {
   const openSafetyMenu = useCallback(() => {
     Haptics.selectionAsync();
     Alert.alert(
-      'Community safety',
-      'Long-press any message from someone else to Report message, Report user, or Block user. Read the full Community Guidelines for conduct rules, enforcement, and escalation.',
+      'Connect safety',
+      'Long-press any message from someone else to Report message, Report user, or Block user. Read the full Connect safety guidelines for conduct rules, enforcement, and escalation.',
       [
         { text: 'Close', style: 'cancel' },
         {
@@ -382,7 +382,7 @@ export default function RoomSessionScreen() {
         <View style={styles.safetyCard}>
           <BookOpen size={20} color={Colors.primary} />
           <View style={styles.safetyInfo}>
-            <Text style={styles.safetyTitle}>Community Guidelines</Text>
+            <Text style={styles.safetyTitle}>Connect safety</Text>
             <Text style={styles.safetyDesc}>
               The full guidelines explain acceptable content, enforcement, how moderation review works when live
               community is on, and escalation paths.
@@ -396,7 +396,7 @@ export default function RoomSessionScreen() {
             router.push('/community-guidelines' as any);
           }}
         >
-          <Text style={styles.guidelinesCtaText}>Read Community Guidelines</Text>
+          <Text style={styles.guidelinesCtaText}>Read Connect safety guidelines</Text>
           <ChevronRight size={16} color={Colors.primary} />
         </Pressable>
       </View>
@@ -479,7 +479,7 @@ export default function RoomSessionScreen() {
             }}
             hitSlop={10}
             accessibilityRole="button"
-            accessibilityLabel="Community guidelines"
+            accessibilityLabel="Connect safety guidelines"
             testID="room-guidelines-btn"
           >
             <BookOpen size={20} color={Colors.textSecondary} />
@@ -605,7 +605,7 @@ export default function RoomSessionScreen() {
                 <Shield size={20} color={Colors.primary} />
                 <Text style={styles.chatWelcomeText}>
                   Welcome to {room.name}. Be kind. Long-press someone else’s message to report abuse, report a user, or
-                  block a user. Open the full Community Guidelines from the banner above or the book icon.
+                  block a user. Open the full Connect safety guidelines from the banner above or the book icon.
                 </Text>
                 <Pressable onPress={() => setShowRules(true)}>
                   <Text style={styles.chatWelcomeLink}>View room rules</Text>

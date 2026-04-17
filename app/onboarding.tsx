@@ -22,6 +22,7 @@ import {
 } from '../utils/wizardSteps';
 import { useAppStore } from '../stores/useAppStore';
 import { LegalDocLinksRow } from '../components/LegalDocLinksRow';
+import { arePeerPracticeFeaturesEnabled } from '../core/socialLiveConfig';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const RECOVERY_STAGES: { value: RecoveryStage; label: string; desc: string; icon: React.ReactNode }[] = [
@@ -103,6 +104,7 @@ const GOAL_OPTIONS = [
 export default function OnboardingScreen() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
+  const connectLiveFeaturesEnabled = arePeerPracticeFeaturesEnabled();
   const params = useLocalSearchParams<{ devFullOnboarding?: string }>();
   /** Dev-only: replay every onboarding screen from the start (ignored in production). */
   const devReplayFullOnboarding = __DEV__ && params.devFullOnboarding === '1';
@@ -732,12 +734,15 @@ export default function OnboardingScreen() {
             <View style={styles.privacySection}>
               <Text style={styles.privacySectionTitle}>Privacy Controls</Text>
               <Text style={styles.privacyExplainer}>
-                These choices apply if you use community or peer features. You can change them anytime in Settings.
-                Review the Privacy Policy, Terms, and how local vs shared data works using the links below.
+                {connectLiveFeaturesEnabled
+                  ? 'These choices apply if you use live Connect spaces (for example recovery rooms). You can change them anytime in Settings. Review the Privacy Policy, Terms, and how local vs shared data works using the links below.'
+                  : 'Most recovery data stays on this device. You can change privacy choices anytime in Settings. Review the Privacy Policy, Terms, and how local data works using the links below.'}
               </Text>
               <LegalDocLinksRow compact />
               <View style={styles.privacyRow}>
-                <Text style={styles.privacyLabel}>Share progress with community</Text>
+                <Text style={styles.privacyLabel}>
+                  {connectLiveFeaturesEnabled ? 'Share progress in Connect' : 'Share progress (Connect)'}
+                </Text>
                 <Switch
                   value={privacyControls.shareProgress}
                   onValueChange={(val) =>
@@ -799,7 +804,9 @@ export default function OnboardingScreen() {
           </View>
           <LegalDocLinksRow compact />
           <Text style={styles.legalHint}>
-            Tap to read how we handle data, terms for use of the app, and community rules before you continue.
+            {connectLiveFeaturesEnabled
+              ? 'Tap to read how we handle data, terms for use of the app, and Connect safety rules before you continue.'
+              : 'Tap to read how we handle data and terms for use of the app before you continue.'}
           </Text>
           <Text style={styles.wellnessDisclaimer}>{ONBOARDING_COPY.wellnessDisclaimer}</Text>
         </ScreenScrollView>

@@ -1,18 +1,23 @@
 import React from 'react';
 import { View, Text, StyleSheet, Pressable } from 'react-native';
-import { Stack, useRouter } from 'expo-router';
+import { Redirect, Stack, useRouter } from 'expo-router';
 import * as Haptics from 'expo-haptics';
 import { ScreenScrollView } from '../components/ScreenScrollView';
 import Colors from '../constants/colors';
+import { arePeerPracticeFeaturesEnabled } from '../core/socialLiveConfig';
 
 export default function CommunityGuidelinesScreen() {
   const router = useRouter();
+
+  if (!arePeerPracticeFeaturesEnabled()) {
+    return <Redirect href="/(tabs)/connection" />;
+  }
 
   return (
     <View style={styles.wrapper}>
       <Stack.Screen
         options={{
-          title: 'Community guidelines',
+          title: 'Connect safety',
           headerStyle: { backgroundColor: Colors.background },
           headerTintColor: Colors.text,
         }}

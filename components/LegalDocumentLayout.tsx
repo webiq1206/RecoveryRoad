@@ -32,8 +32,8 @@ export function LegalDocumentLayout({ title, sections, intro }: Props) {
           </View>
         ))}
         <Text style={styles.disclaimer}>
-          This in-app summary is for transparency. It is not personalized legal advice. Use your app store listing
-          support contact for formal requests.
+          This document reflects our practices as of the date shown above. For privacy or account requests, use the
+          support link on your app store listing. Independent legal review is recommended for your jurisdiction.
         </Text>
       </ScreenScrollView>
     </View>

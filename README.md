@@ -34,18 +34,18 @@ Use **Expo Go** or a **development build** on device; this project uses native c
 
 ## Documentation
 
-- Privacy policy draft (legal review): [`docs/PRIVACY_POLICY.md`](docs/PRIVACY_POLICY.md)
+- Privacy policy (keep in sync with in-app Settings → Privacy Policy): [`docs/PRIVACY_POLICY.md`](docs/PRIVACY_POLICY.md)
 - Subscription release QA: [`docs/SUBSCRIPTION_RELEASE_QA.md`](docs/SUBSCRIPTION_RELEASE_QA.md)
 - Live community / recovery rooms: [`docs/LIVE_SOCIAL.md`](docs/LIVE_SOCIAL.md)
 - Strict IA redirect smoke checklist: [`docs/ia-strict-redirect-smoke.md`](docs/ia-strict-redirect-smoke.md)
 
 ## App Store and Google Play disclosure (accounts and data)
 
-Use language like the following in your **store description**, **privacy nutrition labels**, and **privacy policy** so reviewers and users are not misled into thinking there is a hosted Recovery Companion login.
+The canonical policy is **in-app Settings → Privacy Policy** (and [`docs/PRIVACY_POLICY.md`](docs/PRIVACY_POLICY.md)). **App Store Connect → App Privacy** must match that policy for the same binary (especially purchases, optional live social, and on-device-only wellness data).
 
-- **No Recovery Companion cloud account:** The app does not create a separate server-side user account or hosted profile for you to sign into.
-- **Data on your device:** Recovery information and preferences are stored on the device; deleting your “account” in Settings means **permanently erasing locally stored app data** on that device (see in-app copy for the full list).
-- **Store billing is separate:** Subscription or purchase history may still exist under your **Apple ID or Google account**; manage or cancel in App Store / Google Play settings.
+- **No Recovery Companion cloud account:** The app does not create a separate server-side user account or hosted profile for you to sign into for core features.
+- **Data on your device:** Recovery information and preferences are stored on the device; deleting your “account” in Settings means **permanently erasing locally stored app data** on that device (see in-app delete confirmation for the full list).
+- **Store billing is separate:** Subscription or purchase history may still exist under your **Apple ID or Google account** and with **RevenueCat** when the SDK is configured; manage or cancel in App Store / Google Play settings.
 
 ## Consumer vs internal builds
 

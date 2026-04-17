@@ -496,7 +496,9 @@ export const [RecoveryRoomsProvider, useRecoveryRooms] = createContextHook(() =>
     if (!isCommunityEnabled()) return;
     if (liveBlocksQuery.data) {
       setBlockedAuthors(liveBlocksQuery.data.blockedAuthorNames ?? []);
-      setBlockedUserIds(liveBlocksQuery.data.blockedUserIds ?? []);
+      const roomIds = liveBlocksQuery.data.blockedUserIds ?? [];
+      const commIds = liveBlocksQuery.data.communityBlockedUserIds ?? [];
+      setBlockedUserIds([...new Set([...roomIds, ...commIds])]);
     }
   }, [liveBlocksQuery.data]);
 
@@ -744,12 +746,17 @@ export const [RecoveryRoomsProvider, useRecoveryRooms] = createContextHook(() =>
     if (isCommunityEnabled()) {
       void (async () => {
         try {
-          const next = await liveSocial.addLiveRoomBlock({
+          let next = await liveSocial.addLiveRoomBlock({
             authorName: name || undefined,
             authorId: aid || undefined,
           });
+          if (aid && !aid.startsWith('anon:')) {
+            next = await liveSocial.addLiveCommunityBlock(aid);
+          }
           setBlockedAuthors(next.blockedAuthorNames ?? []);
-          setBlockedUserIds(next.blockedUserIds ?? []);
+          setBlockedUserIds(
+            [...new Set([...(next.blockedUserIds ?? []), ...(next.communityBlockedUserIds ?? [])])],
+          );
           await queryClient.invalidateQueries({ queryKey: ['liveSocialBlocks'] });
         } catch (e) {
           alertLiveSocialFailure('Block not saved', e);

@@ -166,6 +166,8 @@ export interface CommunityPost {
   visibility: 'public' | 'private';
   likes: string[];
   commentIds: string[];
+  /** Present when live social backend flagged possible crisis language. */
+  crisisFlag?: boolean;
 }
 
 export interface CommunityComment {
@@ -486,6 +488,8 @@ export interface RecoveryRoomMessage {
   isAnonymous: boolean;
   isReported: boolean;
   reportReason: string;
+  /** Live backend may set when message matches crisis-language heuristics. */
+  crisisSignalDetected?: boolean;
 }
 
 export type SubscriptionTier = 'free' | 'premium';

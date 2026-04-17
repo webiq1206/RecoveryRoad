@@ -4,9 +4,11 @@ This app supports **three modes** (see `core/socialLiveConfig.ts`):
 
 | Mode | When | Behavior |
 |------|------|----------|
-| **live** | `EXPO_PUBLIC_LIVE_SOCIAL_API_URL` is set to a valid `http(s)` origin | Community and Recovery Rooms load from your backend. Messages are **only** from real users on that server. Reports, blocks, and moderation actions are handled by that backend. |
+| **live** | Release: `EXPO_PUBLIC_LIVE_SOCIAL_API_URL` is **`https://` only**, **`EXPO_PUBLIC_COMMUNITY_ENABLED`** is `true` / `1` / `on`, and the URL resolves. Dev (`__DEV__`): same URL check but `http://` is allowed for LAN testing. | Community and Recovery Rooms use your backend. Messages are from real users on that server. Reports, blocks, moderation, rate limits, and crisis-language flags run server-side. |
 | **local_demo** | Metro `__DEV__` and no live URL, and `EXPO_PUBLIC_ALLOW_LOCAL_SOCIAL_DEMO` is not `false` | Optional seeded AsyncStorage content and **simulated** room replies for engineering only. **Never** used in production release binaries (`__DEV__` is false). |
-| **offline** | No live URL and not in local demo (typical App Store / Play release) | No sample users or posts; rooms list is empty until a backend is configured. |
+| **offline** | No live community (typical App Store / Play release from this repo’s `production` EAS profile) | No sample users or posts; peers/rooms tabs stay minimal until you opt in. |
+
+**Default store posture (State A):** `eas.json` production sets `EXPO_PUBLIC_COMMUNITY_ENABLED=false`. To ship **State B** (live UGC), set EAS secrets to `true`, add a **HTTPS** `EXPO_PUBLIC_LIVE_SOCIAL_API_URL`, and run the hardened social server below.
 
 ## Social API server
 
@@ -18,21 +20,38 @@ npm run social-server
 
 Defaults to port **3847**. State is persisted in **SQLite** as `social.db` under `backend/social/data/` (overridable with `SOCIAL_DATA_DIR`). If an older `social-state.json` file is present and the database is empty, it is imported once and the JSON file is renamed aside.
 
-Set **`SOCIAL_JWT_SECRET`** (required when `NODE_ENV=production`) for signing user session tokens, and **`SOCIAL_ADMIN_SECRET`** so moderation admin routes accept `Authorization: Bearer …` with that value.
+### Environment
 
-Optional: **`SOCIAL_ALLOWED_ORIGINS`** — comma-separated browser origins for CORS (omit to allow all origins, which is typical for native app–only deployments). **`SOCIAL_DEV_JWT_SECRET`** — stable JWT signing key for non-production runs when you do not want tokens to reset on every server restart.
+| Variable | Purpose |
+|----------|---------|
+| `NODE_ENV=production` | Requires `SOCIAL_JWT_SECRET`. |
+| `SOCIAL_JWT_SECRET` | Signs end-user session JWTs (required in production). |
+| `SOCIAL_DEV_JWT_SECRET` | Optional stable JWT secret for non-production when you do not want tokens to reset on every server restart. |
+| `SOCIAL_ADMIN_SECRET` | Enables moderation admin routes (`Authorization: Bearer …`). |
+| `SOCIAL_REQUIRE_FORWARDED_TLS` | Set to `1` in production **behind TLS** to reject requests unless `X-Forwarded-Proto: https`. |
+| `SOCIAL_ALLOWED_ORIGINS` | Optional comma-separated browser origins for CORS (native-only deployments often omit). |
+
+### Authentication (production-oriented)
+
+`POST /v1/auth/session` expects JSON:
+
+- **`clientBindingId`** (required): stable per-install id (16+ chars, `[a-zA-Z0-9_-]+`). The app stores this in **SecureStore** (`services/liveSocialClient.ts`).
+- **`appAccountId`** (optional): same value as RevenueCat’s anonymous app user id (`rc_user_id` in AsyncStorage) when available, so reinstalls can re-link the same social profile.
+
+The server binds accounts by `app_account_id` first, then `device_id` (binding), and creates users on first contact.
 
 ### User safety (implemented in this server)
 
-- **Rate limits** — room messages, community posts/comments, and reports are throttled per account (see `backend/social/server.mjs`).
-- **Spam / abuse** — rapid duplicate identical content from the same account is rejected.
+- **Rate limits** — room messages, community posts/comments, reports, and auth-by-IP (see `backend/social/server.mjs`).
+- **Spam / abuse** — duplicate identical content rejection plus pattern rejects (links, repetitive characters, common spam phrases).
+- **Blocking** — recovery-room blocks (names + ids) **and** community user blocks (`community_user_blocks`). Blocked authors’ **room messages** are omitted for the blocker server-side; community **posts/comments/users** lists are filtered for the viewer.
+- **Reporting** — room message and user reports include **snapshots** when the message still exists; community reports for posts/comments; automated **crisis-language** rows are queued when heuristics match.
 - **Posting restriction** — admins can restrict an account from creating new posts or messages.
-- **Reporting** — room message and user reports include **snapshots** (message body, author ids) when the message still exists, so moderators can review without guessing.
-- **Community reports** — `POST /v1/community/reports` for posts or comments with `targetType`, `targetId`, optional `postId`, `reason`, `description`.
+- **Data deletion** — admin route removes a user and their authored content (see below).
 
 ### Admin & moderation (requires `SOCIAL_ADMIN_SECRET`)
 
-Send **`Authorization: Bearer <SOCIAL_ADMIN_SECRET>`** on every admin request (this is separate from end-user session JWTs).
+Send **`Authorization: Bearer <SOCIAL_ADMIN_SECRET>`** on every admin request (separate from end-user session JWTs).
 
 | Method | Path | Purpose |
 |--------|------|---------|
@@ -42,30 +61,42 @@ Send **`Authorization: Bearer <SOCIAL_ADMIN_SECRET>`** on every admin request (t
 | POST | `/v1/admin/moderation/hide-community-post` | Body: `{ "postId" }` |
 | POST | `/v1/admin/moderation/hide-community-comment` | Body: `{ "commentId" }` |
 | POST | `/v1/admin/moderation/restrict-user` | Body: `{ "userId", "restrict": true \| false }` |
+| POST | `/v1/admin/users/:userId/delete-data` | Deletes user row, authored posts/comments/messages, follows, blocks, and reports **where `reporterId` matches** (adjust for your retention policy). |
+
+### End-user safety routes
+
+| Method | Path | Purpose |
+|--------|------|---------|
+| GET | `/v1/me/blocks` | Room blocks + `communityBlockedUserIds` |
+| POST | `/v1/me/blocks` | Add room block (`authorName` / `authorId`) |
+| POST | `/v1/me/community-blocks` | Body `{ "blockedUserId" }` — hide that user’s community content for this account |
 
 ### App configuration
 
-1. Start the server on a machine reachable from your phone (same Wi‑Fi).
-2. Set in `.env` or EAS secrets:
+1. Run the server on a host reachable from devices (TLS-terminated reverse proxy in production).
+2. Set EAS / `.env`:
 
 ```bash
-EXPO_PUBLIC_LIVE_SOCIAL_API_URL=http://192.168.x.x:3847
+EXPO_PUBLIC_LIVE_SOCIAL_API_URL=https://social.example.com
+EXPO_PUBLIC_COMMUNITY_ENABLED=true
+EXPO_PUBLIC_SUPPORT_EMAIL=support@example.com
+# optional:
+# EXPO_PUBLIC_SUPPORT_URL=https://example.com/help
 ```
 
-For **Android** with an `http://` URL, the native app must allow cleartext traffic at **build** time. Release and preview builds keep cleartext **off** by default (`app.config.js`). Only enable it when you truly need HTTP:
+For **Android** with an `http://` URL (dev only), the native app must allow cleartext traffic at **build** time. Release and preview builds keep cleartext **off** by default (`app.config.js`). Only enable it when you truly need HTTP:
 
 - **EAS `development` profile** sets `EXPO_ANDROID_ALLOW_CLEARTEXT=1` in `eas.json` (internal dev client + LAN servers).
-- **Local `expo run:android`:** set `EXPO_ANDROID_ALLOW_CLEARTEXT=1` in your shell or `.env` for that build.
-- **Production / Play:** use **`https://`** for `EXPO_PUBLIC_LIVE_SOCIAL_API_URL` and do **not** set `EXPO_ANDROID_ALLOW_CLEARTEXT`.
+- **Production / Play:** use **`https://`** only; release binaries **reject** `http://` social URLs.
 
-3. Rebuild the dev client or release binary so the env var is embedded.
+3. Rebuild the dev client or release binary so the env vars are embedded.
 
 ### Production hardening checklist
 
-- Run **TLS** in front of the API; do not ship production session tokens over plain HTTP.
-- Back up **`social.db`** on a schedule appropriate to your retention policy.
-- Add **authenticated identities** (e.g. Sign in with Apple) mapped to stable user IDs if you need accounts beyond anonymous device binding.
-- Connect admin routes to your **internal tooling**, SSO, and audit logging; rotate **`SOCIAL_ADMIN_SECRET`** and **`SOCIAL_JWT_SECRET`** on compromise.
+- Terminate **TLS** in front of the API; set **`SOCIAL_REQUIRE_FORWARDED_TLS=1`** so plain HTTP cannot bypass the edge.
+- Back up **`social.db`** on a schedule that matches your **retention** policy (define retention and deletion with legal/clinical stakeholders).
+- Map **Sign in with Apple** or another IdP to `appAccountId` when you outgrow RevenueCat anonymous ids.
+- Connect admin routes to **internal tooling**, SSO, and audit logging; rotate **`SOCIAL_ADMIN_SECRET`** and **`SOCIAL_JWT_SECRET`** on compromise.
 - Define **retention**, appeals, and crisis escalation with your legal and clinical teams.
 
-The mobile app **polls** the API on an interval in live mode; for large communities, add WebSockets or push and adjust battery/network expectations accordingly.
+The mobile app **polls** the API in live mode; for large communities, add WebSockets or push and adjust battery/network expectations accordingly.

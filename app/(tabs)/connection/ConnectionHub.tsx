@@ -16,6 +16,7 @@ import {
 import * as Haptics from 'expo-haptics';
 import Colors from '../../../constants/colors';
 import { arePeerPracticeFeaturesEnabled, isCommunityEnabled } from '../../../core/socialLiveConfig';
+import { getSupportEmail, getSupportUrl, hasConfiguredSupportContact } from '../../../core/supportContact';
 import { useConnection } from '../../../providers/ConnectionProvider';
 import { TrustedContact, PeerChat, SafeRoom, PeerMessage, RoomMessage } from '../../../types';
 import { useHydrateToolUsageStore, useToolUsageStore } from '../../../features/tools/state/useToolUsageStore';
@@ -206,6 +207,44 @@ export default function ConnectionScreen() {
       </Pressable>
     ),
     [router],
+  );
+
+  const renderSupportContactStrip = useCallback(
+    () => (
+      <Pressable
+        style={({ pressed }) => [styles.ugcSafetyStrip, { marginTop: 8 }, pressed && { opacity: 0.9 }]}
+        onPress={() => {
+          Haptics.selectionAsync();
+          const email = getSupportEmail();
+          const url = getSupportUrl();
+          if (email) {
+            void Linking.openURL(
+              `mailto:${encodeURIComponent(email)}?subject=${encodeURIComponent('Recovery Companion — Connect')}`,
+            );
+            return;
+          }
+          if (/^https?:\/\//i.test(url)) {
+            void Linking.openURL(url);
+            return;
+          }
+          Alert.alert(
+            'Contact support',
+            'Configure EXPO_PUBLIC_SUPPORT_EMAIL or EXPO_PUBLIC_SUPPORT_URL for this build. Emergencies: local emergency services or 988 in the U.S.',
+          );
+        }}
+        testID="connection-contact-support-strip"
+      >
+        <MessageCircle size={16} color={Colors.primary} />
+        <View style={{ flex: 1 }}>
+          <Text style={styles.ugcSafetyStripTitle}>Report a problem / Contact support</Text>
+          <Text style={styles.ugcSafetyStripSub} numberOfLines={2}>
+            {hasConfiguredSupportContact() ? 'Opens your team’s email or web page' : 'Not yet configured for this build'}
+          </Text>
+        </View>
+        <ChevronRight size={16} color={Colors.textMuted} />
+      </Pressable>
+    ),
+    [],
   );
 
   const activeChat = useMemo(() => {
@@ -416,6 +455,7 @@ export default function ConnectionScreen() {
   const renderPeersTab = () => (
     <View style={styles.tabContent}>
       {renderUgcSafetyStrip()}
+      {renderSupportContactStrip()}
       <View style={styles.peerHeader}>
         <View style={styles.peerSafeNotice}>
           <Shield size={16} color="#7DC9A0" />
@@ -518,6 +558,7 @@ export default function ConnectionScreen() {
   const renderRoomsTab = () => (
     <View style={styles.tabContent}>
       {renderUgcSafetyStrip()}
+      {renderSupportContactStrip()}
       <View style={styles.peerHeader}>
         <View style={styles.peerSafeNotice}>
           <Heart size={16} color="#E8917A" />

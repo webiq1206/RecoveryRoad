@@ -12,6 +12,7 @@
  *   SOCIAL_JWT_SECRET — signing key for session JWTs (required when NODE_ENV=production)
  *   SOCIAL_DEV_JWT_SECRET — optional stable JWT secret for local development
  *   SOCIAL_ADMIN_SECRET — enables moderation admin routes (Bearer token, see below)
+ *   SOCIAL_REQUIRE_FORWARDED_TLS — set to `1` in production behind TLS to require `X-Forwarded-Proto: https`
  *   SOCIAL_ALLOWED_ORIGINS — optional comma-separated list for browser CORS; omit to allow all origins
  *
  * Admin API: send `Authorization: Bearer <SOCIAL_ADMIN_SECRET>` on admin routes.
@@ -43,6 +44,9 @@ const ALLOWED_ORIGINS = (process.env.SOCIAL_ALLOWED_ORIGINS || '')
   .split(',')
   .map((s) => s.trim())
   .filter(Boolean);
+
+/** When `1` and NODE_ENV=production, require `X-Forwarded-Proto: https` (set by TLS terminator). */
+const REQUIRE_FORWARDED_TLS = (process.env.SOCIAL_REQUIRE_FORWARDED_TLS || '').trim() === '1';
 
 const MAX_ROOM_MESSAGE_LEN = 2000;
 const MAX_POST_LEN = 5000;
@@ -103,6 +107,65 @@ function publicUser(u) {
     followingIds: u.followingIds || [],
     postingRestricted: Boolean(u.postingRestricted),
   };
+}
+
+function forwardedTlsOk(req) {
+  if (!REQUIRE_FORWARDED_TLS || !isProd) return true;
+  const p = String(req.headers['x-forwarded-proto'] || '')
+    .split(',')[0]
+    .trim()
+    .toLowerCase();
+  return p === 'https';
+}
+
+function normalizeClientBinding(raw) {
+  const s = String(raw ?? '').trim();
+  if (s.length < 16 || s.length > MAX_DEVICE_ID_LEN) return '';
+  if (!/^[a-zA-Z0-9_-]+$/.test(s)) return '';
+  return s;
+}
+
+function normalizeAppAccountId(raw) {
+  const s = String(raw ?? '').trim().slice(0, 128);
+  if (!s) return '';
+  if (!/^[a-zA-Z0-9_.:-]+$/.test(s)) return '';
+  return s;
+}
+
+/** Self-harm / crisis language flag for moderation and in-app resource prompts (not clinical triage). */
+function contentHasCrisisSignal(content) {
+  const c = String(content || '').toLowerCase();
+  const needles = [
+    'kill myself',
+    'killing myself',
+    'end my life',
+    'want to die',
+    'wish i were dead',
+    'suicide',
+    'hurt myself',
+    'self-harm',
+    'self harm',
+    'cut myself',
+    'better off dead',
+  ];
+  return needles.some((n) => c.includes(n));
+}
+
+/** Reject obvious spam / flooding patterns (server-side; complements rate limits). */
+function basicSpamRejectReason(content) {
+  const s = String(content || '');
+  if (s.length < 2) return null;
+  if (/(.)\1{30,}/.test(s)) return 'repetitive characters';
+  const links = s.match(/https?:\/\//gi);
+  if (links && links.length > 6) return 'too many links';
+  const lower = s.toLowerCase();
+  if (
+    /(viagra|cialis|crypto\s*giveaway|free\s*money|click\s*here\s*now|whatsapp\s*\+?\d{6,})/i.test(lower) &&
+    lower.length < 400
+  ) {
+    return 'blocked pattern';
+  }
+  return null;
 }
 
 function clientIp(req) {
@@ -301,7 +364,8 @@ function buildRoomView(roomId, userId, store) {
   const tpl = roomTemplates().find((r) => r.id === roomId);
   if (!tpl) return null;
   const count = store.roomMemberCount(roomId);
-  const rows = store.listRoomMessages(roomId);
+  const blocks = userId ? store.getRoomBlocks(userId) : { names: new Set(), ids: new Set() };
+  const rows = store.listRoomMessages(roomId).filter((row) => !store.messageHiddenFromViewer(row, userId, blocks));
   const msgs = rows.map((row) => store.msgRowToClient(row, userId));
   return {
     ...tpl,
@@ -359,6 +423,18 @@ const server = http.createServer(async (req, res) => {
     return json(res, 403, { error: 'Origin not allowed', code: 'cors_forbidden' }, '*');
   }
 
+  if (!forwardedTlsOk(req)) {
+    return json(
+      res,
+      403,
+      {
+        error: 'HTTPS is required. Configure your edge proxy to set X-Forwarded-Proto: https, or unset SOCIAL_REQUIRE_FORWARDED_TLS.',
+        code: 'tls_required',
+      },
+      corsOrigin,
+    );
+  }
+
   if (req.method === 'OPTIONS') {
     res.writeHead(204, {
       'Access-Control-Allow-Origin': corsOrigin,
@@ -389,25 +465,75 @@ const server = http.createServer(async (req, res) => {
         );
       }
       const body = await readBody(req);
-      let deviceId = String(body?.deviceId || randomUUID()).trim().slice(0, MAX_DEVICE_ID_LEN);
-      if (!deviceId) deviceId = randomUUID();
+      const clientBindingId = normalizeClientBinding(body?.clientBindingId ?? body?.deviceId);
+      if (!clientBindingId) {
+        return json(
+          res,
+          400,
+          {
+            error:
+              'clientBindingId required: a stable per-install identifier (16+ chars, letters/digits/_/-). The app must generate and store this value securely.',
+            code: 'missing_binding',
+          },
+          corsOrigin,
+        );
+      }
+      const appAccountId = normalizeAppAccountId(body?.appAccountId);
 
-      let user = store.findUserByDevice(deviceId);
+      let user = null;
+      if (appAccountId) {
+        const byApp = store.findUserByAppAccountId(appAccountId);
+        if (byApp) {
+          store.updateUserDeviceBinding(byApp.id, clientBindingId, appAccountId);
+          user = store.getUser(byApp.id);
+        }
+      }
       if (!user) {
+        user = store.findUserByDevice(clientBindingId);
+      }
+      if (user) {
+        if (appAccountId) {
+          const existing = String(user.appAccountId || '');
+          if (existing && existing !== appAccountId) {
+            return json(
+              res,
+              409,
+              {
+                error: 'This install is already linked to a different app account identifier.',
+                code: 'identity_conflict',
+              },
+              corsOrigin,
+            );
+          }
+          if (!existing) {
+            if (store.findUserByAppAccountId(appAccountId)) {
+              return json(res, 409, { error: 'appAccountId already linked to another profile.', code: 'identity_conflict' }, corsOrigin);
+            }
+            store.updateUserRow(user.id, { appAccountId });
+            user = store.getUser(user.id);
+          }
+        }
+      } else {
         const id = `u_${randomUUID().slice(0, 8)}`;
         const username = `member_${id.slice(-6)}`;
-        store.insertUser({
-          id,
-          username,
-          displayName: '',
-          avatar: AVATAR,
-          bio: '',
-          joinedAt: new Date().toISOString(),
-          deviceId,
-          postingRestricted: false,
-          followerIds: [],
-          followingIds: [],
-        });
+        try {
+          store.insertUser({
+            id,
+            username,
+            displayName: '',
+            avatar: AVATAR,
+            bio: '',
+            joinedAt: new Date().toISOString(),
+            deviceId: clientBindingId,
+            appAccountId: appAccountId || undefined,
+            postingRestricted: false,
+          });
+        } catch (e) {
+          if (e && e.code === 'SQLITE_CONSTRAINT_UNIQUE') {
+            return json(res, 409, { error: 'Account identifier conflict. Try again.', code: 'identity_conflict' }, corsOrigin);
+          }
+          throw e;
+        }
         user = store.getUser(id);
       }
       const token = signSessionJwt(user.id, jwtSecret());
@@ -451,7 +577,13 @@ const server = http.createServer(async (req, res) => {
 
     if (routePath === '/v1/me/blocks' && req.method === 'GET') {
       const b = store.getRoomBlocks(user.id);
-      return json(res, 200, { blockedAuthorNames: [...b.names], blockedUserIds: [...b.ids] }, corsOrigin);
+      const communityBlockedUserIds = store.listCommunityBlockedUserIds(user.id);
+      return json(
+        res,
+        200,
+        { blockedAuthorNames: [...b.names], blockedUserIds: [...b.ids], communityBlockedUserIds },
+        corsOrigin,
+      );
     }
 
     if (routePath === '/v1/me/blocks' && req.method === 'POST') {
@@ -461,7 +593,39 @@ const server = http.createServer(async (req, res) => {
       if (!name && !sid) return json(res, 400, { error: 'authorName or authorId required' }, corsOrigin);
       store.addRoomBlock(user.id, name, sid);
       const b = store.getRoomBlocks(user.id);
-      return json(res, 200, { blockedAuthorNames: [...b.names], blockedUserIds: [...b.ids] }, corsOrigin);
+      const communityBlockedUserIds = store.listCommunityBlockedUserIds(user.id);
+      return json(
+        res,
+        200,
+        { blockedAuthorNames: [...b.names], blockedUserIds: [...b.ids], communityBlockedUserIds },
+        corsOrigin,
+      );
+    }
+
+    if (routePath === '/v1/me/community-blocks' && req.method === 'POST') {
+      const body = await readBody(req);
+      const blockedUserId = String(body?.blockedUserId || '').trim();
+      if (!blockedUserId) {
+        return json(res, 400, { error: 'blockedUserId required', code: 'invalid_body' }, corsOrigin);
+      }
+      if (blockedUserId === user.id) {
+        return json(res, 400, { error: 'Cannot block yourself', code: 'invalid_block' }, corsOrigin);
+      }
+      const target = store.getUser(blockedUserId);
+      if (!target) return json(res, 404, { error: 'User not found' }, corsOrigin);
+      store.addCommunityUserBlock(user.id, blockedUserId);
+      const communityBlockedUserIds = store.listCommunityBlockedUserIds(user.id);
+      const b = store.getRoomBlocks(user.id);
+      return json(
+        res,
+        200,
+        {
+          blockedAuthorNames: [...b.names],
+          blockedUserIds: [...b.ids],
+          communityBlockedUserIds,
+        },
+        corsOrigin,
+      );
     }
 
     if (routePath === '/v1/rooms' && req.method === 'GET') {
@@ -515,11 +679,16 @@ const server = http.createServer(async (req, res) => {
       if (!checkSpamRepeat(user.id, content)) {
         return json(res, 429, { error: 'Duplicate message detected. Please wait before retrying.', code: 'spam' }, corsOrigin);
       }
+      const spamWhy = basicSpamRejectReason(content);
+      if (spamWhy) {
+        return json(res, 400, { error: 'Message rejected as spam or unsafe pattern.', code: 'spam_pattern', detail: spamWhy }, corsOrigin);
+      }
       const anonymous = Boolean(body?.anonymous);
       if (!store.roomHasMember(roomId, user.id)) {
         return json(res, 403, { error: 'Join the room before posting' }, corsOrigin);
       }
       const authorName = anonymous ? 'Anonymous' : user.displayName || user.username || 'Member';
+      const crisisSignal = contentHasCrisisSignal(content);
       const msg = {
         id: `m_${randomUUID().slice(0, 12)}`,
         roomId,
@@ -531,8 +700,24 @@ const server = http.createServer(async (req, res) => {
         isReported: false,
         reportReason: '',
         removedByModeration: false,
+        crisisSignal,
       };
       store.insertRoomMessage(msg);
+      if (crisisSignal) {
+        const rep = {
+          id: `rep_auto_${randomUUID().slice(0, 10)}`,
+          type: 'crisis_keyword_room',
+          roomId,
+          messageId: msg.id,
+          reporterId: 'system',
+          reason: 'crisis_language',
+          description: 'Automated flag: message may contain self-harm or crisis language.',
+          createdAt: new Date().toISOString(),
+          status: 'pending',
+          snapshot: { authorId: user.id, authorName, contentPreview: content.slice(0, 280) },
+        };
+        store.appendModerationReport(rep);
+      }
       return json(res, 200, { rooms: listRoomsForUser(user.id, store) }, corsOrigin);
     }
 
@@ -628,19 +813,19 @@ const server = http.createServer(async (req, res) => {
       }
       store.registerUserProfile(user.id, username, displayName);
       const me = store.getUser(user.id);
-      return json(res, 200, { me: publicUser(me), users: store.listUsers().map(publicUser) }, corsOrigin);
+      return json(res, 200, { me: publicUser(me), users: store.listUsersForViewer(user.id).map(publicUser) }, corsOrigin);
     }
 
     if (routePath === '/v1/community/users' && req.method === 'GET') {
-      return json(res, 200, { users: store.listUsers().map(publicUser) }, corsOrigin);
+      return json(res, 200, { users: store.listUsersForViewer(user.id).map(publicUser) }, corsOrigin);
     }
 
     if (routePath === '/v1/community/posts' && req.method === 'GET') {
-      return json(res, 200, { posts: store.listCommunityPostsVisible() }, corsOrigin);
+      return json(res, 200, { posts: store.listCommunityPostsVisibleForViewer(user.id) }, corsOrigin);
     }
 
     if (routePath === '/v1/community/comments' && req.method === 'GET') {
-      return json(res, 200, { comments: store.listCommunityCommentsVisible() }, corsOrigin);
+      return json(res, 200, { comments: store.listCommunityCommentsVisibleForViewer(user.id) }, corsOrigin);
     }
 
     if (routePath === '/v1/community/groups' && req.method === 'GET') {
@@ -673,6 +858,11 @@ const server = http.createServer(async (req, res) => {
       if (!checkSpamRepeat(user.id, content, 30_000)) {
         return json(res, 429, { error: 'Duplicate post detected.', code: 'spam' }, corsOrigin);
       }
+      const spamWhy = basicSpamRejectReason(content);
+      if (spamWhy) {
+        return json(res, 400, { error: 'Post rejected as spam or unsafe pattern.', code: 'spam_pattern', detail: spamWhy }, corsOrigin);
+      }
+      const crisisFlag = contentHasCrisisSignal(content);
       const post = {
         id: `p_${randomUUID().slice(0, 10)}`,
         authorId: user.id,
@@ -682,12 +872,30 @@ const server = http.createServer(async (req, res) => {
         likes: [],
         commentIds: [],
         removedByModeration: false,
+        crisisFlag,
       };
       store.insertCommunityPost(post);
+      if (crisisFlag) {
+        store.appendModerationReport({
+          id: `rep_auto_${randomUUID().slice(0, 10)}`,
+          type: 'crisis_keyword_community_post',
+          targetId: post.id,
+          postId: post.id,
+          reporterId: 'system',
+          reason: 'crisis_language',
+          description: 'Automated flag: post may contain self-harm or crisis language.',
+          createdAt: new Date().toISOString(),
+          status: 'pending',
+          snapshot: { authorId: user.id, contentPreview: content.slice(0, 280) },
+        });
+      }
       return json(
         res,
         200,
-        { posts: store.listCommunityPostsVisible(), comments: store.listCommunityCommentsVisible() },
+        {
+          posts: store.listCommunityPostsVisibleForViewer(user.id),
+          comments: store.listCommunityCommentsVisibleForViewer(user.id),
+        },
         corsOrigin,
       );
     }
@@ -718,6 +926,10 @@ const server = http.createServer(async (req, res) => {
       if (!checkSpamRepeat(user.id, content, 15_000)) {
         return json(res, 429, { error: 'Duplicate comment detected.', code: 'spam' }, corsOrigin);
       }
+      const spamWhy = basicSpamRejectReason(content);
+      if (spamWhy) {
+        return json(res, 400, { error: 'Comment rejected as spam or unsafe pattern.', code: 'spam_pattern', detail: spamWhy }, corsOrigin);
+      }
       const p = store.getCommunityPost(postId);
       if (!p || p.removedByModeration) return json(res, 404, { error: 'Post not found' }, corsOrigin);
       const c = {
@@ -731,10 +943,27 @@ const server = http.createServer(async (req, res) => {
       store.insertCommunityComment(c);
       const nextIds = [...(p.commentIds || []), c.id];
       store.updatePostLikesAndComments(postId, p.likes || [], nextIds);
+      if (contentHasCrisisSignal(content)) {
+        store.appendModerationReport({
+          id: `rep_auto_${randomUUID().slice(0, 10)}`,
+          type: 'crisis_keyword_community_comment',
+          targetId: c.id,
+          postId,
+          reporterId: 'system',
+          reason: 'crisis_language',
+          description: 'Automated flag: comment may contain self-harm or crisis language.',
+          createdAt: new Date().toISOString(),
+          status: 'pending',
+          snapshot: { authorId: user.id, contentPreview: content.slice(0, 280) },
+        });
+      }
       return json(
         res,
         200,
-        { posts: store.listCommunityPostsVisible(), comments: store.listCommunityCommentsVisible() },
+        {
+          posts: store.listCommunityPostsVisibleForViewer(user.id),
+          comments: store.listCommunityCommentsVisibleForViewer(user.id),
+        },
         corsOrigin,
       );
     }
@@ -795,7 +1024,7 @@ const server = http.createServer(async (req, res) => {
       const has = likes.includes(user.id);
       const next = has ? likes.filter((id) => id !== user.id) : [...likes, user.id];
       store.updatePostLikesAndComments(postId, next, p.commentIds || []);
-      return json(res, 200, { posts: store.listCommunityPostsVisible() }, corsOrigin);
+      return json(res, 200, { posts: store.listCommunityPostsVisibleForViewer(user.id) }, corsOrigin);
     }
 
     const followMatch = /^\/v1\/community\/users\/([^/]+)\/follow$/.exec(routePath);
@@ -805,7 +1034,7 @@ const server = http.createServer(async (req, res) => {
       if (!target) return json(res, 404, { error: 'User not found' }, corsOrigin);
       store.toggleFollow(user.id, targetId);
       const me = store.getUser(user.id);
-      return json(res, 200, { me: publicUser(me), users: store.listUsers().map(publicUser) }, corsOrigin);
+      return json(res, 200, { me: publicUser(me), users: store.listUsersForViewer(user.id).map(publicUser) }, corsOrigin);
     }
 
     if (routePath === '/v1/admin/reports' && req.method === 'GET') {
@@ -877,6 +1106,16 @@ const server = http.createServer(async (req, res) => {
       return json(res, 200, { user: publicUser(fresh) }, corsOrigin);
     }
 
+    const adminDeleteUserMatch = /^\/v1\/admin\/users\/([^/]+)\/delete-data$/.exec(routePath);
+    if (adminDeleteUserMatch && req.method === 'POST') {
+      if (!assertAdmin(req, res, corsOrigin)) return;
+      const targetUserId = adminDeleteUserMatch[1];
+      const u = store.getUser(targetUserId);
+      if (!u) return json(res, 404, { error: 'User not found' }, corsOrigin);
+      store.deleteUserData(targetUserId);
+      return json(res, 200, { ok: true, deletedUserId: targetUserId }, corsOrigin);
+    }
+
     return json(res, 404, { error: 'Not found' }, corsOrigin);
   } catch (e) {
     console.error(e);
@@ -900,5 +1139,8 @@ server.listen(PORT, () => {
     console.log('[social] Admin moderation routes enabled (Authorization: Bearer <SOCIAL_ADMIN_SECRET>).');
   } else {
     console.warn('[social] SOCIAL_ADMIN_SECRET is not set; admin moderation routes respond with 403.');
+  }
+  if (REQUIRE_FORWARDED_TLS && isProd) {
+    console.log('[social] SOCIAL_REQUIRE_FORWARDED_TLS=1: rejecting requests without X-Forwarded-Proto: https.');
   }
 });

@@ -95,7 +95,9 @@ export const [CommunityProvider, useCommunity] = createContextHook(() => {
     const b = liveBlocksQuery.data;
     if (b) {
       setBlockedCommunityAuthorNames(b.blockedAuthorNames ?? []);
-      setBlockedCommunityUserIds(b.blockedUserIds ?? []);
+      setBlockedCommunityUserIds(
+        [...new Set([...(b.blockedUserIds ?? []), ...(b.communityBlockedUserIds ?? [])])],
+      );
     }
   }, [liveBlocksQuery.data]);
 
@@ -521,12 +523,17 @@ export const [CommunityProvider, useCommunity] = createContextHook(() => {
       if (isCommunityEnabled()) {
         void (async () => {
           try {
-            const next = await liveSocial.addLiveRoomBlock({
+            let next = await liveSocial.addLiveRoomBlock({
               authorId: id || undefined,
               authorName: label || undefined,
             });
+            if (id && !id.startsWith('anon:')) {
+              next = await liveSocial.addLiveCommunityBlock(id);
+            }
             setBlockedCommunityAuthorNames(next.blockedAuthorNames ?? []);
-            setBlockedCommunityUserIds(next.blockedUserIds ?? []);
+            setBlockedCommunityUserIds(
+              [...new Set([...(next.blockedUserIds ?? []), ...(next.communityBlockedUserIds ?? [])])],
+            );
             await queryClient.invalidateQueries({ queryKey: ['liveSocialBlocks'] });
             await queryClient.invalidateQueries({ queryKey: ['liveSocialCommunityFeed'] });
           } catch (e) {

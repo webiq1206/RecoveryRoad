@@ -1,7 +1,7 @@
 import React, { useState, useCallback, useRef, useMemo } from 'react';
 import {
   View, Text, StyleSheet, Pressable, TextInput,
-  Modal, Alert, Animated, ScrollView, Platform,
+  Modal, Alert, Animated, ScrollView, Platform, Linking,
 } from 'react-native';
 import { ScreenFlatList } from '../components/ScreenFlatList';
 import { useSafeAreaInsets, SafeAreaView } from 'react-native-safe-area-context';
@@ -9,11 +9,12 @@ import { Redirect, useRouter } from 'expo-router';
 import {
   Users, Shield, Clock, Radio, ChevronRight, Lock,
   Eye, EyeOff, Search, X, Calendar, Zap, Heart,
-  MessageSquare, Star, Filter, LogOut, BookOpen, Flag,
+  MessageSquare, Star, Filter, LogOut, BookOpen, Flag, MessageCircle,
 } from 'lucide-react-native';
 import * as Haptics from 'expo-haptics';
 import Colors from '../constants/colors';
 import { arePeerPracticeFeaturesEnabled } from '../core/socialLiveConfig';
+import { getSupportEmail, getSupportUrl, hasConfiguredSupportContact } from '../core/supportContact';
 import { useRecoveryRooms, TOPIC_LABELS } from '../providers/RecoveryRoomsProvider';
 import { useSubscription } from '../providers/SubscriptionProvider';
 import { RecoveryRoom, RecoveryRoomTopic, ScheduledSession } from '../types';
@@ -558,6 +559,40 @@ export default function RecoveryRoomsScreen() {
           </Text>
         </View>
         <BookOpen size={18} color={Colors.primary} />
+        <ChevronRight size={16} color={Colors.textMuted} />
+      </Pressable>
+      <Pressable
+        style={({ pressed }) => [styles.guidelinesEntry, pressed && { opacity: 0.88 }, { marginTop: 8 }]}
+        onPress={() => {
+          Haptics.selectionAsync();
+          const email = getSupportEmail();
+          const url = getSupportUrl();
+          if (email) {
+            void Linking.openURL(
+              `mailto:${encodeURIComponent(email)}?subject=${encodeURIComponent('Recovery Companion — Connect / rooms')}`,
+            );
+            return;
+          }
+          if (/^https?:\/\//i.test(url)) {
+            void Linking.openURL(url);
+            return;
+          }
+          Alert.alert(
+            'Contact support',
+            'Ask your organization for the support email or URL configured for this app. For emergencies, contact local emergency services or call/text 988 in the U.S.',
+          );
+        }}
+        testID="recovery-rooms-contact-support"
+      >
+        <MessageCircle size={16} color={Colors.primary} />
+        <View style={{ flex: 1 }}>
+          <Text style={styles.guidelinesEntryTitle}>Report a problem / Contact support</Text>
+          <Text style={styles.guidelinesEntrySub} numberOfLines={2}>
+            {hasConfiguredSupportContact()
+              ? 'Opens email or web support for this build'
+              : 'Configure EXPO_PUBLIC_SUPPORT_EMAIL for production'}
+          </Text>
+        </View>
         <ChevronRight size={16} color={Colors.textMuted} />
       </Pressable>
       {renderLiveBanner()}

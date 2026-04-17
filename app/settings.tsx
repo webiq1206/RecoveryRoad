@@ -38,6 +38,7 @@ import {
 import * as Haptics from 'expo-haptics';
 import Colors from '../constants/colors';
 import { arePeerPracticeFeaturesEnabled } from '../core/socialLiveConfig';
+import { getSupportEmail, getSupportUrl, hasConfiguredSupportContact } from '../core/supportContact';
 import { useUser } from '../core/domains/useUser';
 import { useAppMeta } from '../core/domains/useAppMeta';
 import { useEngagement } from '../providers/EngagementProvider';
@@ -556,6 +557,44 @@ export default function SettingsScreen() {
             </>
           ) : null}
         </View>
+
+        <Text style={[styles.sectionLabel, { marginTop: 28 }]}>SUPPORT</Text>
+        <Pressable
+          style={({ pressed }) => [styles.settingRow, pressed && { opacity: 0.85 }]}
+          onPress={() => {
+            Haptics.selectionAsync();
+            const email = getSupportEmail();
+            const url = getSupportUrl();
+            if (email) {
+              void Linking.openURL(`mailto:${encodeURIComponent(email)}?subject=${encodeURIComponent('Recovery Companion support')}`);
+              return;
+            }
+            if (/^https?:\/\//i.test(url)) {
+              void Linking.openURL(url);
+              return;
+            }
+            Alert.alert(
+              'Contact support',
+              'Add EXPO_PUBLIC_SUPPORT_EMAIL or EXPO_PUBLIC_SUPPORT_URL to your production build configuration so this button opens your team directly. For emergencies, contact local emergency services or call/text 988 in the U.S.',
+            );
+          }}
+          testID="settings-contact-support"
+        >
+          <View style={styles.settingLeft}>
+            <View style={[styles.settingIcon, { backgroundColor: 'rgba(46,196,182,0.12)' }]}>
+              <MessageCircle size={17} color={Colors.primary} />
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text style={styles.settingLabel}>Report a problem / Contact support</Text>
+              <Text style={styles.settingValue}>
+                {hasConfiguredSupportContact()
+                  ? getSupportEmail() || getSupportUrl()
+                  : 'Configure support email or URL for this build'}
+              </Text>
+            </View>
+          </View>
+          <ChevronRight size={16} color={Colors.textMuted} />
+        </Pressable>
 
         {/* Security */}
         <Text style={[styles.sectionLabel, { marginTop: 28 }]}>SECURITY</Text>

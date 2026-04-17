@@ -1,7 +1,7 @@
 import React, { useState, useCallback, useRef, useMemo, useEffect } from 'react';
 import {
   View, Text, StyleSheet, Pressable, TextInput,
-  Modal, Alert, Animated, KeyboardAvoidingView, Platform,
+  Modal, Alert, Animated, KeyboardAvoidingView, Platform, Linking,
 } from 'react-native';
 import type { FlatList } from 'react-native';
 import { ScreenFlatList } from '../components/ScreenFlatList';
@@ -16,6 +16,7 @@ import {
 import * as Haptics from 'expo-haptics';
 import Colors from '../constants/colors';
 import { arePeerPracticeFeaturesEnabled } from '../core/socialLiveConfig';
+import { textMayIndicateCrisis } from '../core/crisisContentHeuristics';
 import { useRecoveryRooms, TOPIC_LABELS } from '../providers/RecoveryRoomsProvider';
 import { RecoveryRoomMessage, RoomReport, ScheduledSession } from '../types';
 
@@ -92,12 +93,33 @@ export default function RoomSessionScreen() {
   const handleSendMessage = useCallback(() => {
     if (!messageText.trim() || !roomId) return;
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    sendMessage(roomId, messageText.trim(), sendAnonymous);
+    const trimmed = messageText.trim();
+    const crisisHint = textMayIndicateCrisis(trimmed);
+    sendMessage(roomId, trimmed, sendAnonymous);
     setMessageText('');
     setTimeout(() => {
       flatListRef.current?.scrollToEnd({ animated: true });
     }, 100);
-  }, [messageText, roomId, sendAnonymous, sendMessage]);
+    if (crisisHint) {
+      Alert.alert(
+        'Support is available',
+        'This app is not a crisis service. If you are in the U.S., you can call or text 988 to reach the Suicide & Crisis Lifeline. If you or someone else may be in immediate danger, contact local emergency services now.',
+        [
+          {
+            text: 'Open 988lifeline.org',
+            onPress: () => {
+              void Linking.openURL('https://988lifeline.org/');
+            },
+          },
+          {
+            text: 'Crisis tools',
+            onPress: () => router.push('/crisis-mode' as never),
+          },
+          { text: 'Close', style: 'cancel' },
+        ],
+      );
+    }
+  }, [messageText, roomId, sendAnonymous, sendMessage, router]);
 
   const handleReport = useCallback((messageId: string) => {
     setReportingMessageId(messageId);

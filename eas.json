@@ -26,7 +26,8 @@
         "autoIncrement": true,
         "env": {
           "EXPO_USE_FAST_RESOLVER": "1",
-          "EXPO_PUBLIC_INCLUDE_PROVIDER_SUITE": "0"
+          "EXPO_PUBLIC_INCLUDE_PROVIDER_SUITE": "0",
+          "EXPO_PUBLIC_COMMUNITY_ENABLED": "false"
         },
         "ios": {
           "resourceClass": "medium"

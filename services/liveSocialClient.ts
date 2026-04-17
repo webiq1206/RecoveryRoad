@@ -1,8 +1,13 @@
 /**
  * HTTP client for the live social API (`backend/social/server.mjs`).
  * Auth: signed session JWT from POST /v1/auth/session (send as `Authorization: Bearer …` on all calls).
+ *
+ * Session body includes `clientBindingId` (stable per install, from SecureStore) and optional
+ * `appAccountId` (RevenueCat anonymous id when present) so the backend can bind a durable account.
  */
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import * as Crypto from 'expo-crypto';
+import * as SecureStore from 'expo-secure-store';
 
 import type {
   CommunityComment,
@@ -15,7 +20,10 @@ import type {
 import { getLiveSocialApiBaseUrl } from '../core/socialLiveConfig';
 
 const TOKEN_KEY = 'live_social_access_token';
-const DEVICE_KEY = 'live_social_device_id';
+const BINDING_KEY_SECURE = 'live_social_client_binding_v1';
+const DEVICE_KEY_LEGACY = 'live_social_device_id';
+/** Same key as `SubscriptionProvider` — stable per install when RevenueCat is configured. */
+const RC_USER_ID_KEY = 'rc_user_id';
 
 export class LiveSocialApiError extends Error {
   readonly status: number;
@@ -34,13 +42,36 @@ export class LiveSocialApiError extends Error {
   }
 }
 
-async function getDeviceId(): Promise<string> {
-  let id = await AsyncStorage.getItem(DEVICE_KEY);
-  if (!id) {
-    id = `dev_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 12)}`;
-    await AsyncStorage.setItem(DEVICE_KEY, id);
+async function getOrCreateClientBindingId(): Promise<string> {
+  try {
+    const existing = await SecureStore.getItemAsync(BINDING_KEY_SECURE);
+    if (existing && existing.length >= 16 && /^[a-zA-Z0-9_-]+$/.test(existing)) {
+      return existing;
+    }
+  } catch {
+    /* SecureStore unavailable (e.g. web) */
   }
-  return id;
+  const legacy = await AsyncStorage.getItem(DEVICE_KEY_LEGACY);
+  if (legacy && legacy.length >= 16 && /^[a-zA-Z0-9_-]+$/.test(legacy)) {
+    try {
+      await SecureStore.setItemAsync(BINDING_KEY_SECURE, legacy);
+    } catch {
+      /* ignore */
+    }
+    return legacy;
+  }
+  const fresh = Crypto.randomUUID();
+  try {
+    await SecureStore.setItemAsync(BINDING_KEY_SECURE, fresh);
+  } catch {
+    await AsyncStorage.setItem(DEVICE_KEY_LEGACY, fresh);
+  }
+  return fresh;
+}
+
+async function getOptionalAppAccountId(): Promise<string | undefined> {
+  const id = (await AsyncStorage.getItem(RC_USER_ID_KEY))?.trim();
+  return id && id.length >= 8 ? id : undefined;
 }
 
 async function getToken(): Promise<string | null> {
@@ -103,10 +134,14 @@ export async function ensureLiveSocialSession(): Promise<LiveSocialSession> {
       await setToken(null);
     }
   }
-  const deviceId = await getDeviceId();
+  const clientBindingId = await getOrCreateClientBindingId();
+  const appAccountId = await getOptionalAppAccountId();
   const created = await api<{ token: string; user: CommunityUser }>('/v1/auth/session', {
     method: 'POST',
-    body: JSON.stringify({ deviceId }),
+    body: JSON.stringify({
+      clientBindingId,
+      ...(appAccountId ? { appAccountId } : {}),
+    }),
   });
   await setToken(created.token);
   return { token: created.token, user: created.user };
@@ -206,6 +241,8 @@ export async function reportLiveCommunityTarget(payload: {
 export type LiveRoomBlocks = {
   blockedAuthorNames: string[];
   blockedUserIds: string[];
+  /** User IDs blocked for community feed (server-enforced). */
+  communityBlockedUserIds?: string[];
 };
 
 export async function listLiveRoomBlocks(): Promise<LiveRoomBlocks> {
@@ -219,6 +256,14 @@ export async function addLiveRoomBlock(partial: {
   return api<LiveRoomBlocks>('/v1/me/blocks', {
     method: 'POST',
     body: JSON.stringify(partial),
+  });
+}
+
+/** Block a user’s community content for this account (in addition to recovery-room blocks). */
+export async function addLiveCommunityBlock(blockedUserId: string): Promise<LiveRoomBlocks> {
+  return api<LiveRoomBlocks>('/v1/me/community-blocks', {
+    method: 'POST',
+    body: JSON.stringify({ blockedUserId }),
   });
 }
 

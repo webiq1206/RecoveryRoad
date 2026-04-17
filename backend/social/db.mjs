@@ -14,10 +14,12 @@ CREATE TABLE IF NOT EXISTS users (
   bio TEXT NOT NULL DEFAULT '',
   joined_at TEXT NOT NULL,
   device_id TEXT UNIQUE,
-  posting_restricted INTEGER NOT NULL DEFAULT 0
+  posting_restricted INTEGER NOT NULL DEFAULT 0,
+  app_account_id TEXT
 );
 
 CREATE UNIQUE INDEX IF NOT EXISTS idx_users_username ON users(username);
+CREATE UNIQUE INDEX IF NOT EXISTS idx_users_app_account_id ON users(app_account_id) WHERE app_account_id IS NOT NULL;
 
 CREATE TABLE IF NOT EXISTS user_follows (
   follower_id TEXT NOT NULL,
@@ -91,6 +93,15 @@ CREATE TABLE IF NOT EXISTS moderation_reports (
   payload_json TEXT NOT NULL
 );
 
+CREATE TABLE IF NOT EXISTS community_user_blocks (
+  blocker_id TEXT NOT NULL,
+  blocked_id TEXT NOT NULL,
+  created_at TEXT NOT NULL,
+  PRIMARY KEY (blocker_id, blocked_id),
+  FOREIGN KEY (blocker_id) REFERENCES users(id) ON DELETE CASCADE,
+  FOREIGN KEY (blocked_id) REFERENCES users(id) ON DELETE CASCADE
+);
+
 CREATE TABLE IF NOT EXISTS meta (
   key TEXT PRIMARY KEY,
   value TEXT NOT NULL
@@ -114,7 +125,32 @@ export class SocialDatabase {
   static open(dbFilePath) {
     const db = new DatabaseSync(dbFilePath);
     db.exec(SCHEMA);
-    return new SocialDatabase(db);
+    const inst = new SocialDatabase(db);
+    inst.applyDeferredMigrations();
+    return inst;
+  }
+
+  /** Idempotent schema upgrades for existing deployments (older social.db files). */
+  applyDeferredMigrations() {
+    const tableCols = (table) => {
+      const rows = this.db.prepare(`PRAGMA table_info(${table})`).all();
+      return new Set(rows.map((r) => r.name));
+    };
+    const usersCols = tableCols('users');
+    if (!usersCols.has('app_account_id')) {
+      this.db.exec('ALTER TABLE users ADD COLUMN app_account_id TEXT');
+      this.db.exec(
+        'CREATE UNIQUE INDEX IF NOT EXISTS idx_users_app_account_id ON users(app_account_id) WHERE app_account_id IS NOT NULL',
+      );
+    }
+    const msgCols = tableCols('room_messages');
+    if (!msgCols.has('crisis_signal')) {
+      this.db.exec('ALTER TABLE room_messages ADD COLUMN crisis_signal INTEGER NOT NULL DEFAULT 0');
+    }
+    const postCols = tableCols('community_posts');
+    if (!postCols.has('crisis_flag')) {
+      this.db.exec('ALTER TABLE community_posts ADD COLUMN crisis_flag INTEGER NOT NULL DEFAULT 0');
+    }
   }
 
   isBootstrapped() {
@@ -289,6 +325,7 @@ export class SocialDatabase {
       followerIds: g.followerIds,
       followingIds: g.followingIds,
       postingRestricted: Boolean(row.posting_restricted),
+      appAccountId: row.app_account_id != null && row.app_account_id !== '' ? String(row.app_account_id) : '',
     };
   }
 
@@ -296,6 +333,11 @@ export class SocialDatabase {
     const graph = this.loadFollowGraph();
     const rows = this.db.prepare('SELECT * FROM users ORDER BY joined_at ASC').all();
     return rows.map((row) => this.rowToUser(row, graph));
+  }
+
+  listUsersForViewer(viewerId) {
+    const blocked = new Set(this.listCommunityBlockedUserIds(viewerId));
+    return this.listUsers().filter((u) => !blocked.has(u.id));
   }
 
   getUser(userId) {
@@ -319,11 +361,19 @@ export class SocialDatabase {
     return this.rowToUser(row, graph);
   }
 
+  findUserByAppAccountId(appAccountId) {
+    if (!appAccountId) return null;
+    const row = this.db.prepare('SELECT * FROM users WHERE app_account_id = ?').get(appAccountId);
+    if (!row) return null;
+    const graph = this.loadFollowGraph();
+    return this.rowToUser(row, graph);
+  }
+
   insertUser(user) {
     this.db
       .prepare(
-        `INSERT INTO users (id, username, display_name, avatar, bio, joined_at, device_id, posting_restricted)
-       VALUES (@id, @username, @display_name, @avatar, @bio, @joined_at, @device_id, @posting_restricted)`,
+        `INSERT INTO users (id, username, display_name, avatar, bio, joined_at, device_id, posting_restricted, app_account_id)
+       VALUES (@id, @username, @display_name, @avatar, @bio, @joined_at, @device_id, @posting_restricted, @app_account_id)`,
       )
       .run({
         id: user.id,
@@ -334,7 +384,18 @@ export class SocialDatabase {
         joined_at: user.joinedAt,
         device_id: user.deviceId ?? null,
         posting_restricted: user.postingRestricted ? 1 : 0,
+        app_account_id: user.appAccountId ?? null,
       });
+  }
+
+  updateUserDeviceBinding(userId, deviceId, appAccountId) {
+    if (appAccountId) {
+      this.db
+        .prepare('UPDATE users SET device_id = @device_id, app_account_id = COALESCE(app_account_id, @app) WHERE id = @id')
+        .run({ id: userId, device_id: deviceId, app: appAccountId });
+    } else {
+      this.db.prepare('UPDATE users SET device_id = @device_id WHERE id = @id').run({ id: userId, device_id: deviceId });
+    }
   }
 
   updateUserRow(userId, fields) {
@@ -355,6 +416,10 @@ export class SocialDatabase {
     if (fields.postingRestricted !== undefined) {
       sets.push('posting_restricted = @posting_restricted');
       params.posting_restricted = fields.postingRestricted ? 1 : 0;
+    }
+    if (fields.appAccountId !== undefined) {
+      sets.push('app_account_id = @app_account_id');
+      params.app_account_id = fields.appAccountId || null;
     }
     if (!sets.length) return;
     this.db.prepare(`UPDATE users SET ${sets.join(', ')} WHERE id = @id`).run(params);
@@ -386,6 +451,21 @@ export class SocialDatabase {
     }
   }
 
+  listCommunityBlockedUserIds(blockerId) {
+    const rows = this.db.prepare('SELECT blocked_id FROM community_user_blocks WHERE blocker_id = ?').all(blockerId);
+    return rows.map((r) => String(r.blocked_id));
+  }
+
+  addCommunityUserBlock(blockerId, blockedId) {
+    if (!blockerId || !blockedId || blockerId === blockedId) return false;
+    const n = this.db
+      .prepare(
+        `INSERT OR IGNORE INTO community_user_blocks (blocker_id, blocked_id, created_at) VALUES (?, ?, ?)`,
+      )
+      .run(blockerId, blockedId, new Date().toISOString()).changes;
+    return n > 0;
+  }
+
   roomMemberAdd(roomId, userId) {
     this.db.prepare('INSERT OR IGNORE INTO room_members (room_id, user_id) VALUES (?, ?)').run(roomId, userId);
   }
@@ -412,8 +492,8 @@ export class SocialDatabase {
     this.db
       .prepare(
         `INSERT INTO room_messages
-      (id, room_id, author_id, author_name, content, timestamp, is_anonymous, is_reported, report_reason, removed_by_moderation)
-      VALUES (@id, @room_id, @author_id, @author_name, @content, @timestamp, @is_anonymous, @is_reported, @report_reason, @removed_by_moderation)`,
+      (id, room_id, author_id, author_name, content, timestamp, is_anonymous, is_reported, report_reason, removed_by_moderation, crisis_signal)
+      VALUES (@id, @room_id, @author_id, @author_name, @content, @timestamp, @is_anonymous, @is_reported, @report_reason, @removed_by_moderation, @crisis_signal)`,
       )
       .run({
         id: msg.id,
@@ -426,6 +506,7 @@ export class SocialDatabase {
         is_reported: msg.isReported ? 1 : 0,
         report_reason: msg.reportReason || '',
         removed_by_moderation: msg.removedByModeration ? 1 : 0,
+        crisis_signal: msg.crisisSignal ? 1 : 0,
       });
   }
 
@@ -468,7 +549,16 @@ export class SocialDatabase {
       isReported: Boolean(row.is_reported),
       reportReason: row.report_reason || '',
       isOwn: Boolean(userId && row.author_id === userId),
+      crisisSignalDetected: Boolean(row.crisis_signal),
     };
+  }
+
+  messageHiddenFromViewer(row, viewerUserId, blocks) {
+    if (!viewerUserId) return false;
+    if (row.author_id === viewerUserId) return false;
+    if (blocks.ids.has(String(row.author_id))) return true;
+    if (blocks.names.has(String(row.author_name))) return true;
+    return false;
   }
 
   listCommunityPostsVisible() {
@@ -482,6 +572,7 @@ export class SocialDatabase {
       likes: safeJsonParse(row.likes_json, []),
       commentIds: safeJsonParse(row.comment_ids_json, []),
       removedByModeration: false,
+      crisisFlag: Boolean(row.crisis_flag),
     }));
   }
 
@@ -495,6 +586,17 @@ export class SocialDatabase {
       createdAt: row.created_at,
       removedByModeration: false,
     }));
+  }
+
+  /** Hides posts authored by users the viewer has blocked (community safety). */
+  listCommunityPostsVisibleForViewer(viewerId) {
+    const blocked = new Set(this.listCommunityBlockedUserIds(viewerId));
+    return this.listCommunityPostsVisible().filter((p) => !blocked.has(p.authorId));
+  }
+
+  listCommunityCommentsVisibleForViewer(viewerId) {
+    const blocked = new Set(this.listCommunityBlockedUserIds(viewerId));
+    return this.listCommunityCommentsVisible().filter((c) => !blocked.has(c.authorId));
   }
 
   listCommunityGroups() {
@@ -514,14 +616,15 @@ export class SocialDatabase {
       likes: safeJsonParse(row.likes_json, []),
       commentIds: safeJsonParse(row.comment_ids_json, []),
       removedByModeration: Boolean(row.removed),
+      crisisFlag: Boolean(row.crisis_flag),
     };
   }
 
   insertCommunityPost(post) {
     this.db
       .prepare(
-        `INSERT INTO community_posts (id, author_id, content, created_at, visibility, likes_json, comment_ids_json, removed)
-       VALUES (@id, @author_id, @content, @created_at, @visibility, @likes_json, @comment_ids_json, @removed)`,
+        `INSERT INTO community_posts (id, author_id, content, created_at, visibility, likes_json, comment_ids_json, removed, crisis_flag)
+       VALUES (@id, @author_id, @content, @created_at, @visibility, @likes_json, @comment_ids_json, @removed, @crisis_flag)`,
       )
       .run({
         id: post.id,
@@ -532,6 +635,7 @@ export class SocialDatabase {
         likes_json: JSON.stringify(post.likes || []),
         comment_ids_json: JSON.stringify(post.commentIds || []),
         removed: post.removedByModeration ? 1 : 0,
+        crisis_flag: post.crisisFlag ? 1 : 0,
       });
   }
 
@@ -610,5 +714,28 @@ export class SocialDatabase {
 
   insertCommunityGroup(g) {
     this.db.prepare('INSERT OR REPLACE INTO community_groups (id, payload_json) VALUES (?, ?)').run(g.id, JSON.stringify(g));
+  }
+
+  /**
+   * Removes a user and authored content. Moderation rows referencing the user as reporter are deleted;
+   * other reports may remain with snapshots for compliance (adjust for your policy).
+   */
+  deleteUserData(userId) {
+    this.db.exec('BEGIN');
+    try {
+      this.db.prepare('DELETE FROM community_comments WHERE author_id = ?').run(userId);
+      this.db.prepare('DELETE FROM community_posts WHERE author_id = ?').run(userId);
+      this.db.prepare('DELETE FROM room_messages WHERE author_id = ?').run(userId);
+      this.db.prepare('DELETE FROM user_follows WHERE follower_id = ? OR followee_id = ?').run(userId, userId);
+      this.db.prepare('DELETE FROM room_blocks WHERE user_id = ?').run(userId);
+      this.db.prepare('DELETE FROM community_user_blocks WHERE blocker_id = ? OR blocked_id = ?').run(userId, userId);
+      this.db.prepare('DELETE FROM room_members WHERE user_id = ?').run(userId);
+      this.db.prepare(`DELETE FROM moderation_reports WHERE json_extract(payload_json, '$.reporterId') = ?`).run(userId);
+      this.db.prepare('DELETE FROM users WHERE id = ?').run(userId);
+      this.db.exec('COMMIT');
+    } catch (e) {
+      this.db.exec('ROLLBACK');
+      throw e;
+    }
   }
 }

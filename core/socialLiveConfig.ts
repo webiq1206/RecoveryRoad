@@ -1,18 +1,30 @@
 /**
  * Live social / community backend configuration.
  *
- * When `EXPO_PUBLIC_LIVE_SOCIAL_API_URL` is set to an HTTPS URL, Recovery Rooms and related APIs
- * use the real backend (see `services/liveSocialClient.ts` and `docs/LIVE_SOCIAL.md`).
+ * Release builds require **`https://` `EXPO_PUBLIC_LIVE_SOCIAL_API_URL`** plus
+ * **`EXPO_PUBLIC_COMMUNITY_ENABLED=true|1|on`** for live UGC (`isCommunityEnabled()`).
  *
- * Store / production builds without that URL must not expose incomplete “community” UX
- * (empty rooms, offline placeholders). Use `isCommunityEnabled` and `arePeerPracticeFeaturesEnabled`.
+ * Dev bundles may use `http://` for LAN testing. See `docs/LIVE_SOCIAL.md`.
  */
 
 declare const __DEV__: boolean;
 
-export function getLiveSocialApiBaseUrl(): string {
+function readLiveSocialApiUrlRaw(): string {
   const raw = process.env.EXPO_PUBLIC_LIVE_SOCIAL_API_URL?.trim();
   return raw && /^https?:\/\//i.test(raw) ? raw.replace(/\/+$/, '') : '';
+}
+
+/**
+ * Base URL for the live social API. Release binaries (`!__DEV__`) only accept **https** origins.
+ */
+export function getLiveSocialApiBaseUrl(): string {
+  const base = readLiveSocialApiUrlRaw();
+  if (!base) return '';
+  const isRelease = typeof __DEV__ !== 'undefined' && !__DEV__;
+  if (isRelease && !base.toLowerCase().startsWith('https://')) {
+    return '';
+  }
+  return base;
 }
 
 export function isLiveSocialMode(): boolean {
@@ -20,13 +32,21 @@ export function isLiveSocialMode(): boolean {
 }
 
 /**
- * Explicit kill-switch for emergency store builds (optional). Set `EXPO_PUBLIC_COMMUNITY_ENABLED=false`
- * to hide all community / recovery-room surfaces even if an API URL is present.
+ * Live community / recovery rooms. **Release builds** require an explicit opt-in flag
+ * (`EXPO_PUBLIC_COMMUNITY_ENABLED=true|1|on`) plus a configured **https** API URL, so store
+ * binaries never accidentally ship partial social features.
+ *
+ * Set `EXPO_PUBLIC_COMMUNITY_ENABLED=false` to force-disable even when a URL is present.
  */
 export function isCommunityEnabled(): boolean {
   const v = process.env.EXPO_PUBLIC_COMMUNITY_ENABLED?.trim().toLowerCase();
   if (v === '0' || v === 'false' || v === 'off') return false;
-  return isLiveSocialMode();
+  if (!isLiveSocialMode()) return false;
+  const isRelease = typeof __DEV__ !== 'undefined' && !__DEV__;
+  if (isRelease) {
+    return v === 'true' || v === '1' || v === 'on';
+  }
+  return true;
 }
 
 /**

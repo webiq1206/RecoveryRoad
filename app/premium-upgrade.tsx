@@ -366,11 +366,8 @@ export default function PremiumUpgradeScreen() {
                 if (msg === 'PURCHASE_CANCELLED') {
                   return;
                 }
-                console.log('Store purchase failed:', error);
-                Alert.alert(
-                  'Purchase did not complete',
-                  'Check your connection and try again, or tap Restore purchases if you already bought Premium with this store account.',
-                );
+                if (__DEV__) console.log('Store purchase failed:', error);
+                Alert.alert('Purchase did not complete', msg);
               },
             });
           },

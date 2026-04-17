@@ -73,13 +73,17 @@ export function getSocialPresentationMode(): SocialPresentationMode {
 
 /**
  * Recovery Rooms, Connect “Peers/Rooms” tabs, community guidelines entry points, and premium
- * marketing for `recovery_rooms` are enabled only when:
+ * marketing for `recovery_rooms` are enabled when:
  * - Live social is configured (`isCommunityEnabled()`), or
+ * - The app is running under the Metro / dev client (`__DEV__`), so Connect Peers/Rooms are always
+ *   available while developing without extra env, or
  * - A local engineer demo is explicitly allowed (dev bundle + `EXPO_PUBLIC_ALLOW_LOCAL_SOCIAL_DEMO` not `false`).
  *
- * Release App Store builds without `EXPO_PUBLIC_LIVE_SOCIAL_API_URL` → false (State A: fully hidden).
+ * **Release** store builds (`!__DEV__`) without live social still resolve to “State A” (hidden) unless
+ * `EXPO_PUBLIC_ALLOW_LOCAL_SOCIAL_DEMO` is not `false` (unusual for production).
  */
 export function arePeerPracticeFeaturesEnabled(): boolean {
   if (isCommunityEnabled()) return true;
+  if (typeof __DEV__ === 'boolean' && __DEV__) return true;
   return isLocalSocialDemoEnabled();
 }

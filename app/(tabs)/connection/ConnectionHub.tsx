@@ -874,6 +874,12 @@ export default function ConnectionScreen() {
     <Animated.View style={[styles.container, { opacity: fadeAnim }]}>
       <View style={styles.headerArea}>
         <Text style={styles.headerWarmText}>You are not alone</Text>
+        {!peerPracticeEnabled ? (
+          <Text style={styles.headerHint}>
+            Peers and Rooms appear when live social is enabled for this build, or when local demo is
+            allowed. This store-style build is showing Circle only.
+          </Text>
+        ) : null}
       </View>
 
       <View style={styles.tabRow}>
@@ -1051,6 +1057,14 @@ const styles = StyleSheet.create({
     fontWeight: '500' as const,
     textAlign: 'center',
     letterSpacing: 0.5,
+  },
+  headerHint: {
+    marginTop: 8,
+    fontSize: 11,
+    lineHeight: 16,
+    color: Colors.textMuted,
+    textAlign: 'center',
+    paddingHorizontal: 12,
   },
   tabRow: {
     flexDirection: 'row',

@@ -754,7 +754,7 @@ function buildRiskWarnings(input: WizardEngineInput): string[] {
 
   if (input.relapseRisk === 'high' || input.relapseRisk === 'elevated') {
     warnings.push(
-      'Your answers suggest a rough patch. Today is a good day to lean on support people and crisis tools a little earlier.',
+      'Your check-in answers suggest a rough patch. Today is a good day to lean on support people and crisis tools a little earlier.',
     );
   }
   if (input.missedEngagementScore >= 50) {

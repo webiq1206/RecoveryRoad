@@ -7,14 +7,11 @@ import {
   Dimensions,
   Pressable,
   TouchableOpacity,
-  Modal,
 } from 'react-native';
 import { ScreenScrollView } from '../../../components/ScreenScrollView';
 import {
   Clock,
-  TrendingUp,
   Shield,
-  Zap,
   Brain,
   Sparkles,
   ChevronUp,
@@ -23,7 +20,6 @@ import {
   Activity,
   ChevronRight,
   BarChart3,
-  Eye,
   AlertTriangle,
   Moon,
   Sun,
@@ -48,13 +44,9 @@ import Colors from '../../../constants/colors';
 import { useUser } from '../../../core/domains/useUser';
 import { useCheckin } from '../../../core/domains/useCheckin';
 import { useAppStore } from '../../../stores/useAppStore';
-import { useRelapse } from '../../../core/domains/useRelapse';
 import { usePledges } from '../../../core/domains/usePledges';
-import { useRebuild } from '../../../core/domains/useRebuild';
 import { useSubscription } from '../../../providers/SubscriptionProvider';
-import { useRiskPrediction } from '../../../providers/RiskPredictionProvider';
 import { PremiumSectionOverlay } from '../../../components/PremiumGate';
-import { getStabilityPhrase, getMoodPhrase, getCravingsPhrase } from '../../../constants/emotionalRisk';
 import { MILESTONE_DATA, MOOD_EMOJIS, MOOD_LABELS } from '../../../constants/milestones';
 import {
   buildProgressStabilitySeries,
@@ -121,18 +113,6 @@ function formatCumulativeHours(hours: number): string {
     minimumFractionDigits: 0,
   });
   return `${s} ${rounded === 1 ? 'hour' : 'hours'}`;
-}
-
-function computeTrend(values: number[]): 'up' | 'down' | 'stable' {
-  if (values.length < 2) return 'stable';
-  const recent = values.slice(0, Math.min(3, values.length));
-  const older = values.slice(Math.min(3, values.length), Math.min(7, values.length));
-  if (older.length === 0) return 'stable';
-  const recentAvg = recent.reduce((a, b) => a + b, 0) / recent.length;
-  const olderAvg = older.reduce((a, b) => a + b, 0) / older.length;
-  const diff = recentAvg - olderAvg;
-  if (Math.abs(diff) < 3) return 'stable';
-  return diff > 0 ? 'up' : 'down';
 }
 
 const TRIGGER_DAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
@@ -288,13 +268,9 @@ function ProgressStabilityChartCard({
 function StabilityTimelineScreen() {
   const router = useRouter();
   const { pledges } = usePledges();
-  const { rebuildData } = useRebuild();
   const { profile, daysSober } = useUser();
   const { checkIns, todayCheckIns: sliceTodayCheckIns } = useCheckin();
   const centralDailyCheckIns = useAppStore((s) => s.dailyCheckIns);
-  const centralProgress = useAppStore((s) => s.progress);
-  const { timelineEvents } = useRelapse();
-  const { trendLabel: riskTrendLabel, timeOfDayRisk } = useRiskPrediction();
   const { stability, relapseRisk } = useTodayHub();
 
   const sourceCheckIns = useMemo(
@@ -343,7 +319,6 @@ function StabilityTimelineScreen() {
   const [dailyStabilityExpanded, setDailyStabilityExpanded] = useState<boolean>(true);
   const [progressTailExpanded, setProgressTailExpanded] = useState<boolean>(false);
   const [savingsExpanded, setSavingsExpanded] = useState<boolean>(false);
-  const [selectedMomentumMetric, setSelectedMomentumMetric] = useState<null | 'change' | 'plans' | 'crisis' | 'setbacks'>(null);
 
   useFocusEffect(
     useCallback(() => {
@@ -429,66 +404,6 @@ function StabilityTimelineScreen() {
     [sourceCheckIns],
   );
 
-  const dailyPlansCompleted = useMemo(() => {
-    const today = new Date();
-    let count = 0;
-    for (let i = 0; i < 30; i++) {
-      const d = new Date(today);
-      d.setDate(d.getDate() - (29 - i));
-      const dateStr = d.toISOString().split('T')[0];
-      const hasCheckIn = sourceCheckIns.some(c => c.date === dateStr);
-      const hasPledge = pledges.some(p => p.date === dateStr);
-      if (hasCheckIn || hasPledge) count++;
-    }
-    return count;
-  }, [sourceCheckIns, pledges]);
-
-  const relapseCount = centralProgress.relapseCount ?? (profile.recoveryProfile?.relapseCount ?? 0);
-  const crisisActivationsCount = useMemo(() => {
-    return timelineEvents.filter((e) => e.type === 'crisis_activation').length;
-  }, [timelineEvents]);
-
-  const sevenDayChange = useMemo(() => {
-    const scores = [...sourceCheckIns].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()).slice(0, 7).map(c => c.stabilityScore);
-    if (scores.length < 2) return 0;
-    const recent = scores.slice(0, 3).reduce((a, b) => a + b, 0) / Math.min(3, scores.length);
-    const older = scores.slice(3, 7);
-    if (older.length === 0) return 0;
-    const olderAvg = older.reduce((a, b) => a + b, 0) / older.length;
-    return Math.round(recent - olderAvg);
-  }, [sourceCheckIns]);
-
-  const weeklyPlansCompleted = useMemo(() => {
-    const today = new Date();
-    let count = 0;
-    for (let i = 0; i < 7; i++) {
-      const d = new Date(today);
-      d.setDate(d.getDate() - (6 - i));
-      const dateStr = d.toISOString().split('T')[0];
-      if (sourceCheckIns.some(c => c.date === dateStr) || pledges.some(p => p.date === dateStr)) count++;
-    }
-    return count;
-  }, [sourceCheckIns, pledges]);
-
-  const rebuildActionsCount = useMemo(() => rebuildData.habits.reduce((s, h) => s + (h.streak || 0), 0), [rebuildData.habits]);
-
-  const consistentCheckInDays = useMemo(() => {
-    const today = new Date();
-    let streak = 0;
-    for (let i = 0; i < 365; i++) {
-      const d = new Date(today);
-      d.setDate(d.getDate() - i);
-      const dateStr = d.toISOString().split('T')[0];
-      const has = sourceCheckIns.some(c => c.date === dateStr) || pledges.some(p => p.date === dateStr);
-      if (has) streak++;
-      else break;
-    }
-    return streak;
-  }, [sourceCheckIns, pledges]);
-
-  const badge7CheckIns = consistentCheckInDays >= 7;
-  const badge14NoCrisis = consistentCheckInDays >= 14 || crisisActivationsCount === 0;
-  const badge10Rebuild = rebuildActionsCount >= 10;
   const nextMilestone = useMemo(() => MILESTONE_DATA.find(m => m.days > daysSober), [daysSober]);
   const unlockedCount = useMemo(() => MILESTONE_DATA.filter(m => m.days <= daysSober).length, [daysSober]);
 
@@ -510,148 +425,12 @@ function StabilityTimelineScreen() {
     };
   }, [daysSober, profile.timeSpentDaily, profile.dailySavings]);
 
-  const weeklyInsights = useMemo(() => {
-    const today = new Date();
-    const start = new Date(today);
-    start.setDate(start.getDate() - 6);
-    const startStr = start.toISOString().split('T')[0];
-    const endStr = today.toISOString().split('T')[0];
-
-    const recentCheckIns = sourceCheckIns
-      .filter(c => c.date >= startStr && c.date <= endStr)
-      .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
-
-    const stabilityValues = recentCheckIns.map(c => c.stabilityScore);
-    const stabilityTrend = stabilityValues.length > 0 ? computeTrend(stabilityValues) : 'stable';
-
-    const weeklyPledges = pledges.filter(p => p.date >= startStr && p.date <= endStr);
-    const completedActions = recentCheckIns.length + weeklyPledges.length;
-
-    const tagCounts: Record<string, number> = {};
-    for (const ci of recentCheckIns) {
-      if (!ci.emotionalTags) continue;
-      for (const tag of ci.emotionalTags) {
-        tagCounts[tag] = (tagCounts[tag] || 0) + 1;
-      }
-    }
-
-    let topEmotionTag: string | null = null;
-    let topEmotionCount = 0;
-    for (const [tag, count] of Object.entries(tagCounts)) {
-      if (count > topEmotionCount) {
-        topEmotionTag = tag;
-        topEmotionCount = count;
-      }
-    }
-
-    const emotionLabel = topEmotionTag
-      ? topEmotionTag === 'anxious'
-        ? 'anxiety'
-        : topEmotionTag === 'lonely'
-          ? 'loneliness'
-          : topEmotionTag === 'ashamed'
-            ? 'shame'
-            : topEmotionTag === 'angry'
-              ? 'anger'
-              : topEmotionTag === 'hopeful'
-                ? 'hope'
-                : 'feeling numb'
-      : null;
-    const riskEmotionLabel = topEmotionTag && topEmotionTag !== 'hopeful' ? emotionLabel : null;
-
-    const period = timeOfDayRisk?.highRiskPeriod;
-    const periodLabel =
-      period === 'night'
-        ? 'late nights'
-        : period === 'evening'
-          ? 'evenings'
-          : period === 'afternoon'
-            ? 'afternoons'
-            : period === 'morning'
-              ? 'mornings'
-              : null;
-
-    const stabilitySentence =
-      stabilityTrend === 'up'
-        ? 'Your stability improved this week.'
-        : stabilityTrend === 'down'
-          ? 'Your stability dipped this week - that awareness matters.'
-          : 'Your stability held fairly steady this week.';
-
-    let triggerSentence = '';
-    if (riskEmotionLabel && periodLabel) {
-      triggerSentence = `${riskEmotionLabel.charAt(0).toUpperCase() + riskEmotionLabel.slice(1)} and ${periodLabel} were your most common triggers.`;
-    } else if (riskEmotionLabel) {
-      triggerSentence = `${riskEmotionLabel.charAt(0).toUpperCase() + riskEmotionLabel.slice(1)} was your most common trigger.`;
-    } else if (periodLabel) {
-      triggerSentence = `${periodLabel.charAt(0).toUpperCase() + periodLabel.slice(1)} were your most vulnerable times.`;
-    } else {
-      triggerSentence = 'You did not record clear trigger patterns yet - keep logging check-ins.';
-    }
-
-    const riskSentence =
-      riskTrendLabel && riskTrendLabel.length > 0
-        ? `Relapse risk was ${riskTrendLabel.toLowerCase().trim()} overall.`
-        : '';
-
-    const actionsSentence =
-      completedActions > 0
-        ? `You completed ${completedActions} recovery actions.`
-        : 'You can strengthen next week by completing a few small recovery actions.';
-
-    const narrativeParts = [stabilitySentence, triggerSentence, riskSentence, actionsSentence].filter(Boolean);
-
-    return {
-      stabilityTrend,
-      relapseRiskTrendLabel: riskTrendLabel || 'Stable',
-      topEmotionTrigger: emotionLabel,
-      highRiskTimeLabel: periodLabel,
-      completedActions,
-      narrative: narrativeParts.join(' '),
-    };
-  }, [sourceCheckIns, pledges, timeOfDayRisk, riskTrendLabel]);
-
   const planCompletedSet = useMemo(() => {
     const set = new Set<string>();
     sourceCheckIns.forEach(c => set.add(c.date));
     pledges.forEach(p => set.add(p.date));
     return set;
   }, [sourceCheckIns, pledges]);
-
-  const uniqueCheckInDays = useMemo(() => {
-    return new Set(sourceCheckIns.map((c) => c.date)).size;
-  }, [sourceCheckIns]);
-
-  const momentumDetails = useMemo(() => {
-    const sortedRecent = [...sourceCheckIns].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
-    const recentScores = sortedRecent.slice(0, 7).map(c => c.stabilityScore);
-    const recentBucket = recentScores.slice(0, 3);
-    const olderBucket = recentScores.slice(3, 7);
-    const recentAvg = recentBucket.length > 0 ? recentBucket.reduce((a, b) => a + b, 0) / recentBucket.length : null;
-    const olderAvg = olderBucket.length > 0 ? olderBucket.reduce((a, b) => a + b, 0) / olderBucket.length : null;
-    const weeklyCheckInDays = new Set<string>();
-    const weeklyPledgeDays = new Set<string>();
-    const today = new Date();
-    for (let i = 0; i < 7; i++) {
-      const d = new Date(today);
-      d.setDate(d.getDate() - (6 - i));
-      const dateStr = d.toISOString().split('T')[0];
-      if (sourceCheckIns.some(c => c.date === dateStr)) weeklyCheckInDays.add(dateStr);
-      if (pledges.some(p => p.date === dateStr)) weeklyPledgeDays.add(dateStr);
-    }
-    const crisisEvents = timelineEvents.filter((e) => e.type === 'crisis_activation');
-    return {
-      changeText:
-        recentAvg != null && olderAvg != null
-          ? `Based on ${recentBucket.length} recent check-ins (avg ${Math.round(recentAvg)}) compared with ${olderBucket.length} older check-ins (avg ${Math.round(olderAvg)}).`
-          : 'Not enough check-ins yet to compare recent and older periods.',
-      plansText: `${weeklyCheckInDays.size} days with check-ins + ${weeklyPledgeDays.size} days with pledges over the last 7 days (unique days total: ${weeklyPlansCompleted}).`,
-      crisisText: `${crisisEvents.length} total crisis activation events recorded in your timeline.`,
-      setbacksText: `${relapseCount} total setbacks recorded in your profile progress.`,
-    };
-  }, [sourceCheckIns, pledges, timelineEvents, weeklyPlansCompleted, relapseCount]);
-
-  const isEarlyDays = uniqueCheckInDays < 7;
 
   const latestScore = useMemo(() => {
     if (sourceCheckIns.length === 0) return 50;
@@ -661,9 +440,8 @@ function StabilityTimelineScreen() {
     return sorted[0].stabilityScore;
   }, [sourceCheckIns]);
 
-  if (isEarlyDays) {
-    return (
-      <ScreenScrollView
+  return (
+    <ScreenScrollView
         style={styles.container}
         contentContainerStyle={styles.content}
         showsVerticalScrollIndicator={false}
@@ -980,415 +758,6 @@ function StabilityTimelineScreen() {
           </Pressable>
         </View>
       </ScreenScrollView>
-    );
-  }
-
-  return (
-    <ScreenScrollView
-      style={styles.container}
-      contentContainerStyle={styles.content}
-      showsVerticalScrollIndicator={false}
-      testID="stability-timeline-screen"
-    >
-      {/* Status header */}
-      <View style={earlyStyles.statusHeader}>
-        <Text style={earlyStyles.statusLabel}>
-          Your stability is{' '}
-          <Text style={{ color: Colors.primary }}>
-            {getStabilityStatusLabel(latestScore)}
-          </Text>
-        </Text>
-      </View>
-
-      <View style={styles.taglineCard}>
-        <Text style={styles.tagline}>You are building stability.</Text>
-      </View>
-
-      <View style={styles.summaryCard}>
-        <Text style={styles.summaryTitle}>Weekly Recovery Insights</Text>
-        <Text style={styles.summaryLabel}>{weeklyInsights.narrative}</Text>
-      </View>
-
-      <View style={earlyStyles.dailyStabilitySection}>
-        <Pressable
-          style={({ pressed }) => [
-            earlyStyles.dailyStabilityHeader,
-            pressed && earlyStyles.dailyStabilityHeaderPressed,
-          ]}
-          onPress={() => {
-            Haptics.selectionAsync();
-            setDailyStabilityExpanded((e) => !e);
-          }}
-          accessibilityRole="button"
-          accessibilityState={{ expanded: dailyStabilityExpanded }}
-          accessibilityLabel="Your Daily Stability"
-          testID="progress-daily-stability-toggle"
-        >
-          <View style={earlyStyles.tealHeaderInner}>
-            <View style={earlyStyles.tealHeaderIconWrap}>
-              <Activity size={20} color={Colors.white} />
-            </View>
-            <View style={earlyStyles.tealHeaderTextBlock}>
-              <Text style={earlyStyles.dailyStabilityHeaderTitle}>Your Daily Stability</Text>
-              <Text style={earlyStyles.tealHeaderSubtitle}>7, 14, 30 day rolling stability</Text>
-            </View>
-          </View>
-          {dailyStabilityExpanded ? (
-            <ChevronUp size={20} color={Colors.white} />
-          ) : (
-            <ChevronDown size={20} color={Colors.white} />
-          )}
-        </Pressable>
-
-        {dailyStabilityExpanded ? (
-          <View>
-            <ProgressStabilityChartCard
-              windowDays={stabilityWindowDays}
-              onChangeWindow={setStabilityWindowDays}
-              title="Mornings"
-              showSectionLabel={false}
-              dates={stabilitySeries.dates}
-              scores={stabilitySeries.scores}
-              pointCount={stabilityPointCount}
-              planCompletedSet={planCompletedSet}
-              currentScore={todayMorningScore}
-              lineColor={Colors.primary}
-              emptyTimeLabel="morning"
-            />
-            <ProgressStabilityChartCard
-              windowDays={stabilityWindowDays}
-              onChangeWindow={setStabilityWindowDays}
-              title="Afternoons"
-              showSectionLabel={false}
-              dates={afternoonStabilitySeries.dates}
-              scores={afternoonStabilitySeries.scores}
-              pointCount={afternoonStabilityPointCount}
-              planCompletedSet={planCompletedSet}
-              currentScore={todayAfternoonScore}
-              lineColor="#FF9800"
-              trendLineColor="rgba(255, 152, 0, 0.55)"
-              emptyTimeLabel="afternoon"
-            />
-            <ProgressStabilityChartCard
-              windowDays={stabilityWindowDays}
-              onChangeWindow={setStabilityWindowDays}
-              title="Evenings"
-              showSectionLabel={false}
-              dates={eveningStabilitySeries.dates}
-              scores={eveningStabilitySeries.scores}
-              pointCount={eveningStabilityPointCount}
-              planCompletedSet={planCompletedSet}
-              currentScore={todayEveningScore}
-              lineColor="#EF5350"
-              trendLineColor="rgba(239, 83, 80, 0.55)"
-              emptyTimeLabel="evening"
-            />
-            <ProgressStabilityChartCard
-              windowDays={stabilityWindowDays}
-              onChangeWindow={setStabilityWindowDays}
-              title="Daily Average"
-              showSectionLabel={false}
-              dates={dailyAverageStabilitySeries.dates}
-              scores={dailyAverageStabilitySeries.scores}
-              pointCount={dailyAveragePointCount}
-              planCompletedSet={planCompletedSet}
-              currentScore={todayDailyAverageScore}
-              lineColor="#0D47A1"
-              trendLineColor="rgba(13, 71, 161, 0.55)"
-              emptyTimeLabel="Morning, afternoon, or evening"
-            />
-          </View>
-        ) : null}
-      </View>
-
-      <View style={styles.momentumCard}>
-        <Text style={styles.momentumTitle}>Momentum summary</Text>
-        <View style={styles.momentumRow}>
-          <Pressable style={({ pressed }) => [styles.momentumItem, pressed && styles.momentumItemPressed]} onPress={() => setSelectedMomentumMetric('change')}>
-            <Text style={styles.momentumValue}>{sevenDayChange >= 0 ? '+' : ''}{sevenDayChange}</Text>
-            <Text style={styles.momentumLabel}>7-day change</Text>
-          </Pressable>
-          <View style={styles.momentumDivider} />
-          <Pressable style={({ pressed }) => [styles.momentumItem, pressed && styles.momentumItemPressed]} onPress={() => setSelectedMomentumMetric('plans')}>
-            <Text style={styles.momentumValue}>{weeklyPlansCompleted}</Text>
-            <Text style={styles.momentumLabel}>Weekly plans completed</Text>
-          </Pressable>
-        </View>
-        <View style={styles.momentumRow}>
-          <Pressable style={({ pressed }) => [styles.momentumItem, pressed && styles.momentumItemPressed]} onPress={() => setSelectedMomentumMetric('crisis')}>
-            <Text style={styles.momentumValue}>{crisisActivationsCount}</Text>
-            <Text style={styles.momentumLabel}>Crisis activations</Text>
-          </Pressable>
-          <View style={styles.momentumDivider} />
-          <Pressable style={({ pressed }) => [styles.momentumItem, pressed && styles.momentumItemPressed]} onPress={() => setSelectedMomentumMetric('setbacks')}>
-            <Text style={styles.momentumValue}>{relapseCount}</Text>
-            <Text style={styles.momentumLabel}>Setbacks (total)</Text>
-          </Pressable>
-        </View>
-      </View>
-
-      <Pressable
-        style={styles.detectionLink}
-        onPress={() => { Haptics.selectionAsync(); router.push('/relapse-detection' as any); }}
-        testID="timeline-relapse-detection-link"
-      >
-        <View style={styles.detectionLinkLeft}>
-          <View style={styles.detectionLinkIcon}>
-            <Eye size={16} color={Colors.primary} />
-          </View>
-          <View>
-            <Text style={styles.detectionLinkTitle}>View wellness signals</Text>
-            <Text style={styles.detectionLinkSub}>Patterns and early support</Text>
-          </View>
-        </View>
-        <ChevronRight size={16} color={Colors.textMuted} />
-      </Pressable>
-
-      <Pressable
-        style={styles.detectionLink}
-        onPress={() => { Haptics.selectionAsync(); router.push('/retention-insights' as any); }}
-        testID="timeline-retention-insights-link"
-      >
-        <View style={styles.detectionLinkLeft}>
-          <View style={styles.detectionLinkIcon}>
-            <TrendingUp size={16} color={Colors.primary} />
-          </View>
-          <View>
-            <Text style={styles.detectionLinkTitle}>Your Recovery Journey</Text>
-            <Text style={styles.detectionLinkSub}>Engagement and long-term recovery signals</Text>
-          </View>
-        </View>
-        <ChevronRight size={16} color={Colors.textMuted} />
-      </Pressable>
-
-      <Modal
-        visible={selectedMomentumMetric !== null}
-        transparent
-        animationType="fade"
-        onRequestClose={() => setSelectedMomentumMetric(null)}
-      >
-        <Pressable style={styles.momentumModalBackdrop} onPress={() => setSelectedMomentumMetric(null)}>
-          <Pressable style={styles.momentumModalCard} onPress={() => {}}>
-            <Text style={styles.momentumModalTitle}>
-              {selectedMomentumMetric === 'change'
-                ? '7-day change'
-                : selectedMomentumMetric === 'plans'
-                  ? 'Weekly plans completed'
-                  : selectedMomentumMetric === 'crisis'
-                    ? 'Crisis activations'
-                    : 'Setbacks (total)'}
-            </Text>
-            <Text style={styles.momentumModalBody}>
-              {selectedMomentumMetric === 'change'
-                ? momentumDetails.changeText
-                : selectedMomentumMetric === 'plans'
-                  ? momentumDetails.plansText
-                  : selectedMomentumMetric === 'crisis'
-                    ? momentumDetails.crisisText
-                    : momentumDetails.setbacksText}
-            </Text>
-            <Pressable style={styles.momentumModalClose} onPress={() => setSelectedMomentumMetric(null)}>
-              <Text style={styles.momentumModalCloseText}>Close</Text>
-            </Pressable>
-          </Pressable>
-        </Pressable>
-      </Modal>
-
-      <View style={styles.badgesCard}>
-        <Text style={styles.badgesTitle}>Milestones</Text>
-        <View style={styles.badgeRow}>
-          <View style={[styles.badgeIcon, badge7CheckIns && styles.badgeUnlocked]}>
-            <Activity size={20} color={badge7CheckIns ? '#4CAF50' : Colors.textMuted} />
-          </View>
-          <Text style={styles.badgeLabel}>7 days consistent check-ins</Text>
-          {badge7CheckIns ? <Text style={styles.badgeDone}>Done</Text> : <Text style={styles.badgeCount}>{consistentCheckInDays}/7</Text>}
-        </View>
-        <View style={styles.badgeRow}>
-          <View style={[styles.badgeIcon, badge14NoCrisis && styles.badgeUnlocked]}>
-            <Shield size={20} color={badge14NoCrisis ? '#4CAF50' : Colors.textMuted} />
-          </View>
-          <Text style={styles.badgeLabel}>14 days without crisis activation</Text>
-          {badge14NoCrisis ? <Text style={styles.badgeDone}>Done</Text> : <Text style={styles.badgeCount}>Building</Text>}
-        </View>
-        <View style={styles.badgeRow}>
-          <View style={[styles.badgeIcon, badge10Rebuild && styles.badgeUnlocked]}>
-            <Zap size={20} color={badge10Rebuild ? '#4CAF50' : Colors.textMuted} />
-          </View>
-          <Text style={styles.badgeLabel}>10 rebuild actions completed</Text>
-          {badge10Rebuild ? <Text style={styles.badgeDone}>Done</Text> : <Text style={styles.badgeCount}>{rebuildActionsCount}/10</Text>}
-        </View>
-      </View>
-
-      <View style={earlyStyles.progressTailSection}>
-        <Pressable
-          style={({ pressed }) => [
-            earlyStyles.progressTailHeader,
-            pressed && earlyStyles.progressTailHeaderPressed,
-          ]}
-          onPress={() => {
-            Haptics.selectionAsync();
-            setProgressTailExpanded((e) => !e);
-          }}
-          accessibilityRole="button"
-          accessibilityState={{ expanded: progressTailExpanded }}
-          accessibilityLabel="Milestones"
-          testID="progress-milestones-tail-toggle"
-        >
-          <View style={earlyStyles.tealHeaderInner}>
-            <View style={earlyStyles.tealHeaderIconWrap}>
-              <Trophy size={20} color={Colors.white} />
-            </View>
-            <View style={earlyStyles.tealHeaderTextBlock}>
-              <Text style={earlyStyles.dailyStabilityHeaderTitle}>Milestones</Text>
-              <Text style={earlyStyles.tealHeaderSubtitle}>Follow your accomplishments</Text>
-            </View>
-          </View>
-          {progressTailExpanded ? (
-            <ChevronUp size={20} color={Colors.white} />
-          ) : (
-            <ChevronDown size={20} color={Colors.white} />
-          )}
-        </Pressable>
-
-        {progressTailExpanded ? (
-          <View style={[styles.milestonesSection, styles.milestonesSectionInTail]}>
-            <View style={styles.milestonesSectionHeader}>
-              <View style={styles.milestonesTitleRow}>
-                <Trophy size={18} color={Colors.primary} />
-                <Text style={styles.milestonesSectionTitle}>Milestones</Text>
-              </View>
-              <Text style={styles.milestonesSubtitle}>
-                {unlockedCount}/{MILESTONE_DATA.length} unlocked
-                {nextMilestone ? ` · ${nextMilestone.days - daysSober}d to next` : ''}
-              </Text>
-            </View>
-
-            {(milestonesExpanded ? MILESTONE_DATA : MILESTONE_DATA.slice(0, 4)).map((milestone, index, arr) => {
-              const unlocked = daysSober >= milestone.days;
-              const IconComponent = ICON_MAP[milestone.icon] ?? Star;
-              const progress = unlocked ? 1 : Math.min(daysSober / milestone.days, 1);
-              return (
-                <View key={milestone.days} style={styles.msCard} testID={`progress-milestone-${milestone.days}`}>
-                  <View style={styles.msLeft}>
-                    <View style={[styles.msIconContainer, unlocked ? styles.msIconUnlocked : styles.msIconLocked]}>
-                      {unlocked ? <IconComponent size={18} color={Colors.white} /> : <Lock size={14} color={Colors.textMuted} />}
-                    </View>
-                    {index < arr.length - 1 && (
-                      <View style={[styles.msConnector, unlocked && styles.msConnectorUnlocked]} />
-                    )}
-                  </View>
-                  <View style={styles.msRight}>
-                    <View style={styles.msHeader}>
-                      <Text style={[styles.msTitle, !unlocked && styles.msTextLocked]}>{milestone.title}</Text>
-                      <Text style={[styles.msDays, unlocked && styles.msDaysUnlocked]}>{milestone.days}d</Text>
-                    </View>
-                    <Text style={[styles.msDesc, !unlocked && styles.msTextLocked]} numberOfLines={2}>
-                      {milestone.description}
-                    </Text>
-                    {!unlocked && (
-                      <View style={styles.msProgressContainer}>
-                        <View style={styles.msProgressBg}>
-                          <View style={[styles.msProgressFill, { width: `${progress * 100}%` }]} />
-                        </View>
-                      </View>
-                    )}
-                    {unlocked && <Text style={styles.msUnlockedText}>Achieved</Text>}
-                  </View>
-                </View>
-              );
-            })}
-
-            <Pressable
-              style={styles.msToggle}
-              onPress={() => {
-                Haptics.selectionAsync();
-                setMilestonesExpanded(!milestonesExpanded);
-              }}
-              testID="progress-toggle-milestones"
-            >
-              {milestonesExpanded ? (
-                <ChevronUp size={16} color={Colors.primary} />
-              ) : (
-                <ChevronDown size={16} color={Colors.primary} />
-              )}
-              <Text style={styles.msToggleText}>
-                {milestonesExpanded ? 'Show Less' : `Show All ${MILESTONE_DATA.length} Milestones`}
-              </Text>
-            </Pressable>
-          </View>
-        ) : null}
-
-        <Pressable
-          style={({ pressed }) => [
-            earlyStyles.progressTailHeader,
-            pressed && earlyStyles.progressTailHeaderPressed,
-          ]}
-          onPress={() => {
-            Haptics.selectionAsync();
-            setSavingsExpanded((e) => !e);
-          }}
-          accessibilityRole="button"
-          accessibilityState={{ expanded: savingsExpanded }}
-          accessibilityLabel="Savings"
-          testID="progress-savings-toggle"
-        >
-          <View style={earlyStyles.tealHeaderInner}>
-            <View style={earlyStyles.tealHeaderIconWrap}>
-              <Shield size={20} color={Colors.white} />
-            </View>
-            <View style={earlyStyles.tealHeaderTextBlock}>
-              <Text style={earlyStyles.dailyStabilityHeaderTitle}>Savings</Text>
-              <Text style={earlyStyles.tealHeaderSubtitle}>Time and money</Text>
-            </View>
-          </View>
-          {savingsExpanded ? (
-            <ChevronUp size={20} color={Colors.white} />
-          ) : (
-            <ChevronDown size={20} color={Colors.white} />
-          )}
-        </Pressable>
-
-        {savingsExpanded ? (
-          <View style={styles.savingsExpandBody}>
-            <Text style={styles.savingsExpandLine}>
-              <Text style={styles.savingsExpandLabel}>Time: </Text>
-              <Text style={styles.savingsExpandValue}>{savingsToDateLabels.time}</Text>
-            </Text>
-            <Text style={[styles.savingsExpandLine, styles.savingsExpandLineSecond]}>
-              <Text style={styles.savingsExpandLabel}>Money: </Text>
-              <Text style={styles.savingsExpandValue}>{savingsToDateLabels.money}</Text>
-            </Text>
-          </View>
-        ) : null}
-
-        <View style={{ height: 40 }} />
-      </View>
-
-      <View style={earlyStyles.dailyStabilitySection}>
-        <Pressable
-          style={({ pressed }) => [
-            earlyStyles.progressTailHeader,
-            pressed && earlyStyles.progressTailHeaderPressed,
-          ]}
-          onPress={() => {
-            Haptics.selectionAsync();
-            router.push('/advanced-analytics' as any);
-          }}
-          testID="progress-advanced-analytics-link"
-        >
-          <View style={earlyStyles.tealHeaderInner}>
-            <View style={earlyStyles.tealHeaderIconWrap}>
-              <BarChart3 size={20} color={Colors.white} />
-            </View>
-            <View style={earlyStyles.tealHeaderTextBlock}>
-              <Text style={earlyStyles.dailyStabilityHeaderTitle}>Advanced Analytics</Text>
-              <Text style={earlyStyles.tealHeaderSubtitle}>Stability improvement and risk warning</Text>
-            </View>
-          </View>
-          <ChevronRight size={20} color={Colors.white} />
-        </Pressable>
-      </View>
-    </ScreenScrollView>
   );
 }
 

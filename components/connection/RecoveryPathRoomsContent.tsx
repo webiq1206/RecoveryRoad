@@ -125,8 +125,9 @@ export function RecoveryPathRoomsContent({ testID }: RecoveryPathRoomsContentPro
   return (
     <View style={styles.inner} testID={testID}>
       <Text style={styles.lead}>
-        Each path has themed rooms with one ongoing conversation. Open a room to read and post in the same thread over
-        time.
+        Each recovery-path room below suggests topics relevant to where you are in your recovery journey. Feel free,
+        however, to tap and join any room to learn, read, post, support, connect, and grow with others who have
+        experienced, or are currently experiencing, a similar path to recovery as you.
       </Text>
       {RECOVERY_PATHS.map((path) => (
         <PathSection key={path.id} path={path} />

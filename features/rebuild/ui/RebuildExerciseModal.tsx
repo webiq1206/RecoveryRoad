@@ -4,6 +4,8 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { X } from 'lucide-react-native';
 
 import type { IdentityExercise, IdentityModule } from '../../../types';
+import { RebuildModalTopFrame } from './RebuildModalTopFrame';
+import { useRebuildModalMaxScrollHeight } from './useRebuildModalMaxScrollHeight';
 
 export function RebuildExerciseModal(props: {
   visible: boolean;
@@ -33,15 +35,20 @@ export function RebuildExerciseModal(props: {
   } = props;
 
   const insets = useSafeAreaInsets();
-  const scrollBottomPad = (Platform.OS === 'ios' ? 36 : 24) + insets.bottom;
+  const maxScrollH = useRebuildModalMaxScrollHeight();
+  const scrollBottomPad = (Platform.OS === 'ios' ? 24 : 16) + insets.bottom;
 
   return (
-    <Modal visible={visible} transparent animationType="slide">
-      <View style={styles.modalOverlay}>
+    <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
+      <RebuildModalTopFrame>
         <ScrollView
-          style={styles.modalScroll}
+          style={[styles.modalScroll, { maxHeight: maxScrollH }]}
           contentContainerStyle={[styles.modalScrollContent, { paddingBottom: scrollBottomPad }]}
           keyboardShouldPersistTaps="handled"
+          keyboardDismissMode="on-drag"
+          showsVerticalScrollIndicator
+          bounces={false}
+          automaticallyAdjustKeyboardInsets={Platform.OS === 'ios'}
         >
           <View style={styles.modalContent}>
             {activeExercise && (
@@ -84,8 +91,7 @@ export function RebuildExerciseModal(props: {
             )}
           </View>
         </ScrollView>
-      </View>
+      </RebuildModalTopFrame>
     </Modal>
   );
 }
-

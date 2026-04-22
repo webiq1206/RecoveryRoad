@@ -4,6 +4,8 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Plus, X } from 'lucide-react-native';
 
 import type { PurposeGoal } from '../../../types';
+import { RebuildModalTopFrame } from './RebuildModalTopFrame';
+import { useRebuildModalMaxScrollHeight } from './useRebuildModalMaxScrollHeight';
 
 export function RebuildAddGoalModal(props: {
   visible: boolean;
@@ -39,17 +41,21 @@ export function RebuildAddGoalModal(props: {
   } = props;
 
   const insets = useSafeAreaInsets();
-  const scrollBottomPad = (Platform.OS === 'ios' ? 36 : 24) + insets.bottom;
-
+  const maxScrollH = useRebuildModalMaxScrollHeight();
+  const scrollBottomPad = (Platform.OS === 'ios' ? 24 : 16) + insets.bottom;
   const canAdd = newGoalTitle.trim().length > 0;
 
   return (
-    <Modal visible={visible} transparent animationType="slide">
-      <View style={styles.modalOverlay}>
+    <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
+      <RebuildModalTopFrame>
         <ScrollView
-          style={styles.modalScroll}
+          style={[styles.modalScroll, { maxHeight: maxScrollH }]}
           contentContainerStyle={[styles.modalScrollContent, { paddingBottom: scrollBottomPad }]}
           keyboardShouldPersistTaps="handled"
+          keyboardDismissMode="on-drag"
+          showsVerticalScrollIndicator
+          bounces={false}
+          automaticallyAdjustKeyboardInsets={Platform.OS === 'ios'}
         >
           <View style={styles.modalContent}>
             <View style={styles.modalHeader}>
@@ -139,8 +145,7 @@ export function RebuildAddGoalModal(props: {
             </TouchableOpacity>
           </View>
         </ScrollView>
-      </View>
+      </RebuildModalTopFrame>
     </Modal>
   );
 }
-

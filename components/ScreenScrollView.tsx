@@ -29,6 +29,7 @@ export const ScreenScrollView = forwardRef<ScrollView, ScreenScrollViewProps>(fu
   const {
     showsVerticalScrollIndicator,
     keyboardShouldPersistTaps,
+    automaticallyAdjustKeyboardInsets: adjustKb,
     ...rest
   } = props;
 
@@ -37,7 +38,7 @@ export const ScreenScrollView = forwardRef<ScrollView, ScreenScrollViewProps>(fu
       ref={setRef}
       showsVerticalScrollIndicator={showsVerticalScrollIndicator ?? false}
       keyboardShouldPersistTaps={keyboardShouldPersistTaps ?? 'handled'}
-      automaticallyAdjustKeyboardInsets={Platform.OS === 'ios'}
+      automaticallyAdjustKeyboardInsets={adjustKb ?? Platform.OS === 'ios'}
       {...rest}
     />
   );

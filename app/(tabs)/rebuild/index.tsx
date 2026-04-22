@@ -1995,26 +1995,25 @@ const styles = StyleSheet.create({
     fontWeight: '600' as const,
     color: Colors.primary,
   },
+  /** @deprecated — Rebuild modals use RebuildModalTopFrame; kept for any legacy reference */
   modalOverlay: {
     flex: 1,
     backgroundColor: 'rgba(0,0,0,0.6)',
-    justifyContent: 'flex-end',
+    justifyContent: 'flex-start',
   },
+  /** Used with useRebuildModalMaxScrollHeight() maxHeight on the ScrollView */
   modalScroll: {
-    flex: 1,
-    marginTop: 80,
+    alignSelf: 'stretch',
   },
   modalScrollContent: {
-    flexGrow: 1,
-    justifyContent: 'flex-end',
+    flexGrow: 0,
+    paddingBottom: 4,
   },
   modalContent: {
     backgroundColor: Colors.cardBackground,
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
+    borderRadius: 20,
     padding: 20,
-    paddingBottom: Platform.OS === 'ios' ? 36 : 24,
-    maxHeight: Dimensions.get('window').height * 0.85,
+    paddingBottom: Platform.OS === 'ios' ? 28 : 20,
   },
   modalHeader: {
     flexDirection: 'row',

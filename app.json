@@ -5,12 +5,12 @@
     "slug": "recoveryroad",
     "version": "1.0.1",
     "orientation": "portrait",
-    "icon": "./assets/images/icon.png",
+    "icon": "./assets/images/appIcon.png",
     "scheme": "recoveryroad",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": false,
     "splash": {
-      "image": "./assets/images/splash-icon.png",
+      "image": "./assets/images/splashIcon.png",
       "resizeMode": "contain",
       "backgroundColor": "#ffffff"
     },
@@ -23,7 +23,7 @@
     },
     "android": {
       "adaptiveIcon": {
-        "foregroundImage": "./assets/images/adaptive-icon.png",
+        "foregroundImage": "./assets/images/adaptiveIcon.png",
         "backgroundColor": "#ffffff"
       },
       "package": "com.webiq.recoverycompanion",

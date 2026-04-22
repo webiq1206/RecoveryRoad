@@ -1,7 +1,7 @@
 {
   "name": "recoveryroad",
   "main": "expo-router/entry",
-  "version": "1.0.2",
+  "version": "1.0.1",
   "scripts": {
     "start": "node ./scripts/expo-start-lan-ip.mjs --lan",
     "start:clear": "node ./scripts/expo-start-lan-ip.mjs -c --lan",

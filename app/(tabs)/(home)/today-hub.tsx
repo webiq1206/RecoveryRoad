@@ -167,7 +167,11 @@ export default function TodayHubScreen() {
     return () => pulse.stop();
   }, [guidanceActions.length, dailyGuidance.isReentryMode, guidanceHeadingScale]);
 
-  const displayProfile = centralProfile ?? profile;
+  /** Merge app-store profile with recovery profile so local edits (e.g. sober date) match Profile. */
+  const displayProfile = useMemo(() => {
+    if (!centralProfile) return profile;
+    return { ...centralProfile, ...profile };
+  }, [centralProfile, profile]);
 
 
   const greetingLabel = (() => {

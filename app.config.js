@@ -3,8 +3,6 @@
  * Dynamic Expo config. Static fields live in `app.json`; this file only adjusts
  * values that must depend on compile-time environment (see Android cleartext below).
  */
-const appJson = require('./app.json');
-
 /**
  * Android `usesCleartextTraffic` (HTTP without TLS).
  *
@@ -29,9 +27,7 @@ function applyExpoBuildProperties(plugins) {
   });
 }
 
-module.exports = () => ({
-  expo: {
-    ...appJson.expo,
-    plugins: applyExpoBuildProperties(appJson.expo.plugins),
-  },
+module.exports = ({ config }) => ({
+  ...config,
+  plugins: applyExpoBuildProperties(config.plugins),
 });

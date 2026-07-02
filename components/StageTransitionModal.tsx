@@ -72,7 +72,12 @@ const StageTransitionModal = React.memo(({ visible, transition, stageConfigs, is
   const negativeSignals = transition.signals.filter(s => s.direction === 'negative');
 
   return (
-    <Modal visible={visible} transparent animationType="none" statusBarTranslucent>
+    <Modal
+      visible={visible}
+      transparent
+      animationType="none"
+      statusBarTranslucent={Platform.OS === 'ios'}
+    >
       <Animated.View style={[styles.overlay, { opacity: fadeAnim }]}>
         <Animated.View style={[styles.card, { transform: [{ translateY: slideAnim }, { scale: pulseAnim }] }]}>
           <Pressable style={styles.closeBtn} onPress={onDismiss} hitSlop={12}>

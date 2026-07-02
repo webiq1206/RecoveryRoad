@@ -4,6 +4,7 @@ import * as SplashScreen from "expo-splash-screen";
 import React, { useEffect, useCallback } from "react";
 import { ActivityIndicator, View } from "react-native";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
+import { SystemBars } from "react-native-edge-to-edge";
 import { ConnectionProvider } from "../providers/ConnectionProvider";
 import { RecoveryRoomsProvider } from "../providers/RecoveryRoomsProvider";
 import { SubscriptionProvider } from "../providers/SubscriptionProvider";
@@ -31,6 +32,7 @@ import {
   modalAnimationDuration,
 } from "../constants/theme";
 import { useShakeToCrisis } from "../hooks/useShakeToCrisis";
+import { usePhonePortraitLock } from "../hooks/usePhonePortraitLock";
 import { shouldEnableStrictIARedirects } from "../utils/legacyRoutes";
 import { logger } from "../utils/logger";
 
@@ -168,6 +170,8 @@ function SecuredApp() {
 }
 
 export default function RootLayout() {
+  usePhonePortraitLock();
+
   useEffect(() => {
     SplashScreen.hideAsync();
 
@@ -181,6 +185,7 @@ export default function RootLayout() {
   return (
     <QueryClientProvider client={queryClient}>
       <GestureHandlerRootView style={{ flex: 1 }}>
+        <SystemBars style="light" />
         <ErrorBoundary fallbackMessage="Something unexpected happened. Your recovery data is safe.">
           <SecurityProvider>
             <SecuredApp />

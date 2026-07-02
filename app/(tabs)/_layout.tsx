@@ -1,5 +1,6 @@
 import { Tabs } from "expo-router";
 import { StyleSheet, View } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import {
   Home,
   TrendingUp,
@@ -64,7 +65,9 @@ const HomeTabIcon = React.memo(
 
 export default function TabLayout() {
   const { stabilityScore } = useAppMeta();
+  const insets = useSafeAreaInsets();
   const dotColor = getStabilityDotColor(stabilityScore);
+  const tabBarBottomInset = Math.max(insets.bottom, spacing.xxs);
 
   const ICON_SIZE = 20;
 
@@ -123,7 +126,7 @@ export default function TabLayout() {
             borderTopWidth: StyleSheet.hairlineWidth,
             borderTopColor: hairline,
             paddingTop: spacing.xxs,
-            paddingBottom: spacing.xxs,
+            paddingBottom: tabBarBottomInset,
             ...shadows.tabBar,
           },
           tabBarLabelStyle: {

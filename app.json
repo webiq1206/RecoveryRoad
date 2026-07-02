@@ -4,7 +4,7 @@
     "description": "Personal wellness and recovery support: check-ins, journaling, routines, trusted-circle connection tools, and self-guided exercises. Not medical advice, diagnosis, treatment, therapy, telehealth, or crisis care—use licensed professionals and emergency services when you need them. Subscriptions are billed through your app store.",
     "slug": "recovery-road",
     "version": "1.0.1",
-    "orientation": "portrait",
+    "orientation": "default",
     "icon": "./assets/images/app-icon.png",
     "scheme": "recoveryroad",
     "userInterfaceStyle": "automatic",
@@ -28,7 +28,8 @@
         "backgroundColor": "#0a0f1a"
       },
       "package": "com.webiq.recoveryroad",
-      "softwareKeyboardLayoutMode": "resize"
+      "softwareKeyboardLayoutMode": "resize",
+      "edgeToEdgeEnabled": true
     },
     "web": {
       "favicon": "./assets/images/favicon.png"
@@ -44,6 +45,23 @@
         }
       ],
       "expo-router",
+      "expo-font",
+      "expo-web-browser",
+      [
+        "expo-screen-orientation",
+        {
+          "initialOrientation": "DEFAULT"
+        }
+      ],
+      "./plugins/withAndroidLargeScreenCompat",
+      [
+        "react-native-edge-to-edge",
+        {
+          "android": {
+            "enforceNavigationBarContrast": false
+          }
+        }
+      ],
       "expo-dev-client",
       [
         "expo-build-properties",

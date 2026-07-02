@@ -4,7 +4,7 @@ import * as SplashScreen from "expo-splash-screen";
 import React, { useEffect, useCallback } from "react";
 import { ActivityIndicator, View } from "react-native";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
-import { SystemBars } from "react-native-edge-to-edge";
+import { AppSystemBars } from "../components/AppSystemBars";
 import { ConnectionProvider } from "../providers/ConnectionProvider";
 import { RecoveryRoomsProvider } from "../providers/RecoveryRoomsProvider";
 import { SubscriptionProvider } from "../providers/SubscriptionProvider";
@@ -185,7 +185,7 @@ export default function RootLayout() {
   return (
     <QueryClientProvider client={queryClient}>
       <GestureHandlerRootView style={{ flex: 1 }}>
-        <SystemBars style="light" />
+        <AppSystemBars style="light" />
         <ErrorBoundary fallbackMessage="Something unexpected happened. Your recovery data is safe.">
           <SecurityProvider>
             <SecuredApp />

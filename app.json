@@ -8,7 +8,7 @@
     "icon": "./assets/images/app-icon.png",
     "scheme": "recoveryroad",
     "userInterfaceStyle": "automatic",
-    "newArchEnabled": false,
+    "newArchEnabled": true,
     "splash": {
       "image": "./assets/images/splash-icon.png",
       "resizeMode": "contain",
@@ -65,7 +65,14 @@
       "expo-dev-client",
       [
         "expo-build-properties",
-        {}
+        {
+          "android": {
+            "newArchEnabled": true
+          },
+          "ios": {
+            "newArchEnabled": true
+          }
+        }
       ],
       [
         "expo-notifications",

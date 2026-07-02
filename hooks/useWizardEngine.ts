@@ -103,8 +103,12 @@ export function useWizardEngineHook(): WizardEngineResult {
   const contactsHook = useSupportContacts();
   const emergencyContacts = contactsHook?.emergencyContacts ?? [];
 
-  const { peerChats, safeRooms, sponsorPairing, trustedContacts } = useConnection();
-  const { isPremium } = useSubscription();
+  const connection = useConnection();
+  const peerChats = connection?.peerChats ?? [];
+  const safeRooms = connection?.safeRooms ?? [];
+  const sponsorPairing = connection?.sponsorPairing ?? null;
+  const trustedContacts = connection?.trustedContacts ?? [];
+  const isPremium = useSubscription()?.isPremium ?? false;
 
   const emergencyContactsCombined = useMemo(
     () => mergeTrustedAndEmergencyContacts(trustedContacts ?? [], emergencyContacts ?? []),

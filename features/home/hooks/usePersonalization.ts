@@ -28,8 +28,12 @@ export interface PersonalizationResult {
 }
 
 export function usePersonalization(): PersonalizationResult {
-  const { todayCheckIn, checkIns } = useCheckin();
-  const { riskCategory, currentPrediction } = useRiskPrediction();
+  const checkin = useCheckin();
+  const todayCheckIn = checkin?.todayCheckIn;
+  const checkIns = checkin?.checkIns ?? [];
+  const riskPrediction = useRiskPrediction();
+  const riskCategory = riskPrediction?.riskCategory ?? 'low';
+  const currentPrediction = riskPrediction?.currentPrediction;
 
   return useMemo<PersonalizationResult>(() => {
     const now = new Date();

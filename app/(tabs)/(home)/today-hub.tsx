@@ -206,6 +206,13 @@ export default function TodayHubScreen() {
       ? guidanceActions.slice(guidanceFocusIndex, guidanceFocusIndex + 1)
       : guidanceActions;
 
+  const guidanceCompletionLabel = useMemo(() => {
+    const total = guidanceActions.length;
+    if (total === 0) return null;
+    const completed = guidanceActions.filter((action) => action.completed).length;
+    return `(${completed} of ${total} completed)`;
+  }, [guidanceActions]);
+
   const checkInRowLocked = (action: WizardAction): boolean => {
     const period = action.params?.period;
     if (period !== 'morning' && period !== 'afternoon' && period !== 'evening') return false;
@@ -327,8 +334,15 @@ export default function TodayHubScreen() {
                     <Text style={styles.planTitle}>Today's Actions</Text>
                   </RNAnimated.View>
                 )}
-                {!dailyGuidance.isReentryMode && dailyGuidance.isComplete ? (
-                  <Text style={styles.guidanceAllComplete}>All Complete</Text>
+                {guidanceCompletionLabel ? (
+                  <Text
+                    style={[
+                      styles.guidanceCompletionCount,
+                      dailyGuidance.isComplete && styles.guidanceCompletionCountDone,
+                    ]}
+                  >
+                    {guidanceCompletionLabel}
+                  </Text>
                 ) : null}
               </View>
               {guidanceMultiple ? (
@@ -637,9 +651,12 @@ const styles = StyleSheet.create({
     color: Colors.text,
     flexShrink: 1,
   },
-  guidanceAllComplete: {
+  guidanceCompletionCount: {
     fontSize: 14,
-    fontWeight: '700' as const,
+    fontWeight: '600' as const,
+    color: Colors.textSecondary,
+  },
+  guidanceCompletionCountDone: {
     color: Colors.primary,
   },
   guidanceTitleChevronHit: {

@@ -5,12 +5,11 @@ import {
   StyleSheet,
   Pressable,
   Animated,
-  PanResponder,
-  ScrollView,
   TextInput,
-  type GestureResponderEvent,
-  type PanResponderGestureState,
+  type LayoutChangeEvent,
 } from 'react-native';
+import { PanGestureHandler, State, ScrollView } from 'react-native-gesture-handler';
+import type { PanGestureHandlerGestureEvent, PanGestureHandlerStateChangeEvent } from 'react-native-gesture-handler';
 import { useScrollToTopOnFocus } from '../hooks/useScrollToTopOnFocus';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -45,6 +44,8 @@ const THUMB_SIZE = 28;
 const THUMB_HIT_SLOP = 18;
 /** Movement below this (px) counts as a tap, not a drag. */
 const SLIDER_TAP_SLOP = 8;
+
+const AnimatedGHScrollView = Animated.createAnimatedComponent(ScrollView);
 
 function clampSliderValue(n: number): number {
   return Math.max(0, Math.min(100, n));
@@ -100,7 +101,10 @@ function periodWithIcon(
 
 interface CustomSliderProps {
   metric: SliderMetric;
-  value: number;
+  /** Starting value when the slider mounts. Not re-applied after interaction. */
+  initialValue: number;
+  /** When set (e.g. sleep carry-over), replaces the thumb position while not dragging. */
+  overrideValue?: number;
   onValueChange: (val: number) => void;
   readOnly?: boolean;
   locked?: boolean;
@@ -109,30 +113,25 @@ interface CustomSliderProps {
 
 function CustomSlider({
   metric,
-  value,
+  initialValue,
+  overrideValue,
   onValueChange,
   readOnly = false,
   locked = false,
   onDragStateChange,
 }: CustomSliderProps) {
-  /** Animated 0–100 continuous percent (not pixels) so layout width changes never jump the thumb. */
-  const animPercent = useRef(new Animated.Value(value)).current;
-  const trackRef = useRef<View>(null);
-  const [trackWidth, setTrackWidth] = useState(0);
+  const animPercent = useRef(new Animated.Value(initialValue)).current;
   const trackWidthRef = useRef(0);
-  const trackPageXRef = useRef(0);
-  const continuousValueRef = useRef(value);
-  const dragStartValueRef = useRef(value);
-  const lastCommittedRef = useRef(value);
-  const pendingCommitRef = useRef<number | null>(null);
-  const touchedOnThumbRef = useRef(true);
+  const [trackWidth, setTrackWidth] = useState(0);
+  const currentValueRef = useRef(initialValue);
+  const dragStartValueRef = useRef(initialValue);
   const isDraggingRef = useRef(false);
-  const lastHapticValueRef = useRef(value);
+  const lastHapticValueRef = useRef(roundSliderValue(initialValue));
   const isDisabledRef = useRef(readOnly || locked);
   const onValueChangeRef = useRef(onValueChange);
   const onDragStateChangeRef = useRef(onDragStateChange);
 
-  const [displayValue, setDisplayValue] = useState(() => roundSliderValue(value));
+  const [displayValue, setDisplayValue] = useState(() => roundSliderValue(initialValue));
   const isDisabled = readOnly || locked;
 
   useEffect(() => {
@@ -147,48 +146,17 @@ function CustomSlider({
     onDragStateChangeRef.current = onDragStateChange;
   }, [onDragStateChange]);
 
-  const syncTrackMetrics = useCallback((updateLayoutState: boolean) => {
-    const node = trackRef.current;
-    if (!node) return;
-    node.measureInWindow((pageX, _pageY, width) => {
-      if (width <= 0) return;
-      trackWidthRef.current = width;
-      trackPageXRef.current = pageX;
-      if (updateLayoutState) {
-        setTrackWidth((prev) => (prev === width ? prev : width));
-      }
-    });
-  }, []);
-
-  const continuousFromPageX = useCallback((pageX: number) => {
-    const width = trackWidthRef.current;
-    const trackX = trackPageXRef.current;
-    if (width <= 0) return continuousValueRef.current;
-    return clampSliderValue(((pageX - trackX) / width) * 100);
-  }, []);
-
-  const isPageXOnThumb = useCallback((pageX: number, currentValue: number) => {
-    const width = trackWidthRef.current;
-    const trackX = trackPageXRef.current;
-    if (width <= 0) return true;
-    const localX = pageX - trackX;
-    const thumbCenterX = (clampSliderValue(currentValue) / 100) * width;
-    const hitRadius = THUMB_SIZE / 2 + THUMB_HIT_SLOP;
-    return Math.abs(localX - thumbCenterX) <= hitRadius;
-  }, []);
-
-  const applyContinuousValue = useCallback(
-    (continuous: number, emitToParent: boolean) => {
+  const applyValue = useCallback(
+    (continuous: number, notifyParent: boolean) => {
       const clamped = clampSliderValue(continuous);
-      continuousValueRef.current = clamped;
+      currentValueRef.current = clamped;
       animPercent.setValue(clamped);
       const rounded = roundSliderValue(clamped);
       setDisplayValue(rounded);
       if (rounded !== lastHapticValueRef.current) {
         lastHapticValueRef.current = rounded;
         Haptics.selectionAsync();
-        if (emitToParent) {
-          lastCommittedRef.current = rounded;
+        if (notifyParent) {
           onValueChangeRef.current(rounded);
         }
       }
@@ -196,146 +164,76 @@ function CustomSlider({
     [animPercent],
   );
 
-  const applyContinuousValueRef = useRef(applyContinuousValue);
+  const applyValueRef = useRef(applyValue);
   useEffect(() => {
-    applyContinuousValueRef.current = applyContinuousValue;
-  }, [applyContinuousValue]);
+    applyValueRef.current = applyValue;
+  }, [applyValue]);
 
-  const syncTrackMetricsRef = useRef(syncTrackMetrics);
   useEffect(() => {
-    syncTrackMetricsRef.current = syncTrackMetrics;
-  }, [syncTrackMetrics]);
+    if (overrideValue === undefined || isDraggingRef.current) return;
+    const rounded = roundSliderValue(overrideValue);
+    if (rounded === roundSliderValue(currentValueRef.current)) return;
+    lastHapticValueRef.current = rounded;
+    currentValueRef.current = rounded;
+    setDisplayValue(rounded);
+    animPercent.setValue(rounded);
+  }, [overrideValue, animPercent]);
 
-  const isPageXOnThumbRef = useRef(isPageXOnThumb);
-  useEffect(() => {
-    isPageXOnThumbRef.current = isPageXOnThumb;
-  }, [isPageXOnThumb]);
+  const handleTrackLayout = useCallback((event: LayoutChangeEvent) => {
+    const width = event.nativeEvent.layout.width;
+    if (width <= 0) return;
+    trackWidthRef.current = width;
+    setTrackWidth((prev) => (prev === width ? prev : width));
+  }, []);
 
-  const continuousFromPageXRef = useRef(continuousFromPageX);
-  useEffect(() => {
-    continuousFromPageXRef.current = continuousFromPageX;
-  }, [continuousFromPageX]);
+  const onGestureEvent = useCallback((event: PanGestureHandlerGestureEvent) => {
+    if (!isDraggingRef.current || isDisabledRef.current) return;
+    const width = trackWidthRef.current;
+    if (width <= 0) return;
+    const next = clampSliderValue(
+      dragStartValueRef.current + (event.nativeEvent.translationX / width) * 100,
+    );
+    applyValueRef.current(next, true);
+  }, []);
 
-  const endDragRef = useRef<(releasePageX: number, dx: number, dy: number, wasOnThumb: boolean) => void>(
-    () => {},
-  );
+  const onHandlerStateChange = useCallback((event: PanGestureHandlerStateChangeEvent) => {
+    if (isDisabledRef.current) return;
 
-  const panResponder = useRef(
-    PanResponder.create({
-      onStartShouldSetPanResponder: () => !isDisabledRef.current,
-      onStartShouldSetPanResponderCapture: () => !isDisabledRef.current,
-      onMoveShouldSetPanResponder: () => !isDisabledRef.current,
-      onMoveShouldSetPanResponderCapture: () => !isDisabledRef.current,
-      onPanResponderTerminationRequest: () => false,
-      onShouldBlockNativeResponder: () => true,
-      onPanResponderGrant: (evt: GestureResponderEvent) => {
-        if (isDisabledRef.current) return;
+    const { state, translationX, translationY, x } = event.nativeEvent;
 
-        const current = continuousValueRef.current;
-        dragStartValueRef.current = current;
+    if (state === State.BEGAN || state === State.ACTIVE) {
+      if (!isDraggingRef.current) {
         isDraggingRef.current = true;
+        dragStartValueRef.current = currentValueRef.current;
         onDragStateChangeRef.current?.(true);
-
-        const touchPageX = evt.nativeEvent.pageX;
-        touchedOnThumbRef.current = true;
-        const node = trackRef.current;
-        if (node) {
-          syncTrackMetricsRef.current(false);
-          node.measureInWindow((pageX, _pageY, width) => {
-            if (width > 0) {
-              trackWidthRef.current = width;
-              trackPageXRef.current = pageX;
-            }
-            touchedOnThumbRef.current = isPageXOnThumbRef.current(touchPageX, current);
-          });
-        }
-      },
-      onPanResponderMove: (_evt: GestureResponderEvent, gestureState: PanResponderGestureState) => {
-        if (!isDraggingRef.current || isDisabledRef.current) return;
-        const width = trackWidthRef.current;
-        if (width <= 0) return;
-        const next = clampSliderValue(
-          dragStartValueRef.current + (gestureState.dx / width) * 100,
-        );
-        applyContinuousValueRef.current(next, true);
-      },
-      onPanResponderRelease: (evt: GestureResponderEvent, gestureState: PanResponderGestureState) => {
-        endDragRef.current(
-          evt.nativeEvent.pageX,
-          gestureState.dx,
-          gestureState.dy,
-          touchedOnThumbRef.current,
-        );
-      },
-      onPanResponderTerminate: (evt: GestureResponderEvent, gestureState: PanResponderGestureState) => {
-        endDragRef.current(
-          evt.nativeEvent.pageX,
-          gestureState.dx,
-          gestureState.dy,
-          touchedOnThumbRef.current,
-        );
-      },
-    }),
-  ).current;
-
-  const endDrag = useCallback(
-    (releasePageX: number, dx: number, dy: number, wasOnThumb: boolean) => {
-      if (!isDraggingRef.current) return;
-
-      const isTap =
-        Math.abs(dx) < SLIDER_TAP_SLOP && Math.abs(dy) < SLIDER_TAP_SLOP;
-      if (isTap && !wasOnThumb) {
-        const tapped = continuousFromPageXRef.current(releasePageX);
-        dragStartValueRef.current = tapped;
-        applyContinuousValueRef.current(tapped, false);
-      }
-
-      isDraggingRef.current = false;
-      touchedOnThumbRef.current = true;
-      onDragStateChangeRef.current?.(false);
-
-      const finalVal = roundSliderValue(continuousValueRef.current);
-      continuousValueRef.current = finalVal;
-      lastHapticValueRef.current = finalVal;
-      lastCommittedRef.current = finalVal;
-      pendingCommitRef.current = finalVal;
-      setDisplayValue(finalVal);
-      animPercent.setValue(finalVal);
-      onValueChangeRef.current(finalVal);
-    },
-    [animPercent],
-  );
-
-  useEffect(() => {
-    endDragRef.current = endDrag;
-  }, [endDrag]);
-
-  useEffect(() => {
-    if (isDraggingRef.current) return;
-    const rounded = roundSliderValue(value);
-
-    if (pendingCommitRef.current !== null) {
-      if (rounded === pendingCommitRef.current) {
-        pendingCommitRef.current = null;
       }
       return;
     }
 
-    if (rounded === lastCommittedRef.current) return;
+    if (state === State.END || state === State.CANCELLED || state === State.FAILED) {
+      if (!isDraggingRef.current) return;
 
-    lastCommittedRef.current = rounded;
-    continuousValueRef.current = rounded;
-    lastHapticValueRef.current = rounded;
-    setDisplayValue(rounded);
-    animPercent.setValue(rounded);
-  }, [value, animPercent]);
+      const isTap =
+        Math.abs(translationX) < SLIDER_TAP_SLOP && Math.abs(translationY) < SLIDER_TAP_SLOP;
+      if (isTap) {
+        const width = trackWidthRef.current;
+        if (width > 0) {
+          const tapped = clampSliderValue((x / width) * 100);
+          applyValueRef.current(tapped, false);
+        }
+      }
 
-  const handleTrackLayout = useCallback(() => {
-    syncTrackMetrics(!isDraggingRef.current);
-    if (!isDraggingRef.current) {
-      animPercent.setValue(continuousValueRef.current);
+      isDraggingRef.current = false;
+      onDragStateChangeRef.current?.(false);
+
+      const finalVal = roundSliderValue(currentValueRef.current);
+      lastHapticValueRef.current = finalVal;
+      currentValueRef.current = finalVal;
+      setDisplayValue(finalVal);
+      animPercent.setValue(finalVal);
+      onValueChangeRef.current(finalVal);
     }
-  }, [animPercent, syncTrackMetrics]);
+  }, [animPercent]);
 
   const w = Math.max(trackWidth, 1);
 
@@ -365,43 +263,50 @@ function CustomSlider({
           {displayValue}
         </Text>
       </View>
-      <View
-        ref={trackRef}
-        style={sliderStyles.trackContainer}
-        onLayout={handleTrackLayout}
-        collapsable={false}
-        {...(isDisabled ? {} : panResponder.panHandlers)}
+      <PanGestureHandler
+        enabled={!isDisabled}
+        onGestureEvent={onGestureEvent}
+        onHandlerStateChange={onHandlerStateChange}
+        activeOffsetX={[-6, 6]}
+        failOffsetY={[-16, 16]}
+        minDist={0}
       >
-        <View style={sliderStyles.track}>
-          <Animated.View
-            style={[
-              sliderStyles.fill,
-              { width: fillWidth, backgroundColor: locked ? Colors.textMuted : metric.color },
-            ]}
-          />
-        </View>
         <Animated.View
-          pointerEvents="none"
-          style={[
-            sliderStyles.thumbHitTarget,
-            {
-              left: thumbLeft,
-              width: THUMB_SIZE + THUMB_HIT_SLOP * 2,
-              marginLeft: -THUMB_HIT_SLOP,
-            },
-          ]}
+          style={sliderStyles.trackContainer}
+          onLayout={handleTrackLayout}
+          collapsable={false}
         >
-          <View
+          <View style={sliderStyles.track}>
+            <Animated.View
+              style={[
+                sliderStyles.fill,
+                { width: fillWidth, backgroundColor: locked ? Colors.textMuted : metric.color },
+              ]}
+            />
+          </View>
+          <Animated.View
+            pointerEvents="none"
             style={[
-              sliderStyles.thumb,
+              sliderStyles.thumbHitTarget,
               {
-                backgroundColor: locked ? Colors.textMuted : metric.color,
-                shadowColor: locked ? Colors.textMuted : metric.color,
+                left: thumbLeft,
+                width: THUMB_SIZE + THUMB_HIT_SLOP * 2,
+                marginLeft: -THUMB_HIT_SLOP,
               },
             ]}
-          />
+          >
+            <View
+              style={[
+                sliderStyles.thumb,
+                {
+                  backgroundColor: locked ? Colors.textMuted : metric.color,
+                  shadowColor: locked ? Colors.textMuted : metric.color,
+                },
+              ]}
+            />
+          </Animated.View>
         </Animated.View>
-      </View>
+      </PanGestureHandler>
       <View style={sliderStyles.rangeLabels}>
         <Text style={sliderStyles.rangeText}>{metric.lowLabel}</Text>
         {locked && <Text style={sliderStyles.lockedText}>From morning check-in</Text>}
@@ -780,7 +685,7 @@ export default function DailyCheckInScreen() {
           <View style={{ width: 36 }} />
         </View>
 
-        <Animated.ScrollView
+        <AnimatedGHScrollView
           ref={scrollRef}
           style={{ opacity: fadeAnim, transform: [{ translateY: slideAnim }] }}
           contentContainerStyle={[styles.scrollContent, { paddingBottom: insets.bottom + 32 }]}
@@ -863,7 +768,7 @@ export default function DailyCheckInScreen() {
               emotionalTagsConfig={emotionalTagsConfig}
             />
           ) : null}
-        </Animated.ScrollView>
+        </AnimatedGHScrollView>
       </View>
     );
   }
@@ -878,7 +783,7 @@ export default function DailyCheckInScreen() {
         <View style={{ width: 36 }} />
       </View>
 
-      <Animated.ScrollView
+      <AnimatedGHScrollView
         ref={scrollRef}
         style={{ opacity: fadeAnim, transform: [{ translateY: slideAnim }] }}
         contentContainerStyle={[styles.scrollContent, { paddingBottom: insets.bottom + 100 }]}
@@ -1005,7 +910,8 @@ export default function DailyCheckInScreen() {
                   <CustomSlider
                     key={metric.key}
                     metric={metric}
-                    value={values[metric.key]}
+                    initialValue={values[metric.key]}
+                    overrideValue={isSleepAndLocked ? values.sleepQuality : undefined}
                     onValueChange={(val) => handleValueChange(metric.key, val)}
                     locked={isSleepAndLocked}
                     onDragStateChange={handleSliderDragStateChange}
@@ -1111,7 +1017,7 @@ export default function DailyCheckInScreen() {
             </View>
           </View>
         )}
-      </Animated.ScrollView>
+      </AnimatedGHScrollView>
 
       <View style={[styles.submitBar, { paddingBottom: insets.bottom + 16 }]}>
         <Pressable

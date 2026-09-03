@@ -123,7 +123,9 @@ function CustomSlider({
   const trackPageXRef = useRef(0);
   const continuousValueRef = useRef(value);
   const dragStartValueRef = useRef(value);
-  const touchedOnThumbRef = useRef(false);
+  const lastCommittedRef = useRef(value);
+  const pendingCommitRef = useRef<number | null>(null);
+  const touchedOnThumbRef = useRef(true);
   const isDraggingRef = useRef(false);
   const lastHapticValueRef = useRef(value);
   const isDisabledRef = useRef(readOnly || locked);
@@ -145,14 +147,16 @@ function CustomSlider({
     onDragStateChangeRef.current = onDragStateChange;
   }, [onDragStateChange]);
 
-  const syncTrackMetrics = useCallback(() => {
+  const syncTrackMetrics = useCallback((updateLayoutState: boolean) => {
     const node = trackRef.current;
     if (!node) return;
     node.measureInWindow((pageX, _pageY, width) => {
       if (width <= 0) return;
       trackWidthRef.current = width;
       trackPageXRef.current = pageX;
-      setTrackWidth(width);
+      if (updateLayoutState) {
+        setTrackWidth((prev) => (prev === width ? prev : width));
+      }
     });
   }, []);
 
@@ -180,10 +184,13 @@ function CustomSlider({
       animPercent.setValue(clamped);
       const rounded = roundSliderValue(clamped);
       setDisplayValue(rounded);
-      if (emitToParent && rounded !== lastHapticValueRef.current) {
+      if (rounded !== lastHapticValueRef.current) {
         lastHapticValueRef.current = rounded;
         Haptics.selectionAsync();
-        onValueChangeRef.current(rounded);
+        if (emitToParent) {
+          lastCommittedRef.current = rounded;
+          onValueChangeRef.current(rounded);
+        }
       }
     },
     [animPercent],
@@ -193,6 +200,21 @@ function CustomSlider({
   useEffect(() => {
     applyContinuousValueRef.current = applyContinuousValue;
   }, [applyContinuousValue]);
+
+  const syncTrackMetricsRef = useRef(syncTrackMetrics);
+  useEffect(() => {
+    syncTrackMetricsRef.current = syncTrackMetrics;
+  }, [syncTrackMetrics]);
+
+  const isPageXOnThumbRef = useRef(isPageXOnThumb);
+  useEffect(() => {
+    isPageXOnThumbRef.current = isPageXOnThumb;
+  }, [isPageXOnThumb]);
+
+  const continuousFromPageXRef = useRef(continuousFromPageX);
+  useEffect(() => {
+    continuousFromPageXRef.current = continuousFromPageX;
+  }, [continuousFromPageX]);
 
   const endDragRef = useRef<(releasePageX: number, dx: number, dy: number, wasOnThumb: boolean) => void>(
     () => {},
@@ -215,18 +237,17 @@ function CustomSlider({
         onDragStateChangeRef.current?.(true);
 
         const touchPageX = evt.nativeEvent.pageX;
+        touchedOnThumbRef.current = true;
         const node = trackRef.current;
         if (node) {
+          syncTrackMetricsRef.current(false);
           node.measureInWindow((pageX, _pageY, width) => {
             if (width > 0) {
               trackWidthRef.current = width;
               trackPageXRef.current = pageX;
-              setTrackWidth(width);
             }
-            touchedOnThumbRef.current = isPageXOnThumb(touchPageX, current);
+            touchedOnThumbRef.current = isPageXOnThumbRef.current(touchPageX, current);
           });
-        } else {
-          touchedOnThumbRef.current = true;
         }
       },
       onPanResponderMove: (_evt: GestureResponderEvent, gestureState: PanResponderGestureState) => {
@@ -264,23 +285,25 @@ function CustomSlider({
       const isTap =
         Math.abs(dx) < SLIDER_TAP_SLOP && Math.abs(dy) < SLIDER_TAP_SLOP;
       if (isTap && !wasOnThumb) {
-        const tapped = continuousFromPageX(releasePageX);
+        const tapped = continuousFromPageXRef.current(releasePageX);
         dragStartValueRef.current = tapped;
-        applyContinuousValueRef.current(tapped, true);
+        applyContinuousValueRef.current(tapped, false);
       }
 
       isDraggingRef.current = false;
-      touchedOnThumbRef.current = false;
+      touchedOnThumbRef.current = true;
       onDragStateChangeRef.current?.(false);
 
       const finalVal = roundSliderValue(continuousValueRef.current);
       continuousValueRef.current = finalVal;
       lastHapticValueRef.current = finalVal;
+      lastCommittedRef.current = finalVal;
+      pendingCommitRef.current = finalVal;
       setDisplayValue(finalVal);
       animPercent.setValue(finalVal);
       onValueChangeRef.current(finalVal);
     },
-    [animPercent, continuousFromPageX],
+    [animPercent],
   );
 
   useEffect(() => {
@@ -290,6 +313,17 @@ function CustomSlider({
   useEffect(() => {
     if (isDraggingRef.current) return;
     const rounded = roundSliderValue(value);
+
+    if (pendingCommitRef.current !== null) {
+      if (rounded === pendingCommitRef.current) {
+        pendingCommitRef.current = null;
+      }
+      return;
+    }
+
+    if (rounded === lastCommittedRef.current) return;
+
+    lastCommittedRef.current = rounded;
     continuousValueRef.current = rounded;
     lastHapticValueRef.current = rounded;
     setDisplayValue(rounded);
@@ -297,7 +331,7 @@ function CustomSlider({
   }, [value, animPercent]);
 
   const handleTrackLayout = useCallback(() => {
-    syncTrackMetrics();
+    syncTrackMetrics(!isDraggingRef.current);
     if (!isDraggingRef.current) {
       animPercent.setValue(continuousValueRef.current);
     }
@@ -622,7 +656,13 @@ export default function DailyCheckInScreen() {
   const activeReviewForReadOnly = reviewSelectionPeriod ?? defaultReviewPeriod;
 
   const scrollRef = useRef<ScrollView>(null);
-  const [sliderScrollLocked, setSliderScrollLocked] = useState(false);
+  const sliderScrollLockedRef = useRef(false);
+
+  const handleSliderDragStateChange = useCallback((dragging: boolean) => {
+    if (sliderScrollLockedRef.current === dragging) return;
+    sliderScrollLockedRef.current = dragging;
+    scrollRef.current?.setNativeProps({ scrollEnabled: !dragging });
+  }, []);
   useScrollToTopOnFocus(scrollRef);
 
   const fadeAnim = useRef(new Animated.Value(0)).current;
@@ -840,7 +880,6 @@ export default function DailyCheckInScreen() {
 
       <Animated.ScrollView
         ref={scrollRef}
-        scrollEnabled={!sliderScrollLocked}
         style={{ opacity: fadeAnim, transform: [{ translateY: slideAnim }] }}
         contentContainerStyle={[styles.scrollContent, { paddingBottom: insets.bottom + 100 }]}
         showsVerticalScrollIndicator={false}
@@ -969,7 +1008,7 @@ export default function DailyCheckInScreen() {
                     value={values[metric.key]}
                     onValueChange={(val) => handleValueChange(metric.key, val)}
                     locked={isSleepAndLocked}
-                    onDragStateChange={setSliderScrollLocked}
+                    onDragStateChange={handleSliderDragStateChange}
                   />
                 );
               })}

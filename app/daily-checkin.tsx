@@ -5,11 +5,9 @@ import {
   StyleSheet,
   Pressable,
   Animated,
+  ScrollView,
   TextInput,
-  type LayoutChangeEvent,
 } from 'react-native';
-import { PanGestureHandler, State, ScrollView } from 'react-native-gesture-handler';
-import type { PanGestureHandlerGestureEvent, PanGestureHandlerStateChangeEvent } from 'react-native-gesture-handler';
 import { useScrollToTopOnFocus } from '../hooks/useScrollToTopOnFocus';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -26,7 +24,6 @@ import {
   Zap,
   Sun,
   Sunset,
-  Lock,
 } from 'lucide-react-native';
 import * as Haptics from 'expo-haptics';
 import Colors from '../constants/colors';
@@ -38,22 +35,9 @@ import { getScoreColor, getScoreLabel } from '../lib/services/checkInAnalysis';
 import { computeDailyCheckInStabilityScore } from '../utils/stabilityEngine';
 import type { DailyCheckIn, RecoveryProfile } from '../types';
 import type { CheckInTimeOfDay, EmotionalTagConfig } from '../features/checkin/constants/checkinMetrics';
+import { CheckInMetricSlider } from '../components/checkin/CheckInMetricSlider';
 
-const THUMB_SIZE = 28;
-/** Extra touch radius beyond the visible thumb edge (invisible hit target). */
-const THUMB_HIT_SLOP = 18;
-/** Movement below this (px) counts as a tap, not a drag. */
-const SLIDER_TAP_SLOP = 8;
-
-const AnimatedGHScrollView = Animated.createAnimatedComponent(ScrollView);
-
-function clampSliderValue(n: number): number {
-  return Math.max(0, Math.min(100, n));
-}
-
-function roundSliderValue(n: number): number {
-  return Math.round(clampSliderValue(n));
-}
+const AnimatedScrollView = Animated.createAnimatedComponent(ScrollView);
 
 const METRIC_ICONS: Record<string, React.ComponentType<{ size?: number; color?: string }>> = {
   heart: Heart,
@@ -98,298 +82,6 @@ function periodWithIcon(
     icon: <IconComp size={18} color={config.color} />,
   };
 }
-
-interface CustomSliderProps {
-  metric: SliderMetric;
-  /** Starting value when the slider mounts. Not re-applied after interaction. */
-  initialValue: number;
-  /** When set (e.g. sleep carry-over), replaces the thumb position while not dragging. */
-  overrideValue?: number;
-  onValueChange: (val: number) => void;
-  readOnly?: boolean;
-  locked?: boolean;
-  onDragStateChange?: (dragging: boolean) => void;
-}
-
-function CustomSlider({
-  metric,
-  initialValue,
-  overrideValue,
-  onValueChange,
-  readOnly = false,
-  locked = false,
-  onDragStateChange,
-}: CustomSliderProps) {
-  const animPercent = useRef(new Animated.Value(initialValue)).current;
-  const trackWidthRef = useRef(0);
-  const [trackWidth, setTrackWidth] = useState(0);
-  const currentValueRef = useRef(initialValue);
-  const dragStartValueRef = useRef(initialValue);
-  const isDraggingRef = useRef(false);
-  const lastHapticValueRef = useRef(roundSliderValue(initialValue));
-  const isDisabledRef = useRef(readOnly || locked);
-  const onValueChangeRef = useRef(onValueChange);
-  const onDragStateChangeRef = useRef(onDragStateChange);
-
-  const [displayValue, setDisplayValue] = useState(() => roundSliderValue(initialValue));
-  const isDisabled = readOnly || locked;
-
-  useEffect(() => {
-    isDisabledRef.current = isDisabled;
-  }, [isDisabled]);
-
-  useEffect(() => {
-    onValueChangeRef.current = onValueChange;
-  }, [onValueChange]);
-
-  useEffect(() => {
-    onDragStateChangeRef.current = onDragStateChange;
-  }, [onDragStateChange]);
-
-  const applyValue = useCallback(
-    (continuous: number, notifyParent: boolean) => {
-      const clamped = clampSliderValue(continuous);
-      currentValueRef.current = clamped;
-      animPercent.setValue(clamped);
-      const rounded = roundSliderValue(clamped);
-      setDisplayValue(rounded);
-      if (rounded !== lastHapticValueRef.current) {
-        lastHapticValueRef.current = rounded;
-        Haptics.selectionAsync();
-        if (notifyParent) {
-          onValueChangeRef.current(rounded);
-        }
-      }
-    },
-    [animPercent],
-  );
-
-  const applyValueRef = useRef(applyValue);
-  useEffect(() => {
-    applyValueRef.current = applyValue;
-  }, [applyValue]);
-
-  useEffect(() => {
-    if (overrideValue === undefined || isDraggingRef.current) return;
-    const rounded = roundSliderValue(overrideValue);
-    if (rounded === roundSliderValue(currentValueRef.current)) return;
-    lastHapticValueRef.current = rounded;
-    currentValueRef.current = rounded;
-    setDisplayValue(rounded);
-    animPercent.setValue(rounded);
-  }, [overrideValue, animPercent]);
-
-  const handleTrackLayout = useCallback((event: LayoutChangeEvent) => {
-    const width = event.nativeEvent.layout.width;
-    if (width <= 0) return;
-    trackWidthRef.current = width;
-    setTrackWidth((prev) => (prev === width ? prev : width));
-  }, []);
-
-  const onGestureEvent = useCallback((event: PanGestureHandlerGestureEvent) => {
-    if (!isDraggingRef.current || isDisabledRef.current) return;
-    const width = trackWidthRef.current;
-    if (width <= 0) return;
-    const next = clampSliderValue(
-      dragStartValueRef.current + (event.nativeEvent.translationX / width) * 100,
-    );
-    applyValueRef.current(next, true);
-  }, []);
-
-  const onHandlerStateChange = useCallback((event: PanGestureHandlerStateChangeEvent) => {
-    if (isDisabledRef.current) return;
-
-    const { state, translationX, translationY, x } = event.nativeEvent;
-
-    if (state === State.BEGAN || state === State.ACTIVE) {
-      if (!isDraggingRef.current) {
-        isDraggingRef.current = true;
-        dragStartValueRef.current = currentValueRef.current;
-        onDragStateChangeRef.current?.(true);
-      }
-      return;
-    }
-
-    if (state === State.END || state === State.CANCELLED || state === State.FAILED) {
-      if (!isDraggingRef.current) return;
-
-      const isTap =
-        Math.abs(translationX) < SLIDER_TAP_SLOP && Math.abs(translationY) < SLIDER_TAP_SLOP;
-      if (isTap) {
-        const width = trackWidthRef.current;
-        if (width > 0) {
-          const tapped = clampSliderValue((x / width) * 100);
-          applyValueRef.current(tapped, false);
-        }
-      }
-
-      isDraggingRef.current = false;
-      onDragStateChangeRef.current?.(false);
-
-      const finalVal = roundSliderValue(currentValueRef.current);
-      lastHapticValueRef.current = finalVal;
-      currentValueRef.current = finalVal;
-      setDisplayValue(finalVal);
-      animPercent.setValue(finalVal);
-      onValueChangeRef.current(finalVal);
-    }
-  }, [animPercent]);
-
-  const w = Math.max(trackWidth, 1);
-
-  const fillWidth = animPercent.interpolate({
-    inputRange: [0, 100],
-    outputRange: [0, w],
-    extrapolate: 'clamp',
-  });
-
-  const thumbLeft = animPercent.interpolate({
-    inputRange: [0, 100],
-    outputRange: [-(THUMB_SIZE / 2), w - THUMB_SIZE / 2],
-    extrapolate: 'clamp',
-  });
-
-  const sliderOpacity = isDisabled ? 0.45 : 1;
-
-  return (
-    <View style={[sliderStyles.container, { opacity: sliderOpacity }]}>
-      <View style={sliderStyles.labelRow}>
-        <View style={sliderStyles.iconLabel}>
-          {metric.icon}
-          <Text style={sliderStyles.label}>{metric.label}</Text>
-          {locked && <Lock size={12} color={Colors.textMuted} />}
-        </View>
-        <Text style={[sliderStyles.valueText, { color: locked ? Colors.textMuted : metric.color }]}>
-          {displayValue}
-        </Text>
-      </View>
-      <PanGestureHandler
-        enabled={!isDisabled}
-        onGestureEvent={onGestureEvent}
-        onHandlerStateChange={onHandlerStateChange}
-        activeOffsetX={[-6, 6]}
-        failOffsetY={[-16, 16]}
-        minDist={0}
-      >
-        <Animated.View
-          style={sliderStyles.trackContainer}
-          onLayout={handleTrackLayout}
-          collapsable={false}
-        >
-          <View style={sliderStyles.track}>
-            <Animated.View
-              style={[
-                sliderStyles.fill,
-                { width: fillWidth, backgroundColor: locked ? Colors.textMuted : metric.color },
-              ]}
-            />
-          </View>
-          <Animated.View
-            pointerEvents="none"
-            style={[
-              sliderStyles.thumbHitTarget,
-              {
-                left: thumbLeft,
-                width: THUMB_SIZE + THUMB_HIT_SLOP * 2,
-                marginLeft: -THUMB_HIT_SLOP,
-              },
-            ]}
-          >
-            <View
-              style={[
-                sliderStyles.thumb,
-                {
-                  backgroundColor: locked ? Colors.textMuted : metric.color,
-                  shadowColor: locked ? Colors.textMuted : metric.color,
-                },
-              ]}
-            />
-          </Animated.View>
-        </Animated.View>
-      </PanGestureHandler>
-      <View style={sliderStyles.rangeLabels}>
-        <Text style={sliderStyles.rangeText}>{metric.lowLabel}</Text>
-        {locked && <Text style={sliderStyles.lockedText}>From morning check-in</Text>}
-        <Text style={sliderStyles.rangeText}>{metric.highLabel}</Text>
-      </View>
-    </View>
-  );
-}
-
-const sliderStyles = StyleSheet.create({
-  container: {
-    marginBottom: 20,
-  },
-  labelRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginBottom: 10,
-  },
-  iconLabel: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-  },
-  label: {
-    fontSize: 15,
-    fontWeight: '600' as const,
-    color: Colors.text,
-  },
-  valueText: {
-    fontSize: 18,
-    fontWeight: '700' as const,
-    fontVariant: ['tabular-nums'],
-  },
-  trackContainer: {
-    height: 48,
-    justifyContent: 'center',
-    position: 'relative' as const,
-  },
-  track: {
-    height: 6,
-    backgroundColor: Colors.surface,
-    borderRadius: 3,
-    overflow: 'hidden' as const,
-  },
-  fill: {
-    height: 6,
-    borderRadius: 3,
-  },
-  thumbHitTarget: {
-    position: 'absolute' as const,
-    height: THUMB_SIZE + THUMB_HIT_SLOP * 2,
-    top: (48 - (THUMB_SIZE + THUMB_HIT_SLOP * 2)) / 2,
-    alignItems: 'center' as const,
-    justifyContent: 'center' as const,
-  },
-  thumb: {
-    width: THUMB_SIZE,
-    height: THUMB_SIZE,
-    borderRadius: THUMB_SIZE / 2,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.4,
-    shadowRadius: 4,
-    elevation: 4,
-    borderWidth: 3,
-    borderColor: Colors.background,
-  },
-  rangeLabels: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginTop: 2,
-  },
-  rangeText: {
-    fontSize: 11,
-    color: Colors.textMuted,
-    fontWeight: '500' as const,
-  },
-  lockedText: {
-    fontSize: 10,
-    color: Colors.textMuted,
-    fontStyle: 'italic' as const,
-  },
-});
 
 type PeriodTabConfig = {
   label: string;
@@ -568,6 +260,14 @@ export default function DailyCheckInScreen() {
     sliderScrollLockedRef.current = dragging;
     scrollRef.current?.setNativeProps({ scrollEnabled: !dragging });
   }, []);
+
+  const handleMetricValueChange = useCallback(
+    (key: string, val: number) => {
+      handleValueChange(key, val);
+    },
+    [handleValueChange],
+  );
+
   useScrollToTopOnFocus(scrollRef);
 
   const fadeAnim = useRef(new Animated.Value(0)).current;
@@ -685,7 +385,7 @@ export default function DailyCheckInScreen() {
           <View style={{ width: 36 }} />
         </View>
 
-        <AnimatedGHScrollView
+        <AnimatedScrollView
           ref={scrollRef}
           style={{ opacity: fadeAnim, transform: [{ translateY: slideAnim }] }}
           contentContainerStyle={[styles.scrollContent, { paddingBottom: insets.bottom + 32 }]}
@@ -768,7 +468,7 @@ export default function DailyCheckInScreen() {
               emotionalTagsConfig={emotionalTagsConfig}
             />
           ) : null}
-        </AnimatedGHScrollView>
+        </AnimatedScrollView>
       </View>
     );
   }
@@ -783,11 +483,13 @@ export default function DailyCheckInScreen() {
         <View style={{ width: 36 }} />
       </View>
 
-      <AnimatedGHScrollView
+      <AnimatedScrollView
         ref={scrollRef}
         style={{ opacity: fadeAnim, transform: [{ translateY: slideAnim }] }}
         contentContainerStyle={[styles.scrollContent, { paddingBottom: insets.bottom + 100 }]}
         showsVerticalScrollIndicator={false}
+        nestedScrollEnabled
+        keyboardShouldPersistTaps="handled"
       >
         <View style={styles.periodProgressRow}>
           {(['morning', 'afternoon', 'evening'] as CheckInTimeOfDay[]).map((period) => {
@@ -907,12 +609,15 @@ export default function DailyCheckInScreen() {
               {METRICS.map((metric) => {
                 const isSleepAndLocked = metric.key === 'sleepQuality' && sleepLocked;
                 return (
-                  <CustomSlider
+                  <CheckInMetricSlider
                     key={metric.key}
-                    metric={metric}
-                    initialValue={values[metric.key]}
-                    overrideValue={isSleepAndLocked ? values.sleepQuality : undefined}
-                    onValueChange={(val) => handleValueChange(metric.key, val)}
+                    label={metric.label}
+                    icon={metric.icon}
+                    color={metric.color}
+                    lowLabel={metric.lowLabel}
+                    highLabel={metric.highLabel}
+                    value={values[metric.key]}
+                    onValueChange={(val) => handleMetricValueChange(metric.key, val)}
                     locked={isSleepAndLocked}
                     onDragStateChange={handleSliderDragStateChange}
                   />
@@ -1017,7 +722,7 @@ export default function DailyCheckInScreen() {
             </View>
           </View>
         )}
-      </AnimatedGHScrollView>
+      </AnimatedScrollView>
 
       <View style={[styles.submitBar, { paddingBottom: insets.bottom + 16 }]}>
         <Pressable

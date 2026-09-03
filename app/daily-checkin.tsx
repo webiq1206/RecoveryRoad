@@ -6,9 +6,10 @@ import {
   Pressable,
   Animated,
   PanResponder,
-  Dimensions,
   ScrollView,
   TextInput,
+  type GestureResponderEvent,
+  type PanResponderGestureState,
 } from 'react-native';
 import { useScrollToTopOnFocus } from '../hooks/useScrollToTopOnFocus';
 import { useLocalSearchParams, useRouter } from 'expo-router';
@@ -39,11 +40,17 @@ import { computeDailyCheckInStabilityScore } from '../utils/stabilityEngine';
 import type { DailyCheckIn, RecoveryProfile } from '../types';
 import type { CheckInTimeOfDay, EmotionalTagConfig } from '../features/checkin/constants/checkinMetrics';
 
-const { width: SCREEN_WIDTH } = Dimensions.get('window');
-const SLIDER_WIDTH = SCREEN_WIDTH - 80;
 const THUMB_SIZE = 28;
-/** Lower = thumb moves less per pixel of finger travel (finer control). */
-const SLIDER_DAMPING = 0.50;
+/** Extra touch radius beyond the visible thumb edge (invisible hit target). */
+const THUMB_HIT_SLOP = 18;
+
+function clampSliderValue(n: number): number {
+  return Math.max(0, Math.min(100, n));
+}
+
+function roundSliderValue(n: number): number {
+  return Math.round(clampSliderValue(n));
+}
 
 const METRIC_ICONS: Record<string, React.ComponentType<{ size?: number; color?: string }>> = {
   heart: Heart,
@@ -95,69 +102,168 @@ interface CustomSliderProps {
   onValueChange: (val: number) => void;
   readOnly?: boolean;
   locked?: boolean;
+  onDragStateChange?: (dragging: boolean) => void;
 }
 
-function CustomSlider({ metric, value, onValueChange, readOnly = false, locked = false }: CustomSliderProps) {
-  const panX = useRef(new Animated.Value((value / 100) * SLIDER_WIDTH)).current;
-  const lastValue = useRef(value);
-  const isDragging = useRef(false);
-  const dragStartValue = useRef(value);
-  const lastHapticValue = useRef(value);
+function CustomSlider({
+  metric,
+  value,
+  onValueChange,
+  readOnly = false,
+  locked = false,
+  onDragStateChange,
+}: CustomSliderProps) {
+  const panX = useRef(new Animated.Value(0)).current;
+  const [trackWidth, setTrackWidth] = useState(0);
+  const trackWidthRef = useRef(0);
+  const continuousValueRef = useRef(value);
+  const dragStartValueRef = useRef(value);
+  const touchModeRef = useRef<'thumb' | 'track' | null>(null);
+  const isDraggingRef = useRef(false);
+  const lastHapticValueRef = useRef(value);
+  const isDisabledRef = useRef(readOnly || locked);
+  const onValueChangeRef = useRef(onValueChange);
+  const onDragStateChangeRef = useRef(onDragStateChange);
+
+  const [displayValue, setDisplayValue] = useState(() => roundSliderValue(value));
   const isDisabled = readOnly || locked;
+
+  useEffect(() => {
+    isDisabledRef.current = isDisabled;
+  }, [isDisabled]);
+
+  useEffect(() => {
+    onValueChangeRef.current = onValueChange;
+  }, [onValueChange]);
+
+  useEffect(() => {
+    onDragStateChangeRef.current = onDragStateChange;
+  }, [onDragStateChange]);
+
+  const positionFromContinuous = useCallback((continuous: number, width: number) => {
+    if (width <= 0) return 0;
+    return (clampSliderValue(continuous) / 100) * width;
+  }, []);
+
+  const applyContinuousValue = useCallback(
+    (continuous: number, width: number, emitToParent: boolean) => {
+      continuousValueRef.current = continuous;
+      panX.setValue(positionFromContinuous(continuous, width));
+      const rounded = roundSliderValue(continuous);
+      setDisplayValue(rounded);
+      if (emitToParent && rounded !== lastHapticValueRef.current) {
+        lastHapticValueRef.current = rounded;
+        Haptics.selectionAsync();
+        onValueChangeRef.current(rounded);
+      }
+    },
+    [panX, positionFromContinuous],
+  );
+
+  const applyContinuousValueRef = useRef(applyContinuousValue);
+  useEffect(() => {
+    applyContinuousValueRef.current = applyContinuousValue;
+  }, [applyContinuousValue]);
+
+  const endDragRef = useRef<(width: number) => void>(() => {});
 
   const panResponder = useRef(
     PanResponder.create({
-      onStartShouldSetPanResponder: () => true,
-      onMoveShouldSetPanResponder: () => true,
-      onPanResponderGrant: () => {
-        isDragging.current = true;
-        dragStartValue.current = lastValue.current;
-        lastHapticValue.current = lastValue.current;
-        panX.setOffset((dragStartValue.current / 100) * SLIDER_WIDTH);
-        panX.setValue(0);
-      },
-      onPanResponderMove: (_, gestureState) => {
-        const dampedDx = gestureState.dx * SLIDER_DAMPING;
-        const startX = (dragStartValue.current / 100) * SLIDER_WIDTH;
-        const newX = Math.max(0, Math.min(SLIDER_WIDTH, startX + dampedDx));
-        panX.setOffset(0);
-        panX.setValue(newX);
-        const newVal = Math.round((newX / SLIDER_WIDTH) * 100);
-        if (newVal !== lastHapticValue.current) {
-          lastHapticValue.current = newVal;
-          Haptics.selectionAsync();
+      onStartShouldSetPanResponder: () => !isDisabledRef.current,
+      onMoveShouldSetPanResponder: () => !isDisabledRef.current,
+      onPanResponderTerminationRequest: () => false,
+      onShouldBlockNativeResponder: () => true,
+      onPanResponderGrant: (evt: GestureResponderEvent) => {
+        if (isDisabledRef.current) return;
+        const width = trackWidthRef.current;
+        const localX = evt.nativeEvent.locationX;
+        const current = continuousValueRef.current;
+        const thumbHitRadius = THUMB_SIZE / 2 + THUMB_HIT_SLOP;
+        const thumbCenterX = width > 0 ? (clampSliderValue(current) / 100) * width : 0;
+        const onThumb = width > 0 && Math.abs(localX - thumbCenterX) <= thumbHitRadius;
+
+        isDraggingRef.current = true;
+        onDragStateChangeRef.current?.(true);
+
+        if (onThumb) {
+          touchModeRef.current = 'thumb';
+          dragStartValueRef.current = current;
+          return;
         }
-        onValueChange(newVal);
+
+        touchModeRef.current = 'track';
+        const tapped =
+          width > 0 ? clampSliderValue((localX / width) * 100) : current;
+        dragStartValueRef.current = tapped;
+        applyContinuousValueRef.current(tapped, width, true);
       },
-      onPanResponderRelease: (_, gestureState) => {
-        const dampedDx = gestureState.dx * SLIDER_DAMPING;
-        const startX = (dragStartValue.current / 100) * SLIDER_WIDTH;
-        const finalX = Math.max(0, Math.min(SLIDER_WIDTH, startX + dampedDx));
-        const finalVal = Math.round((finalX / SLIDER_WIDTH) * 100);
-        lastValue.current = finalVal;
-        isDragging.current = false;
-        panX.flattenOffset();
-        onValueChange(finalVal);
+      onPanResponderMove: (_evt: GestureResponderEvent, gestureState: PanResponderGestureState) => {
+        if (!isDraggingRef.current || isDisabledRef.current) return;
+        const width = trackWidthRef.current;
+        const next =
+          width > 0
+            ? clampSliderValue(dragStartValueRef.current + (gestureState.dx / width) * 100)
+            : dragStartValueRef.current;
+        applyContinuousValueRef.current(next, width, true);
       },
-    })
+      onPanResponderRelease: () => {
+        endDragRef.current(trackWidthRef.current);
+      },
+      onPanResponderTerminate: () => {
+        endDragRef.current(trackWidthRef.current);
+      },
+    }),
   ).current;
 
+  const endDrag = useCallback(
+    (width: number) => {
+      if (!isDraggingRef.current) return;
+      isDraggingRef.current = false;
+      touchModeRef.current = null;
+      onDragStateChangeRef.current?.(false);
+      const finalVal = roundSliderValue(continuousValueRef.current);
+      continuousValueRef.current = finalVal;
+      lastHapticValueRef.current = finalVal;
+      setDisplayValue(finalVal);
+      panX.setValue(positionFromContinuous(finalVal, width));
+      onValueChangeRef.current(finalVal);
+    },
+    [panX, positionFromContinuous],
+  );
+
   useEffect(() => {
-    if (isDragging.current) return;
-    lastValue.current = value;
-    lastHapticValue.current = value;
-    panX.setValue((value / 100) * SLIDER_WIDTH);
-  }, [value]);
+    endDragRef.current = endDrag;
+  }, [endDrag]);
+
+  useEffect(() => {
+    if (isDraggingRef.current) return;
+    const rounded = roundSliderValue(value);
+    continuousValueRef.current = rounded;
+    lastHapticValueRef.current = rounded;
+    setDisplayValue(rounded);
+    panX.setValue(positionFromContinuous(rounded, trackWidthRef.current));
+  }, [value, panX, positionFromContinuous]);
+
+  const handleTrackLayout = useCallback(
+    (width: number) => {
+      trackWidthRef.current = width;
+      setTrackWidth(width);
+      panX.setValue(positionFromContinuous(continuousValueRef.current, width));
+    },
+    [panX, positionFromContinuous],
+  );
+
+  const interpolateMax = Math.max(trackWidth, 1);
 
   const fillWidth = panX.interpolate({
-    inputRange: [0, SLIDER_WIDTH],
-    outputRange: [0, SLIDER_WIDTH],
+    inputRange: [0, interpolateMax],
+    outputRange: [0, interpolateMax],
     extrapolate: 'clamp',
   });
 
   const thumbLeft = panX.interpolate({
-    inputRange: [0, SLIDER_WIDTH],
-    outputRange: [-(THUMB_SIZE / 2), SLIDER_WIDTH - (THUMB_SIZE / 2)],
+    inputRange: [0, interpolateMax],
+    outputRange: [-(THUMB_SIZE / 2), interpolateMax - (THUMB_SIZE / 2)],
     extrapolate: 'clamp',
   });
 
@@ -171,9 +277,15 @@ function CustomSlider({ metric, value, onValueChange, readOnly = false, locked =
           <Text style={sliderStyles.label}>{metric.label}</Text>
           {locked && <Lock size={12} color={Colors.textMuted} />}
         </View>
-        <Text style={[sliderStyles.valueText, { color: locked ? Colors.textMuted : metric.color }]}>{value}</Text>
+        <Text style={[sliderStyles.valueText, { color: locked ? Colors.textMuted : metric.color }]}>
+          {displayValue}
+        </Text>
       </View>
-      <View style={sliderStyles.trackContainer} {...(isDisabled ? {} : panResponder.panHandlers)}>
+      <View
+        style={sliderStyles.trackContainer}
+        onLayout={(e) => handleTrackLayout(e.nativeEvent.layout.width)}
+        {...(isDisabled ? {} : panResponder.panHandlers)}
+      >
         <View style={sliderStyles.track}>
           <Animated.View
             style={[
@@ -183,15 +295,26 @@ function CustomSlider({ metric, value, onValueChange, readOnly = false, locked =
           />
         </View>
         <Animated.View
+          pointerEvents="none"
           style={[
-            sliderStyles.thumb,
+            sliderStyles.thumbHitTarget,
             {
               left: thumbLeft,
-              backgroundColor: locked ? Colors.textMuted : metric.color,
-              shadowColor: locked ? Colors.textMuted : metric.color,
+              width: THUMB_SIZE + THUMB_HIT_SLOP * 2,
+              marginLeft: -THUMB_HIT_SLOP,
             },
           ]}
-        />
+        >
+          <View
+            style={[
+              sliderStyles.thumb,
+              {
+                backgroundColor: locked ? Colors.textMuted : metric.color,
+                shadowColor: locked ? Colors.textMuted : metric.color,
+              },
+            ]}
+          />
+        </Animated.View>
       </View>
       <View style={sliderStyles.rangeLabels}>
         <Text style={sliderStyles.rangeText}>{metric.lowLabel}</Text>
@@ -228,7 +351,7 @@ const sliderStyles = StyleSheet.create({
     fontVariant: ['tabular-nums'],
   },
   trackContainer: {
-    height: 40,
+    height: 48,
     justifyContent: 'center',
     position: 'relative' as const,
   },
@@ -242,12 +365,17 @@ const sliderStyles = StyleSheet.create({
     height: 6,
     borderRadius: 3,
   },
-  thumb: {
+  thumbHitTarget: {
     position: 'absolute' as const,
+    height: THUMB_SIZE + THUMB_HIT_SLOP * 2,
+    top: (48 - (THUMB_SIZE + THUMB_HIT_SLOP * 2)) / 2,
+    alignItems: 'center' as const,
+    justifyContent: 'center' as const,
+  },
+  thumb: {
     width: THUMB_SIZE,
     height: THUMB_SIZE,
     borderRadius: THUMB_SIZE / 2,
-    top: (40 - THUMB_SIZE) / 2,
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.4,
     shadowRadius: 4,
@@ -442,6 +570,7 @@ export default function DailyCheckInScreen() {
   const activeReviewForReadOnly = reviewSelectionPeriod ?? defaultReviewPeriod;
 
   const scrollRef = useRef<ScrollView>(null);
+  const [sliderScrollLocked, setSliderScrollLocked] = useState(false);
   useScrollToTopOnFocus(scrollRef);
 
   const fadeAnim = useRef(new Animated.Value(0)).current;
@@ -659,6 +788,7 @@ export default function DailyCheckInScreen() {
 
       <Animated.ScrollView
         ref={scrollRef}
+        scrollEnabled={!sliderScrollLocked}
         style={{ opacity: fadeAnim, transform: [{ translateY: slideAnim }] }}
         contentContainerStyle={[styles.scrollContent, { paddingBottom: insets.bottom + 100 }]}
         showsVerticalScrollIndicator={false}
@@ -787,6 +917,7 @@ export default function DailyCheckInScreen() {
                     value={values[metric.key]}
                     onValueChange={(val) => handleValueChange(metric.key, val)}
                     locked={isSleepAndLocked}
+                    onDragStateChange={setSliderScrollLocked}
                   />
                 );
               })}

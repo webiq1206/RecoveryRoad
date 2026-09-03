@@ -28,6 +28,7 @@ import {
   mergeTodayCheckInsFromSources,
 } from '../../../utils/mergeProfile';
 import { getLocalDateKey } from '../../../utils/checkInDate';
+import { roundCheckInSliderValue } from '../../../utils/checkInSliderValue';
 
 export interface PeriodConfig {
   label: string;
@@ -158,7 +159,7 @@ export function useDailyCheckInFlow(options?: { period?: CheckInTimeOfDay }) {
   const handleValueChange = useCallback(
     (key: string, val: number) => {
       if (key === 'sleepQuality' && sleepLocked) return;
-      setValues((prev) => ({ ...prev, [key]: val }));
+      setValues((prev) => ({ ...prev, [key]: roundCheckInSliderValue(val) }));
     },
     [sleepLocked]
   );

@@ -16,7 +16,7 @@
     "start-web": "expo start --web",
     "start-web-dev": "expo start --web",
     "lint": "expo lint",
-    "test": "bun test utils/mergeProfile.test.ts utils/checkInSliderValue.test.ts",
+    "test": "bun test utils/mergeProfile.test.ts utils/checkInSliderValue.test.ts utils/checkInStepperHold.test.ts utils/checkInDataContract.test.ts",
     "qa:ia-strict": "node scripts/qa-ia-strict.mjs",
     "audit:nav": "node scripts/audit-navigation-routes.mjs",
     "android": "node ./scripts/expo-with-packager-env.mjs run:android",

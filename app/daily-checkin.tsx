@@ -43,6 +43,8 @@ import type { CheckInTimeOfDay, EmotionalTagConfig } from '../features/checkin/c
 const THUMB_SIZE = 28;
 /** Extra touch radius beyond the visible thumb edge (invisible hit target). */
 const THUMB_HIT_SLOP = 18;
+/** Movement below this (px) counts as a tap, not a drag. */
+const SLIDER_TAP_SLOP = 8;
 
 function clampSliderValue(n: number): number {
   return Math.max(0, Math.min(100, n));
@@ -113,12 +115,15 @@ function CustomSlider({
   locked = false,
   onDragStateChange,
 }: CustomSliderProps) {
-  const panX = useRef(new Animated.Value(0)).current;
+  /** Animated 0–100 continuous percent (not pixels) so layout width changes never jump the thumb. */
+  const animPercent = useRef(new Animated.Value(value)).current;
+  const trackRef = useRef<View>(null);
   const [trackWidth, setTrackWidth] = useState(0);
   const trackWidthRef = useRef(0);
+  const trackPageXRef = useRef(0);
   const continuousValueRef = useRef(value);
   const dragStartValueRef = useRef(value);
-  const touchModeRef = useRef<'thumb' | 'track' | null>(null);
+  const touchedOnThumbRef = useRef(false);
   const isDraggingRef = useRef(false);
   const lastHapticValueRef = useRef(value);
   const isDisabledRef = useRef(readOnly || locked);
@@ -140,16 +145,40 @@ function CustomSlider({
     onDragStateChangeRef.current = onDragStateChange;
   }, [onDragStateChange]);
 
-  const positionFromContinuous = useCallback((continuous: number, width: number) => {
-    if (width <= 0) return 0;
-    return (clampSliderValue(continuous) / 100) * width;
+  const syncTrackMetrics = useCallback(() => {
+    const node = trackRef.current;
+    if (!node) return;
+    node.measureInWindow((pageX, _pageY, width) => {
+      if (width <= 0) return;
+      trackWidthRef.current = width;
+      trackPageXRef.current = pageX;
+      setTrackWidth(width);
+    });
+  }, []);
+
+  const continuousFromPageX = useCallback((pageX: number) => {
+    const width = trackWidthRef.current;
+    const trackX = trackPageXRef.current;
+    if (width <= 0) return continuousValueRef.current;
+    return clampSliderValue(((pageX - trackX) / width) * 100);
+  }, []);
+
+  const isPageXOnThumb = useCallback((pageX: number, currentValue: number) => {
+    const width = trackWidthRef.current;
+    const trackX = trackPageXRef.current;
+    if (width <= 0) return true;
+    const localX = pageX - trackX;
+    const thumbCenterX = (clampSliderValue(currentValue) / 100) * width;
+    const hitRadius = THUMB_SIZE / 2 + THUMB_HIT_SLOP;
+    return Math.abs(localX - thumbCenterX) <= hitRadius;
   }, []);
 
   const applyContinuousValue = useCallback(
-    (continuous: number, width: number, emitToParent: boolean) => {
-      continuousValueRef.current = continuous;
-      panX.setValue(positionFromContinuous(continuous, width));
-      const rounded = roundSliderValue(continuous);
+    (continuous: number, emitToParent: boolean) => {
+      const clamped = clampSliderValue(continuous);
+      continuousValueRef.current = clamped;
+      animPercent.setValue(clamped);
+      const rounded = roundSliderValue(clamped);
       setDisplayValue(rounded);
       if (emitToParent && rounded !== lastHapticValueRef.current) {
         lastHapticValueRef.current = rounded;
@@ -157,7 +186,7 @@ function CustomSlider({
         onValueChangeRef.current(rounded);
       }
     },
-    [panX, positionFromContinuous],
+    [animPercent],
   );
 
   const applyContinuousValueRef = useRef(applyContinuousValue);
@@ -165,70 +194,93 @@ function CustomSlider({
     applyContinuousValueRef.current = applyContinuousValue;
   }, [applyContinuousValue]);
 
-  const endDragRef = useRef<(width: number) => void>(() => {});
+  const endDragRef = useRef<(releasePageX: number, dx: number, dy: number, wasOnThumb: boolean) => void>(
+    () => {},
+  );
 
   const panResponder = useRef(
     PanResponder.create({
       onStartShouldSetPanResponder: () => !isDisabledRef.current,
+      onStartShouldSetPanResponderCapture: () => !isDisabledRef.current,
       onMoveShouldSetPanResponder: () => !isDisabledRef.current,
+      onMoveShouldSetPanResponderCapture: () => !isDisabledRef.current,
       onPanResponderTerminationRequest: () => false,
       onShouldBlockNativeResponder: () => true,
       onPanResponderGrant: (evt: GestureResponderEvent) => {
         if (isDisabledRef.current) return;
-        const width = trackWidthRef.current;
-        const localX = evt.nativeEvent.locationX;
-        const current = continuousValueRef.current;
-        const thumbHitRadius = THUMB_SIZE / 2 + THUMB_HIT_SLOP;
-        const thumbCenterX = width > 0 ? (clampSliderValue(current) / 100) * width : 0;
-        const onThumb = width > 0 && Math.abs(localX - thumbCenterX) <= thumbHitRadius;
 
+        const current = continuousValueRef.current;
+        dragStartValueRef.current = current;
         isDraggingRef.current = true;
         onDragStateChangeRef.current?.(true);
 
-        if (onThumb) {
-          touchModeRef.current = 'thumb';
-          dragStartValueRef.current = current;
-          return;
+        const touchPageX = evt.nativeEvent.pageX;
+        const node = trackRef.current;
+        if (node) {
+          node.measureInWindow((pageX, _pageY, width) => {
+            if (width > 0) {
+              trackWidthRef.current = width;
+              trackPageXRef.current = pageX;
+              setTrackWidth(width);
+            }
+            touchedOnThumbRef.current = isPageXOnThumb(touchPageX, current);
+          });
+        } else {
+          touchedOnThumbRef.current = true;
         }
-
-        touchModeRef.current = 'track';
-        const tapped =
-          width > 0 ? clampSliderValue((localX / width) * 100) : current;
-        dragStartValueRef.current = tapped;
-        applyContinuousValueRef.current(tapped, width, true);
       },
       onPanResponderMove: (_evt: GestureResponderEvent, gestureState: PanResponderGestureState) => {
         if (!isDraggingRef.current || isDisabledRef.current) return;
         const width = trackWidthRef.current;
-        const next =
-          width > 0
-            ? clampSliderValue(dragStartValueRef.current + (gestureState.dx / width) * 100)
-            : dragStartValueRef.current;
-        applyContinuousValueRef.current(next, width, true);
+        if (width <= 0) return;
+        const next = clampSliderValue(
+          dragStartValueRef.current + (gestureState.dx / width) * 100,
+        );
+        applyContinuousValueRef.current(next, true);
       },
-      onPanResponderRelease: () => {
-        endDragRef.current(trackWidthRef.current);
+      onPanResponderRelease: (evt: GestureResponderEvent, gestureState: PanResponderGestureState) => {
+        endDragRef.current(
+          evt.nativeEvent.pageX,
+          gestureState.dx,
+          gestureState.dy,
+          touchedOnThumbRef.current,
+        );
       },
-      onPanResponderTerminate: () => {
-        endDragRef.current(trackWidthRef.current);
+      onPanResponderTerminate: (evt: GestureResponderEvent, gestureState: PanResponderGestureState) => {
+        endDragRef.current(
+          evt.nativeEvent.pageX,
+          gestureState.dx,
+          gestureState.dy,
+          touchedOnThumbRef.current,
+        );
       },
     }),
   ).current;
 
   const endDrag = useCallback(
-    (width: number) => {
+    (releasePageX: number, dx: number, dy: number, wasOnThumb: boolean) => {
       if (!isDraggingRef.current) return;
+
+      const isTap =
+        Math.abs(dx) < SLIDER_TAP_SLOP && Math.abs(dy) < SLIDER_TAP_SLOP;
+      if (isTap && !wasOnThumb) {
+        const tapped = continuousFromPageX(releasePageX);
+        dragStartValueRef.current = tapped;
+        applyContinuousValueRef.current(tapped, true);
+      }
+
       isDraggingRef.current = false;
-      touchModeRef.current = null;
+      touchedOnThumbRef.current = false;
       onDragStateChangeRef.current?.(false);
+
       const finalVal = roundSliderValue(continuousValueRef.current);
       continuousValueRef.current = finalVal;
       lastHapticValueRef.current = finalVal;
       setDisplayValue(finalVal);
-      panX.setValue(positionFromContinuous(finalVal, width));
+      animPercent.setValue(finalVal);
       onValueChangeRef.current(finalVal);
     },
-    [panX, positionFromContinuous],
+    [animPercent, continuousFromPageX],
   );
 
   useEffect(() => {
@@ -241,29 +293,27 @@ function CustomSlider({
     continuousValueRef.current = rounded;
     lastHapticValueRef.current = rounded;
     setDisplayValue(rounded);
-    panX.setValue(positionFromContinuous(rounded, trackWidthRef.current));
-  }, [value, panX, positionFromContinuous]);
+    animPercent.setValue(rounded);
+  }, [value, animPercent]);
 
-  const handleTrackLayout = useCallback(
-    (width: number) => {
-      trackWidthRef.current = width;
-      setTrackWidth(width);
-      panX.setValue(positionFromContinuous(continuousValueRef.current, width));
-    },
-    [panX, positionFromContinuous],
-  );
+  const handleTrackLayout = useCallback(() => {
+    syncTrackMetrics();
+    if (!isDraggingRef.current) {
+      animPercent.setValue(continuousValueRef.current);
+    }
+  }, [animPercent, syncTrackMetrics]);
 
-  const interpolateMax = Math.max(trackWidth, 1);
+  const w = Math.max(trackWidth, 1);
 
-  const fillWidth = panX.interpolate({
-    inputRange: [0, interpolateMax],
-    outputRange: [0, interpolateMax],
+  const fillWidth = animPercent.interpolate({
+    inputRange: [0, 100],
+    outputRange: [0, w],
     extrapolate: 'clamp',
   });
 
-  const thumbLeft = panX.interpolate({
-    inputRange: [0, interpolateMax],
-    outputRange: [-(THUMB_SIZE / 2), interpolateMax - (THUMB_SIZE / 2)],
+  const thumbLeft = animPercent.interpolate({
+    inputRange: [0, 100],
+    outputRange: [-(THUMB_SIZE / 2), w - THUMB_SIZE / 2],
     extrapolate: 'clamp',
   });
 
@@ -282,8 +332,10 @@ function CustomSlider({
         </Text>
       </View>
       <View
+        ref={trackRef}
         style={sliderStyles.trackContainer}
-        onLayout={(e) => handleTrackLayout(e.nativeEvent.layout.width)}
+        onLayout={handleTrackLayout}
+        collapsable={false}
         {...(isDisabled ? {} : panResponder.panHandlers)}
       >
         <View style={sliderStyles.track}>

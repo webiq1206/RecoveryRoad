@@ -41,7 +41,6 @@ import { useUser } from '../core/domains/useUser';
 import { useAppMeta } from '../core/domains/useAppMeta';
 import { useEngagement } from '../providers/EngagementProvider';
 import { useSubscription } from '../providers/SubscriptionProvider';
-import { REVENUECAT_PRO_ENTITLEMENT_ID } from '../constants/revenueCatPublicConfig';
 import { useOpenPremiumPaywall } from '../hooks/useOpenPremiumPaywall';
 import { useNotifications } from '../providers/NotificationProvider';
 import { useProviderMode } from '../providers/ProviderModeProvider';
@@ -76,8 +75,6 @@ export default function SettingsScreen() {
     restoreMutation,
     storePurchasesReady,
     purchasesApiKeyConfigured,
-    rcUserId,
-    subscriptionDiagnostics,
   } = useSubscription();
   const { openPremiumPaywall } = useOpenPremiumPaywall();
   const {
@@ -276,45 +273,6 @@ export default function SettingsScreen() {
             Subscription status: Free
           </Text>
         )}
-        {Platform.OS !== 'web' && __DEV__ && !isPremium ? (
-          <View style={styles.subscriptionStatusCard} testID="settings-subscription-diagnostics">
-            <Text style={styles.subscriptionStatusTitle}>Subscription diagnostics</Text>
-            <Text style={styles.subscriptionStatusLine}>
-              Store key in build: {purchasesApiKeyConfigured ? 'yes' : 'no'}
-            </Text>
-            <Text style={styles.subscriptionStatusLine}>
-              Store connected: {storePurchasesReady ? 'yes' : 'no'}
-            </Text>
-            <Text style={styles.subscriptionStatusLine}>
-              Expected entitlement: {REVENUECAT_PRO_ENTITLEMENT_ID}
-            </Text>
-            <Text style={styles.subscriptionStatusLine}>
-              Active entitlements:{' '}
-              {subscriptionDiagnostics.activeEntitlementKeys.length > 0
-                ? subscriptionDiagnostics.activeEntitlementKeys.join(', ')
-                : '(none)'}
-            </Text>
-            {subscriptionDiagnostics.lastResolvedEntitlementId ? (
-              <Text style={styles.subscriptionStatusLine}>
-                Resolved as: {subscriptionDiagnostics.lastResolvedEntitlementId}
-                {subscriptionDiagnostics.lastEntitlementSource
-                  ? ` (${subscriptionDiagnostics.lastEntitlementSource})`
-                  : ''}
-              </Text>
-            ) : null}
-            {rcUserId ? (
-              <Text style={styles.subscriptionStatusLine} testID="settings-rc-user-id">
-                RevenueCat customer ID: {rcUserId}
-              </Text>
-            ) : null}
-            {!purchasesApiKeyConfigured ? (
-              <Text style={styles.subscriptionStatusHint}>
-                TestFlight builds need EXPO_PUBLIC_REVENUECAT_IOS_API_KEY on the EAS production
-                environment, then a new build.
-              </Text>
-            ) : null}
-          </View>
-        ) : null}
         <View style={styles.groupCard}>
           <Pressable
             style={({ pressed }) => [styles.settingRow, pressed && { opacity: 0.85 }]}
@@ -328,7 +286,7 @@ export default function SettingsScreen() {
               <View style={{ flex: 1 }}>
                 <Text style={styles.settingLabel}>Plans & benefits</Text>
                 <Text style={styles.settingValue}>
-                  See Freemium vs Premium side by side
+                  See Free vs Premium side by side
                 </Text>
               </View>
             </View>
@@ -1038,31 +996,7 @@ export default function SettingsScreen() {
           </>
         )}
 
-        <Text style={[styles.sectionLabel, { marginTop: 28 }]}>LOCAL DATA</Text>
-        <Pressable
-          style={styles.dangerRow}
-          onPress={handleRemoveAppData}
-          testID="settings-remove-all-app-data"
-        >
-          <View style={styles.settingLeft}>
-            <View
-              style={[
-                styles.settingIcon,
-                { backgroundColor: 'rgba(239,83,80,0.12)' },
-              ]}
-            >
-              <Trash2 size={17} color={Colors.danger} />
-            </View>
-            <View style={{ flex: 1 }}>
-              <Text style={[styles.settingLabel, { color: Colors.danger }]}>Remove all app data</Text>
-              <Text style={styles.settingValue}>
-                Permanently erase your on-device profile and all app data (no RecoveryRoad cloud
-                account)
-              </Text>
-            </View>
-          </View>
-        </Pressable>
-
+        <Text style={[styles.sectionLabel, { marginTop: 28 }]}>CLEAR DATA</Text>
         <Pressable
           style={({ pressed }) => [
             styles.settingRow,
@@ -1085,6 +1019,31 @@ export default function SettingsScreen() {
               <Text style={styles.settingValue}>
                 Clear caches, prediction buffers, and on-device logs—does not remove journal,
                 check-ins, or profile
+              </Text>
+            </View>
+          </View>
+        </Pressable>
+
+        <Text style={[styles.sectionLabel, { marginTop: 28 }]}>DELETE ACCOUNT</Text>
+        <Pressable
+          style={styles.dangerRow}
+          onPress={handleRemoveAppData}
+          testID="settings-remove-all-app-data"
+        >
+          <View style={styles.settingLeft}>
+            <View
+              style={[
+                styles.settingIcon,
+                { backgroundColor: 'rgba(239,83,80,0.12)' },
+              ]}
+            >
+              <Trash2 size={17} color={Colors.danger} />
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text style={[styles.settingLabel, { color: Colors.danger }]}>Remove all app data</Text>
+              <Text style={styles.settingValue}>
+                Permanently erase your on-device profile and all app data (no RecoveryRoad cloud
+                account)
               </Text>
             </View>
           </View>
@@ -1122,34 +1081,6 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: Colors.textSecondary,
     marginBottom: 12,
-  },
-  subscriptionStatusCard: {
-    backgroundColor: Colors.cardBackground,
-    borderRadius: 12,
-    padding: 12,
-    marginBottom: 12,
-    borderWidth: 1,
-    borderColor: Colors.border,
-  },
-  subscriptionStatusTitle: {
-    fontSize: 12,
-    fontWeight: '700',
-    color: Colors.textSecondary,
-    marginBottom: 8,
-    textTransform: 'uppercase',
-    letterSpacing: 0.8,
-  },
-  subscriptionStatusLine: {
-    fontSize: 11,
-    color: Colors.textMuted,
-    lineHeight: 16,
-    marginBottom: 4,
-  },
-  subscriptionStatusHint: {
-    fontSize: 11,
-    color: Colors.warning,
-    lineHeight: 16,
-    marginTop: 6,
   },
   groupCard: {
     backgroundColor: Colors.cardBackground,

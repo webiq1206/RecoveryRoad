@@ -2,6 +2,7 @@ import React, { useCallback, useState } from 'react';
 import { View, Text, StyleSheet, TextInput, Pressable, KeyboardAvoidingView, Platform } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ScreenScrollView } from '../../components/ScreenScrollView';
+import { KeyboardDoneBar } from '../../components/KeyboardDoneBar';
 import { useRouter, Stack } from 'expo-router';
 import * as Haptics from 'expo-haptics';
 import Colors from '../../constants/colors';
@@ -60,70 +61,73 @@ export default function QuickJournalToolScreen() {
   }, [content, addJournalEntry, recordMicroWin, triggerLoop, logToolUsage, router]);
 
   return (
-    <KeyboardAvoidingView
-      style={{ flex: 1, backgroundColor: Colors.background }}
-      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-      keyboardVerticalOffset={Platform.OS === 'ios' ? 64 : 0}
-    >
-      <Stack.Screen
-        options={{
-          title: 'Quick journal',
-          headerStyle: { backgroundColor: Colors.background },
-          headerTintColor: Colors.text,
-        }}
-      />
-      <ScreenScrollView
-        keyboardShouldPersistTaps="handled"
-        showsVerticalScrollIndicator
-        contentContainerStyle={[
-          styles.scrollContent,
-          {
-            paddingTop: 12,
-            paddingBottom: insets.bottom + KEYBOARD_SCROLL_PADDING,
-          },
-        ]}
+    <>
+      <KeyboardAvoidingView
+        style={{ flex: 1, backgroundColor: Colors.background }}
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+        keyboardVerticalOffset={Platform.OS === 'ios' ? 64 : 0}
       >
-        <View style={styles.card}>
-          <Text style={styles.label}>ONE SHORT ENTRY</Text>
-          <Text style={styles.title}>Get it out of your head</Text>
-          <Text style={styles.subtitle}>
-            Take 1–2 minutes to describe what&apos;s happening, without editing yourself.
-          </Text>
+        <Stack.Screen
+          options={{
+            title: 'Quick journal',
+            headerStyle: { backgroundColor: Colors.background },
+            headerTintColor: Colors.text,
+          }}
+        />
+        <ScreenScrollView
+          keyboardShouldPersistTaps="handled"
+          showsVerticalScrollIndicator
+          contentContainerStyle={[
+            styles.scrollContent,
+            {
+              paddingTop: 12,
+              paddingBottom: insets.bottom + KEYBOARD_SCROLL_PADDING,
+            },
+          ]}
+        >
+          <View style={styles.card}>
+            <Text style={styles.label}>ONE SHORT ENTRY</Text>
+            <Text style={styles.title}>Get it out of your head</Text>
+            <Text style={styles.subtitle}>
+              Take 1–2 minutes to describe what&apos;s happening, without editing yourself.
+            </Text>
 
-          <View style={styles.promptBox}>
-            <Text style={styles.promptLabel}>Prompt</Text>
-            <Text style={styles.promptText}>{prompt}</Text>
+            <View style={styles.promptBox}>
+              <Text style={styles.promptLabel}>Prompt</Text>
+              <Text style={styles.promptText}>{prompt}</Text>
+            </View>
+
+            <TextInput
+              style={styles.input}
+              placeholder="Start writing here..."
+              placeholderTextColor={Colors.textMuted}
+              multiline
+              textAlignVertical="top"
+              maxLength={800}
+              value={content}
+              onChangeText={setContent}
+              testID="quick-journal-input"
+            />
+
+            <View style={styles.footerRow}>
+              <Text style={styles.charCount}>{content.length}/800</Text>
+              <Pressable
+                style={({ pressed }) => [
+                  styles.saveButton,
+                  (!content.trim() || pressed) && styles.saveButtonPressed,
+                ]}
+                onPress={handleSave}
+                disabled={!content.trim()}
+                testID="quick-journal-save"
+              >
+                <Text style={styles.saveButtonText}>Save Entry</Text>
+              </Pressable>
+            </View>
           </View>
-
-          <TextInput
-            style={styles.input}
-            placeholder="Start writing here..."
-            placeholderTextColor={Colors.textMuted}
-            multiline
-            textAlignVertical="top"
-            maxLength={800}
-            value={content}
-            onChangeText={setContent}
-            testID="quick-journal-input"
-          />
-
-          <View style={styles.footerRow}>
-            <Text style={styles.charCount}>{content.length}/800</Text>
-            <Pressable
-              style={({ pressed }) => [
-                styles.saveButton,
-                (!content.trim() || pressed) && styles.saveButtonPressed,
-              ]}
-              onPress={handleSave}
-              disabled={!content.trim()}
-              testID="quick-journal-save"
-            >
-              <Text style={styles.saveButtonText}>Save Entry</Text>
-            </Pressable>
-          </View>
-        </View>
-      </ScreenScrollView>
-    </KeyboardAvoidingView>
+        </ScreenScrollView>
+      </KeyboardAvoidingView>
+      <KeyboardDoneBar />
+    </>
   );
 }
 

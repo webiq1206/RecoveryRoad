@@ -14,6 +14,7 @@ import {
 } from 'react-native';
 import { ScreenFlatList } from '../../../components/ScreenFlatList';
 import { ScreenScrollView } from '../../../components/ScreenScrollView';
+import { KeyboardDoneBar } from '../../../components/KeyboardDoneBar';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import {
   Heart, Shield, Phone, Plus, X,
@@ -598,6 +599,7 @@ export default function ConnectionScreen() {
               <Text style={styles.formSubmitText}>Add Contact</Text>
             </Pressable>
           </View>
+          <KeyboardDoneBar inline />
         </KeyboardAvoidingView>
       </Modal>
 

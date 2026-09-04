@@ -1,6 +1,7 @@
 import React, { type ReactNode } from 'react';
 import { StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { KeyboardDoneBar } from '../../../components/KeyboardDoneBar';
 
 /**
  * Full-screen dimmed overlay with the form anchored to the top (safe area). No
@@ -21,6 +22,7 @@ export function RebuildModalTopFrame({ children }: { children: ReactNode }) {
       ]}
     >
       {children}
+      <KeyboardDoneBar />
     </View>
   );
 }

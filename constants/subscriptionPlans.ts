@@ -36,7 +36,7 @@ export function getFreemiumHighlights(): string[] {
 }
 
 /** Section title on paywall / plans for the free tier list */
-export const FREEMIUM_SECTION_TITLE = 'Freemium includes';
+export const FREEMIUM_SECTION_TITLE = 'Free includes';
 
 /**
  * Premium feature cards for marketing UI (icons + copy).
@@ -182,7 +182,7 @@ export const TIER_COMPARISON_ROWS: TierComparisonRow[] = [
     freemium: false,
     premium: true,
     footnote:
-      'Freemium includes core progress and charts where available; Premium unlocks the full predictive engine and deeper analytics.',
+      'Free includes core progress and charts where available; Premium unlocks the full predictive engine and deeper analytics.',
   },
 ];
 

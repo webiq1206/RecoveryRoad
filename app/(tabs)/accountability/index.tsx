@@ -14,6 +14,7 @@ import {
   useWindowDimensions,
 } from 'react-native';
 import { ScreenScrollView } from '../../../components/ScreenScrollView';
+import { KeyboardDoneBar } from '../../../components/KeyboardDoneBar';
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import {
@@ -720,7 +721,7 @@ export default function AccountabilityScreen() {
                   void openPremiumPaywall();
                 }}
               >
-                <Text style={styles.premiumGateBtnText}>Unlock Partners</Text>
+                <Text style={styles.premiumGateBtnText}>Unlock with Premium</Text>
               </Pressable>
             </View>
           )
@@ -742,7 +743,7 @@ export default function AccountabilityScreen() {
                   void openPremiumPaywall();
                 }}
               >
-                <Text style={styles.premiumGateBtnText}>Unlock Alerts</Text>
+                <Text style={styles.premiumGateBtnText}>Unlock with Premium</Text>
               </Pressable>
             </View>
           )
@@ -981,6 +982,7 @@ export default function AccountabilityScreen() {
         </View>
       </Modal>
     </Animated.View>
+    <KeyboardDoneBar />
     </>
   );
 }

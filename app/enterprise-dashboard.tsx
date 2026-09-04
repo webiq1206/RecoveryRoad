@@ -11,6 +11,7 @@ import {
   Platform,
 } from 'react-native';
 import { ScreenScrollView } from '../components/ScreenScrollView';
+import { KeyboardDoneBar } from '../components/KeyboardDoneBar';
 import { Stack, useRouter } from 'expo-router';
 import {
   Building2,
@@ -389,6 +390,7 @@ export default function EnterpriseDashboard() {
           </View>
         </View>
       </Modal>
+      <KeyboardDoneBar />
     </View>
   );
 }

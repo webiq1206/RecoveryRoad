@@ -817,7 +817,7 @@ export default function RebuildScreen() {
               void openPremiumPaywall();
             }}
           >
-            <Text style={styles.premiumOverlayBtnText}>Unlock Rebuild</Text>
+            <Text style={styles.premiumOverlayBtnText}>Unlock with Premium</Text>
           </Pressable>
         </View>
       </View>

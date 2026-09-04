@@ -36,6 +36,7 @@ import { computeDailyCheckInStabilityScore } from '../utils/stabilityEngine';
 import type { DailyCheckIn, RecoveryProfile } from '../types';
 import type { CheckInTimeOfDay, EmotionalTagConfig } from '../features/checkin/constants/checkinMetrics';
 import { CheckInMetricSlider } from '../components/checkin/CheckInMetricSlider';
+import { KeyboardDoneBar } from '../components/KeyboardDoneBar';
 
 const AnimatedScrollView = Animated.createAnimatedComponent(ScrollView);
 
@@ -736,6 +737,7 @@ export default function DailyCheckInScreen() {
           <ChevronRight size={20} color={Colors.white} />
         </Pressable>
       </View>
+      <KeyboardDoneBar />
     </View>
   );
 }

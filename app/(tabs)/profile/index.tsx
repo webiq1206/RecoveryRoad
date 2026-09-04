@@ -18,6 +18,7 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ScreenScrollView } from '../../../components/ScreenScrollView';
+import { KeyboardDoneBar } from '../../../components/KeyboardDoneBar';
 import { User, Shield, Target, TrendingUp, Bell, BellOff, Lock, Unlock, MessageCircle, ChevronRight, Sparkles, Clock, Heart, AlertTriangle, Sun, Moon as MoonIcon, ShieldAlert, Award, Crown, RotateCcw, Calendar, DollarSign, BookOpen, Check, X, Scale, Gauge, PauseCircle, PlayCircle, Activity } from 'lucide-react-native';
 import * as Haptics from 'expo-haptics';
 import Colors from '../../../constants/colors';
@@ -331,7 +332,7 @@ export default function ProfileScreen() {
           <View style={{ flex: 1, marginRight: 12 }}>
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 4 }}>
               <Sparkles size={14} color={Colors.primary} />
-              <Text style={styles.upgradeTitle}>Freemium</Text>
+              <Text style={styles.upgradeTitle}>Free</Text>
             </View>
             <Text style={styles.upgradeSubtitle}>
               Core recovery tools are free. Compare plans or upgrade for AI, programs, and more.
@@ -874,6 +875,7 @@ export default function ProfileScreen() {
         </View>
       </Modal>
       </ScreenScrollView>
+      <KeyboardDoneBar inline />
     </KeyboardAvoidingView>
   );
 }

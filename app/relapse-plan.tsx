@@ -1,6 +1,7 @@
 import React, { useMemo, useState } from 'react';
 import { View, Text, StyleSheet, Pressable, TextInput, KeyboardAvoidingView, Platform } from 'react-native';
 import { ScreenScrollView } from '../components/ScreenScrollView';
+import { KeyboardDoneBar } from '../components/KeyboardDoneBar';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter, Stack } from 'expo-router';
 import { AlertTriangle, BookOpenCheck, ChevronRight, Shield, Users } from 'lucide-react-native';
@@ -336,6 +337,7 @@ export default function RelapsePlanScreen() {
           <ChevronRight size={18} color="#FFFFFF" />
         </Pressable>
       </SafeAreaView>
+      <KeyboardDoneBar inline />
     </KeyboardAvoidingView>
   );
 }

@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { View, Text, StyleSheet, Pressable, useWindowDimensions } from 'react-native';
 import { useFocusEffect } from 'expo-router';
-import Slider, { type SliderRef } from '@react-native-community/slider';
+import Slider, { type SliderProps, type SliderRef } from '@react-native-community/slider';
 import { Lock, Minus, Plus } from 'lucide-react-native';
 import * as Haptics from 'expo-haptics';
 import Colors from '../../constants/colors';
@@ -50,7 +50,8 @@ export function CheckInMetricSlider({
   const onValueChangeRef = useRef(onValueChange);
   const onDragStateChangeRef = useRef(onDragStateChange);
   const lastHapticRef = useRef(displayValue);
-  const sliderRef = useRef<SliderRef>(null);
+  // Only web attaches an imperative handle; native forwards the host component.
+  const sliderRef = useRef<Partial<SliderRef> | null>(null);
   const holdRef = useRef(new CheckInStepperHoldController());
   const holdScrollLockedRef = useRef(false);
   const pendingTapRef = useRef<StepperHoldDirection | null>(null);
@@ -87,6 +88,13 @@ export function CheckInMetricSlider({
     void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
   }, []);
 
+  const resyncSliderThumb = useCallback((next: number) => {
+    // updateValue only exists on web; on native the ref is the host component
+    // and the value prop drives the thumb.
+    const instance = sliderRef.current;
+    if (typeof instance?.updateValue === 'function') instance.updateValue(next);
+  }, []);
+
   const handleSlidingStart = useCallback(() => {
     controller.onSlideStart();
     onDragStateChangeRef.current?.(true);
@@ -99,12 +107,12 @@ export function CheckInMetricSlider({
       setSliderValue(next);
       setDisplayValue(roundCheckInSliderValue(next));
       if (next === previous && emitValue === null) {
-        sliderRef.current?.updateValue(next);
+        resyncSliderThumb(next);
       }
       if (emitValue !== null) playSliderHaptic(emitValue);
       emitIfNeeded(emitValue);
     },
-    [controller, emitIfNeeded, playSliderHaptic],
+    [controller, emitIfNeeded, playSliderHaptic, resyncSliderThumb],
   );
 
   const handleSlidingComplete = useCallback(
@@ -112,12 +120,12 @@ export function CheckInMetricSlider({
       const { sliderValue: next, emitValue } = controller.onSlideComplete(raw);
       setSliderValue(next);
       setDisplayValue(next);
-      sliderRef.current?.updateValue(next);
+      resyncSliderThumb(next);
       lastHapticRef.current = emitValue;
       onValueChangeRef.current(roundCheckInSliderValue(emitValue));
       onDragStateChangeRef.current?.(false);
     },
-    [controller],
+    [controller, resyncSliderThumb],
   );
 
   const applyStepperDelta = useCallback(
@@ -126,13 +134,13 @@ export function CheckInMetricSlider({
       setSliderValue(next);
       setDisplayValue(controller.getDisplayValue());
       if (emitValue === null) return false;
-      sliderRef.current?.updateValue(next);
+      resyncSliderThumb(next);
       lastHapticRef.current = emitValue;
       if (haptic !== 'none') playStepperHaptic();
       emitIfNeeded(emitValue);
       return true;
     },
-    [controller, emitIfNeeded, playStepperHaptic],
+    [controller, emitIfNeeded, playStepperHaptic, resyncSliderThumb],
   );
 
   const unlockHoldScroll = useCallback(() => {
@@ -257,7 +265,7 @@ export function CheckInMetricSlider({
       <View style={[styles.sliderRow, { gap: sliderStepperGap }]}>
         <View style={[styles.sliderWrap, { minWidth: sliderMinWidth }]}>
           <Slider
-            ref={sliderRef}
+            ref={sliderRef as unknown as SliderProps['ref']}
             style={styles.slider}
             value={sliderValue}
             onSlidingStart={handleSlidingStart}

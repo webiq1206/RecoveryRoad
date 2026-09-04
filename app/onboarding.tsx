@@ -18,6 +18,7 @@ import {
   type NativeScrollEvent,
 } from 'react-native';
 import { ScreenScrollView } from '../components/ScreenScrollView';
+import { KeyboardDoneBar } from '../components/KeyboardDoneBar';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useRouter, useLocalSearchParams, useFocusEffect } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -1185,6 +1186,7 @@ export default function OnboardingScreen() {
         )}
       </View>
     </View>
+    <KeyboardDoneBar inline />
     </KeyboardAvoidingView>
   );
 }

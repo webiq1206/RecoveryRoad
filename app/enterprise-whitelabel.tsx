@@ -11,6 +11,7 @@ import {
   Switch,
 } from 'react-native';
 import { ScreenScrollView } from '../components/ScreenScrollView';
+import { KeyboardDoneBar } from '../components/KeyboardDoneBar';
 import { Stack } from 'expo-router';
 import {
   Palette,
@@ -344,6 +345,7 @@ export default function EnterpriseWhiteLabel() {
           <View style={{ height: 40 }} />
         </Animated.View>
       </ScreenScrollView>
+      <KeyboardDoneBar />
     </View>
   );
 }

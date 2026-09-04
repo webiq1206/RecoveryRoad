@@ -2,6 +2,7 @@ import React, { useState, useCallback } from 'react';
 import { View, Text, StyleSheet, TextInput, Pressable, Alert, KeyboardAvoidingView, Platform } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ScreenScrollView } from '../components/ScreenScrollView';
+import { KeyboardDoneBar } from '../components/KeyboardDoneBar';
 import { useRouter, Stack } from 'expo-router';
 import * as Haptics from 'expo-haptics';
 import Colors from '../constants/colors';
@@ -51,87 +52,91 @@ export default function NewJournalScreen() {
   }, [title, content, mood, addJournalEntry]);
 
   return (
-    <KeyboardAvoidingView
-      style={styles.keyboardRoot}
-      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-      keyboardVerticalOffset={Platform.OS === 'ios' ? insets.top + 56 : 0}
-    >
-      <Stack.Screen
-        options={{
-          title: 'New Entry',
-          headerStyle: { backgroundColor: Colors.background },
-          headerTintColor: Colors.text,
-          headerRight: () => (
-            <Pressable onPress={handleSave} hitSlop={12}>
-              <Text style={styles.saveButton}>Save</Text>
-            </Pressable>
-          ),
-        }}
-      />
-      <ScreenScrollView
-        style={styles.container}
-        contentContainerStyle={[
-          styles.content,
-          {
-            flexGrow: 1,
-            paddingBottom: Math.max(insets.bottom + KEYBOARD_SCROLL_PADDING, 320),
-          },
-        ]}
-        keyboardShouldPersistTaps="handled"
-        showsVerticalScrollIndicator
+    <>
+      <KeyboardAvoidingView
+        style={styles.keyboardRoot}
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+        keyboardVerticalOffset={Platform.OS === 'ios' ? insets.top + 56 : 0}
       >
-        <Text style={styles.label}>HOW ARE YOU FEELING?</Text>
-        <View style={styles.moodRow}>
-          {MOOD_EMOJIS.map((emoji, index) => (
-            <Pressable
-              key={index}
-              style={[styles.moodBtn, mood === index + 1 && styles.moodBtnSelected]}
-              onPress={() => {
-                Haptics.selectionAsync();
-                setMood(index + 1);
-              }}
-            >
-              <Text style={styles.moodEmoji}>{emoji}</Text>
-              <Text style={[styles.moodLabel, mood === index + 1 && styles.moodLabelActive]}>
-                {MOOD_LABELS[index]}
-              </Text>
-            </Pressable>
-          ))}
-        </View>
-
-        <Text style={styles.label}>TITLE</Text>
-        <TextInput
-          style={styles.titleInput}
-          placeholder="Give your entry a title"
-          placeholderTextColor={Colors.textMuted}
-          value={title}
-          onChangeText={setTitle}
-          maxLength={100}
-          testID="journal-title"
+        <Stack.Screen
+          options={{
+            title: 'New Entry',
+            headerStyle: { backgroundColor: Colors.background },
+            headerTintColor: Colors.text,
+            headerRight: () => (
+              <Pressable onPress={handleSave} hitSlop={12}>
+                <Text style={styles.saveButton}>Save</Text>
+              </Pressable>
+            ),
+          }}
         />
-
-        <Text style={styles.label}>YOUR THOUGHTS</Text>
-        <TextInput
-          style={styles.contentInput}
-          placeholder="Write about your day, feelings, challenges, or victories..."
-          placeholderTextColor={Colors.textMuted}
-          value={content}
-          onChangeText={setContent}
-          multiline
-          textAlignVertical="top"
-          maxLength={2000}
-          testID="journal-content"
-        />
-
-        <Pressable
-          style={({ pressed }) => [styles.saveBtn, pressed && styles.saveBtnPressed]}
-          onPress={handleSave}
-          testID="save-journal"
+        <ScreenScrollView
+          style={styles.container}
+          contentContainerStyle={[
+            styles.content,
+            {
+              flexGrow: 1,
+              paddingBottom: Math.max(insets.bottom + KEYBOARD_SCROLL_PADDING, 320),
+            },
+          ]}
+          keyboardShouldPersistTaps="handled"
+          showsVerticalScrollIndicator
         >
-          <Text style={styles.saveBtnText}>Save Entry</Text>
-        </Pressable>
-      </ScreenScrollView>
-    </KeyboardAvoidingView>
+          <Text style={styles.label}>HOW ARE YOU FEELING?</Text>
+          <View style={styles.moodRow}>
+            {MOOD_EMOJIS.map((emoji, index) => (
+              <Pressable
+                key={index}
+                style={[styles.moodBtn, mood === index + 1 && styles.moodBtnSelected]}
+                onPress={() => {
+                  Haptics.selectionAsync();
+                  setMood(index + 1);
+                }}
+              >
+                <Text style={styles.moodEmoji}>{emoji}</Text>
+                <Text style={[styles.moodLabel, mood === index + 1 && styles.moodLabelActive]}>
+                  {MOOD_LABELS[index]}
+                </Text>
+              </Pressable>
+            ))}
+          </View>
+
+          <Text style={styles.label}>TITLE</Text>
+          <TextInput
+            style={styles.titleInput}
+            placeholder="Give your entry a title"
+            placeholderTextColor={Colors.textMuted}
+            value={title}
+            onChangeText={setTitle}
+            maxLength={100}
+            returnKeyType="done"
+            testID="journal-title"
+          />
+
+          <Text style={styles.label}>YOUR THOUGHTS</Text>
+          <TextInput
+            style={styles.contentInput}
+            placeholder="Write about your day, feelings, challenges, or victories..."
+            placeholderTextColor={Colors.textMuted}
+            value={content}
+            onChangeText={setContent}
+            multiline
+            textAlignVertical="top"
+            maxLength={2000}
+            testID="journal-content"
+          />
+
+          <Pressable
+            style={({ pressed }) => [styles.saveBtn, pressed && styles.saveBtnPressed]}
+            onPress={handleSave}
+            testID="save-journal"
+          >
+            <Text style={styles.saveBtnText}>Save Entry</Text>
+          </Pressable>
+        </ScreenScrollView>
+      </KeyboardAvoidingView>
+      <KeyboardDoneBar />
+    </>
   );
 }
 

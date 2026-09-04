@@ -112,8 +112,8 @@ export default function SubscriptionPlansScreen() {
         showsVerticalScrollIndicator={false}
       >
         <Text style={styles.lead}>
-          <Text style={styles.leadStrong}>Freemium</Text>
-          {' '}is our free tier with full core recovery tools.{' '}
+          <Text style={styles.leadStrong}>Free</Text>
+          {' '}is our no-cost tier with full core recovery tools.{' '}
           <Text style={styles.leadStrong}>Premium</Text>
           {' '}unlocks deeper insights, structured programs, exercises, advanced accountability and analytics.
         </Text>
@@ -201,7 +201,7 @@ export default function SubscriptionPlansScreen() {
             <Text style={[styles.tableHeaderCell, styles.tableFeatureCol]}> </Text>
             <View style={styles.tableHeadMini}>
               <Sparkles size={14} color={Colors.primary} />
-              <Text style={styles.tableHeadLabel}>Freemium</Text>
+              <Text style={styles.tableHeadLabel}>Free</Text>
             </View>
             <View style={styles.tableHeadMini}>
               <Crown size={14} color="#D4A574" />

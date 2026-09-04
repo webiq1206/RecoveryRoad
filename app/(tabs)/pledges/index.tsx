@@ -1,6 +1,7 @@
 import React, { useState, useCallback, useRef, useEffect } from 'react';
 import { View, Text, StyleSheet, Pressable, TextInput, Animated, LayoutChangeEvent, type ScrollView } from 'react-native';
 import { ScreenScrollView } from '../../../components/ScreenScrollView';
+import { KeyboardDoneBar } from '../../../components/KeyboardDoneBar';
 import { LinearGradient } from 'expo-linear-gradient';
 import { HandHeart, Check, Flame } from 'lucide-react-native';
 import * as Haptics from 'expo-haptics';
@@ -123,6 +124,7 @@ export default function PledgesScreen() {
   }
 
   return (
+    <>
     <ScreenScrollView
       ref={scrollRef}
       style={styles.container}
@@ -196,6 +198,8 @@ export default function PledgesScreen() {
       )}
 
     </ScreenScrollView>
+    <KeyboardDoneBar />
+    </>
   );
 }
 

@@ -12,6 +12,7 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ScreenScrollView } from '../components/ScreenScrollView';
+import { KeyboardDoneBar } from '../components/KeyboardDoneBar';
 import { useLocalSearchParams, Stack, useRouter } from 'expo-router';
 import { useSubscription } from '../providers/SubscriptionProvider';
 import { useOpenPremiumPaywall } from '../hooks/useOpenPremiumPaywall';
@@ -232,32 +233,35 @@ export default function WorkbookSectionScreen() {
   };
 
   return (
-    <KeyboardAvoidingView
-      style={styles.container}
-      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-      keyboardVerticalOffset={Platform.OS === 'ios' ? 88 : 0}
-    >
-      <Stack.Screen options={{ title: section.title }} />
-      <ScreenScrollView
-        ref={scrollRef}
-        keyboardShouldPersistTaps="handled"
-        showsVerticalScrollIndicator={false}
-        contentContainerStyle={[styles.listContent, { paddingBottom: 40 + insets.bottom }]}
+    <>
+      <KeyboardAvoidingView
+        style={styles.container}
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+        keyboardVerticalOffset={Platform.OS === 'ios' ? 88 : 0}
       >
-        <View style={styles.sectionHeader}>
-          <Text style={styles.sectionDesc}>{section.description}</Text>
-          <View style={styles.progressRow}>
-            <View style={styles.progressBarBg}>
-              <View style={[styles.progressBarFill, { width: `${progress * 100}%` }]} />
+        <Stack.Screen options={{ title: section.title }} />
+        <ScreenScrollView
+          ref={scrollRef}
+          keyboardShouldPersistTaps="handled"
+          showsVerticalScrollIndicator={false}
+          contentContainerStyle={[styles.listContent, { paddingBottom: 40 + insets.bottom }]}
+        >
+          <View style={styles.sectionHeader}>
+            <Text style={styles.sectionDesc}>{section.description}</Text>
+            <View style={styles.progressRow}>
+              <View style={styles.progressBarBg}>
+                <View style={[styles.progressBarFill, { width: `${progress * 100}%` }]} />
+              </View>
+              <Text style={styles.progressText}>{Math.round(progress * 100)}%</Text>
             </View>
-            <Text style={styles.progressText}>{Math.round(progress * 100)}%</Text>
           </View>
-        </View>
-        {section.questions.map((item, index) => (
-          <React.Fragment key={item.id}>{renderQuestion({ item, index })}</React.Fragment>
-        ))}
-      </ScreenScrollView>
-    </KeyboardAvoidingView>
+          {section.questions.map((item, index) => (
+            <React.Fragment key={item.id}>{renderQuestion({ item, index })}</React.Fragment>
+          ))}
+        </ScreenScrollView>
+      </KeyboardAvoidingView>
+      <KeyboardDoneBar />
+    </>
   );
 }
 

@@ -23,6 +23,21 @@ const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const expoCli = path.join(root, "node_modules", "expo", "bin", "cli");
 const forwarded = process.argv.slice(2);
 
+function hasSchemeArg(argv) {
+  return argv.some((a) => a === "--scheme" || a.startsWith("--scheme="));
+}
+
+const wantsDevClient = forwarded.includes("--dev-client") || forwarded.includes("-d");
+const wantsGo = forwarded.includes("--go") || forwarded.includes("-g");
+
+if (wantsDevClient && !hasSchemeArg(forwarded)) {
+  forwarded.push("--scheme", "recoveryroad");
+}
+
+if (!wantsGo && !wantsDevClient) {
+  forwarded.push("--go");
+}
+
 const useTunnel = argvImpliesTunnelMode(forwarded);
 const useLocalhost = argvImpliesLocalhostMode(forwarded);
 

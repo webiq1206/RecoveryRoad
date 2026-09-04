@@ -1,7 +1,6 @@
 import { useCallback } from 'react';
 import { Alert, InteractionManager, Platform } from 'react-native';
 import * as Haptics from 'expo-haptics';
-import { PAYWALL_RESULT } from 'react-native-purchases-ui';
 import { REVENUECAT_PRO_ENTITLEMENT_ID } from '../constants/revenueCatPublicConfig';
 import { useSubscription } from '../providers/SubscriptionProvider';
 
@@ -70,7 +69,9 @@ export function useOpenPremiumPaywall() {
         ? reconciled.activeEntitlementKeys
         : outcome.activeEntitlementKeys;
 
-    if (outcome.result === PAYWALL_RESULT.PURCHASED) {
+import { Alert, InteractionManager, Platform } from 'react-native';
+import * as Haptics from 'expo-haptics';
+import { REVENUECAT_PRO_ENTITLEMENT_ID } from '../constants/revenueCatPublicConfig';
       Alert.alert('Premium not activated', buildPurchaseVerifyFailedMessage(activeKeys), [{ text: 'OK' }]);
     } else if (activeKeys.length > 0) {
       Alert.alert(

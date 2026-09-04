@@ -3,14 +3,15 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useState, useEffect, useCallback, useMemo, useRef, type MutableRefObject } from 'react';
 import { Platform } from 'react-native';
-import Purchases, {
-  PURCHASES_ERROR_CODE,
-  type CustomerInfo,
-  type CustomerInfoUpdateListener,
-  type PurchasesEntitlementInfo,
-  type PurchasesOffering,
-  type PurchasesPackage,
+import type {
+  CustomerInfo,
+  CustomerInfoUpdateListener,
+  PurchasesEntitlementInfo,
+  PurchasesOffering,
+  PurchasesPackage,
 } from 'react-native-purchases';
+import { loadPurchases, loadPurchasesModule, requirePurchases } from '../utils/loadPurchasesSdk';
+import { isExpoGo } from '../utils/runtime';
 import { SubscriptionState, PremiumFeature } from '../types';
 import { arePeerPracticeFeaturesEnabled } from '../core/socialLiveConfig';
 import { isProviderEnterpriseSuiteInBuild } from '../utils/isProviderEnterpriseSuiteInBuild';
@@ -309,7 +310,9 @@ function diagnosticsFromCustomerInfo(info: CustomerInfo): SubscriptionDiagnostic
 
 async function syncStorePurchasesIfSupported(): Promise<void> {
   if (Platform.OS !== 'ios') return;
-  const purchases = Purchases as typeof Purchases & { syncPurchases?: () => Promise<void> };
+  const purchases = requirePurchases() as ReturnType<typeof requirePurchases> & {
+    syncPurchases?: () => Promise<void>;
+  };
   if (typeof purchases.syncPurchases === 'function') {
     try {
       await purchases.syncPurchases();
@@ -330,7 +333,7 @@ async function refreshPremiumStateAfterStoreAction(
   await syncStorePurchasesIfSupported();
   if (options?.restoreBeforeRefresh) {
     try {
-      await Purchases.restorePurchases();
+      await requirePurchases().restorePurchases();
     } catch (e) {
       console.log('[Subscription] restorePurchases during reconcile failed:', e);
     }
@@ -340,7 +343,7 @@ async function refreshPremiumStateAfterStoreAction(
     if (delayMs > 0) {
       await new Promise((resolve) => setTimeout(resolve, delayMs));
     }
-    lastInfo = await Purchases.getCustomerInfo();
+    lastInfo = await requirePurchases().getCustomerInfo();
     applyCustomerInfo(lastInfo);
     const tier = subscriptionStateFromCustomerInfo(lastInfo).tier;
     if (tier === 'premium') {
@@ -367,11 +370,10 @@ function shouldReconcileStoreSubscription(info: CustomerInfo): boolean {
 }
 
 function isPurchaseCancelledError(e: unknown): boolean {
-  const err = e as { code?: PURCHASES_ERROR_CODE; userCancelled?: boolean | null };
-  return (
-    err?.userCancelled === true ||
-    err?.code === PURCHASES_ERROR_CODE.PURCHASE_CANCELLED_ERROR
-  );
+  const err = e as { code?: string | number; userCancelled?: boolean | null };
+  if (err?.userCancelled === true) return true;
+  const cancelled = loadPurchasesModule()?.PURCHASES_ERROR_CODE?.PURCHASE_CANCELLED_ERROR;
+  return cancelled != null && err?.code === cancelled;
 }
 
 export const [SubscriptionProvider, useSubscription] = createContextHook(() => {
@@ -391,7 +393,7 @@ export const [SubscriptionProvider, useSubscription] = createContextHook(() => {
 
   const purchasesApiKeyConfigured = isPurchasesApiKeyConfigured();
   const shouldUseNativePurchases =
-    isNativeStorePlatform() && purchasesApiKeyConfigured;
+    isNativeStorePlatform() && purchasesApiKeyConfigured && loadPurchases() != null && !isExpoGo();
 
   const userIdQuery = useQuery({
     queryKey: ['rc_user_id'],
@@ -422,11 +424,11 @@ export const [SubscriptionProvider, useSubscription] = createContextHook(() => {
       queryClient.removeQueries({ queryKey: ['rc_user_id'] });
       queryClient.removeQueries({ queryKey: ['rc_offerings'] });
 
-      if (isNativeStorePlatform() && isPurchasesApiKeyConfigured()) {
+      if (loadPurchases() != null && isNativeStorePlatform() && isPurchasesApiKeyConfigured()) {
         try {
-          const configured = await Purchases.isConfigured();
+          const configured = await requirePurchases().isConfigured();
           if (configured) {
-            const purchases = Purchases as typeof Purchases & {
+            const purchases = requirePurchases() as ReturnType<typeof requirePurchases> & {
               logOut?: () => Promise<CustomerInfo>;
             };
             if (typeof purchases.logOut === 'function') {
@@ -471,16 +473,16 @@ export const [SubscriptionProvider, useSubscription] = createContextHook(() => {
     (async () => {
       try {
         const apiKey = getPurchasesSdkApiKey();
-        const already = await Purchases.isConfigured();
+        const already = await requirePurchases().isConfigured();
         if (!already) {
-          Purchases.configure({ apiKey, appUserID: rcUserId });
+          requirePurchases().configure({ apiKey, appUserID: rcUserId });
         } else {
-          await Purchases.logIn(rcUserId);
+          await requirePurchases().logIn(rcUserId);
         }
         if (__DEV__) {
-          await Purchases.setLogLevel(Purchases.LOG_LEVEL.DEBUG);
+          await requirePurchases().setLogLevel(requirePurchases().LOG_LEVEL.DEBUG);
         }
-        const info = await Purchases.getCustomerInfo();
+        const info = await requirePurchases().getCustomerInfo();
         if (cancelled) return;
         applyCustomerInfoRef.current(info);
         if (shouldReconcileStoreSubscription(info)) {
@@ -492,7 +494,7 @@ export const [SubscriptionProvider, useSubscription] = createContextHook(() => {
         listener = (customerInfo) => {
           applyCustomerInfoRef.current(customerInfo);
         };
-        Purchases.addCustomerInfoUpdateListener(listener);
+        requirePurchases().addCustomerInfoUpdateListener(listener);
         setStorePurchasesReady(true);
       } catch (e) {
         console.log('[Subscription] Purchases setup failed:', e);
@@ -503,7 +505,7 @@ export const [SubscriptionProvider, useSubscription] = createContextHook(() => {
     return () => {
       cancelled = true;
       if (listener) {
-        Purchases.removeCustomerInfoUpdateListener(listener);
+        requirePurchases().removeCustomerInfoUpdateListener(listener);
       }
     };
   }, [shouldUseNativePurchases, rcUserId]);
@@ -514,7 +516,7 @@ export const [SubscriptionProvider, useSubscription] = createContextHook(() => {
       if (!shouldUseNativePurchases || !storePurchasesReady) {
         return [];
       }
-      const data = await Purchases.getOfferings();
+      const data = await requirePurchases().getOfferings();
       const current = data.current;
       repopulateNativePackageMap(nativePackagesByProductId, current);
       if (!current) {
@@ -565,7 +567,7 @@ export const [SubscriptionProvider, useSubscription] = createContextHook(() => {
 
   const refreshOfferingsPackageMap = useCallback(async () => {
     if (!storePurchasesReady || !shouldUseNativePurchases) return;
-    const data = await Purchases.getOfferings();
+    const data = await requirePurchases().getOfferings();
     repopulateNativePackageMap(nativePackagesByProductId, data.current);
   }, [storePurchasesReady, shouldUseNativePurchases]);
 
@@ -586,7 +588,7 @@ export const [SubscriptionProvider, useSubscription] = createContextHook(() => {
         throw new Error('That plan could not be loaded yet. Try this screen again in a moment.');
       }
       try {
-        const { customerInfo } = await Purchases.purchasePackage(pkg);
+        const { customerInfo } = await requirePurchases().purchasePackage(pkg);
         await queryClient.invalidateQueries({ queryKey: ['rc_offerings', rcUserId] });
         const refreshed = await refreshPremiumStateAfterStoreAction(applyCustomerInfoRef.current);
         if (refreshed.tier !== 'premium') {
@@ -615,7 +617,7 @@ export const [SubscriptionProvider, useSubscription] = createContextHook(() => {
       if (!shouldUseNativePurchases || !storePurchasesReady) {
         throw new Error('Restore is only available in the iOS and Android apps once the store has finished connecting.');
       }
-      await Purchases.restorePurchases();
+      await requirePurchases().restorePurchases();
       const refreshed = await refreshPremiumStateAfterStoreAction(applyCustomerInfoRef.current);
       return { restored: refreshed.tier === 'premium' };
     },
@@ -713,7 +715,7 @@ export const [SubscriptionProvider, useSubscription] = createContextHook(() => {
     try {
       const { default: RevenueCatUI, PAYWALL_RESULT } = await import('react-native-purchases-ui');
 
-      let preInfo = await Purchases.getCustomerInfo();
+      let preInfo = await requirePurchases().getCustomerInfo();
       applyCustomerInfoRef.current(preInfo);
       if (shouldReconcileStoreSubscription(preInfo)) {
         const preReconcile = await refreshPremiumStateAfterStoreAction(applyCustomerInfoRef.current, {
@@ -762,7 +764,7 @@ export const [SubscriptionProvider, useSubscription] = createContextHook(() => {
       }
 
       if (result === PAYWALL_RESULT.NOT_PRESENTED) {
-        const info = await Purchases.getCustomerInfo();
+        const info = await requirePurchases().getCustomerInfo();
         applyCustomerInfoRef.current(info);
         let tier = subscriptionStateFromCustomerInfo(info).tier;
         let keys = activeEntitlementKeys(info);
@@ -780,7 +782,7 @@ export const [SubscriptionProvider, useSubscription] = createContextHook(() => {
         };
       }
 
-      const info = await Purchases.getCustomerInfo();
+      const info = await requirePurchases().getCustomerInfo();
       applyCustomerInfoRef.current(info);
       if (subscriptionStateFromCustomerInfo(info).tier !== 'premium') {
         const reconciled = await refreshPremiumStateAfterStoreAction(applyCustomerInfoRef.current, {

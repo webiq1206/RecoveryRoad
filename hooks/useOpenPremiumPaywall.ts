@@ -69,9 +69,7 @@ export function useOpenPremiumPaywall() {
         ? reconciled.activeEntitlementKeys
         : outcome.activeEntitlementKeys;
 
-import { Alert, InteractionManager, Platform } from 'react-native';
-import * as Haptics from 'expo-haptics';
-import { REVENUECAT_PRO_ENTITLEMENT_ID } from '../constants/revenueCatPublicConfig';
+    if (outcome.result === 'PURCHASED') {
       Alert.alert('Premium not activated', buildPurchaseVerifyFailedMessage(activeKeys), [{ text: 'OK' }]);
     } else if (activeKeys.length > 0) {
       Alert.alert(

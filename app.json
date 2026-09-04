@@ -8,12 +8,6 @@
     "icon": "./assets/images/app-icon.png",
     "scheme": "recoveryroad",
     "userInterfaceStyle": "automatic",
-    "newArchEnabled": true,
-    "splash": {
-      "image": "./assets/images/splash-icon.png",
-      "resizeMode": "contain",
-      "backgroundColor": "#0a0f1a"
-    },
     "ios": {
       "supportsTablet": false,
       "icon": "./assets/images/app-icon.png",
@@ -28,8 +22,7 @@
         "backgroundColor": "#0a0f1a"
       },
       "package": "com.webiq.recoveryroad",
-      "softwareKeyboardLayoutMode": "resize",
-      "edgeToEdgeEnabled": true
+      "softwareKeyboardLayoutMode": "resize"
     },
     "web": {
       "favicon": "./assets/images/favicon.png"
@@ -47,6 +40,8 @@
       "expo-router",
       "expo-font",
       "expo-web-browser",
+      "expo-image",
+      "expo-secure-store",
       [
         "expo-screen-orientation",
         {

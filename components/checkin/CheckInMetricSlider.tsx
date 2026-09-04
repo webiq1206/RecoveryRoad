@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { View, Text, StyleSheet, Pressable, useWindowDimensions } from 'react-native';
-import { useFocusEffect } from '@react-navigation/native';
+import { useFocusEffect } from 'expo-router';
 import Slider, { type SliderRef } from '@react-native-community/slider';
 import { Lock, Minus, Plus } from 'lucide-react-native';
 import * as Haptics from 'expo-haptics';

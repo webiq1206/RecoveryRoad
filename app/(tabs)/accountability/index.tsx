@@ -6,6 +6,7 @@ import {
   Pressable,
   TextInput,
   Animated,
+  KeyboardAvoidingView,
   Modal,
   Alert,
   Platform,
@@ -842,11 +843,16 @@ export default function AccountabilityScreen() {
             accessibilityLabel="Close"
             accessibilityRole="button"
           />
+          <KeyboardDoneBar />
         </View>
       </Modal>
 
       <Modal visible={showCheckInModal} animationType="fade" transparent testID="checkin-modal">
-        <View style={styles.modalOverlay}>
+        <KeyboardAvoidingView
+          style={styles.modalOverlay}
+          behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+        >
+          <KeyboardDoneBar inline />
           <View style={styles.modalContent}>
             <View style={styles.modalHeader}>
               <Text style={styles.modalTitle}>Daily Check-In</Text>
@@ -887,7 +893,7 @@ export default function AccountabilityScreen() {
             </View>
             <Text style={styles.slipNote}>Slipping doesn't erase your progress. Honesty is recovery.</Text>
           </View>
-        </View>
+        </KeyboardAvoidingView>
       </Modal>
 
       <Modal visible={showNewPartner} animationType="slide" transparent testID="new-partner-modal">
@@ -979,6 +985,7 @@ export default function AccountabilityScreen() {
             accessibilityLabel="Close"
             accessibilityRole="button"
           />
+          <KeyboardDoneBar />
         </View>
       </Modal>
     </Animated.View>

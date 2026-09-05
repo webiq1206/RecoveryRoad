@@ -1,9 +1,10 @@
-import React, { useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { View, Text, StyleSheet, Pressable, TextInput, KeyboardAvoidingView, Platform } from 'react-native';
 import { ScreenScrollView } from '../components/ScreenScrollView';
 import { KeyboardDoneBar } from '../components/KeyboardDoneBar';
+import { useKeyboardState } from '../hooks/useKeyboardState';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
-import { useRouter, Stack } from 'expo-router';
+import { useRouter, Stack, useLocalSearchParams, useFocusEffect } from 'expo-router';
 import { AlertTriangle, BookOpenCheck, ChevronRight, Shield, Users } from 'lucide-react-native';
 import * as Haptics from 'expo-haptics';
 import Colors from '../constants/colors';
@@ -11,11 +12,24 @@ import { useRelapse } from '../core/domains/useRelapse';
 import { useSupportContacts } from '../core/domains/useSupportContacts';
 import { useConnection } from '../providers/ConnectionProvider';
 import { mergeTrustedAndEmergencyContacts } from '../utils/mergeEmergencyContacts';
+import { useRelapsePlanDraftStore } from '../stores/useRelapsePlanDraftStore';
 
 type WizardStep = 1 | 2 | 3 | 4 | 5;
 
+/** Step 4 collects support contacts, so Connection links back to it by number. */
+const SUPPORT_CONTACTS_WIZARD_STEP: WizardStep = 4;
+export const SUPPORT_CONTACTS_STEP = String(SUPPORT_CONTACTS_WIZARD_STEP);
+
+function parseStepParam(value: string | string[] | undefined): WizardStep {
+  const raw = Array.isArray(value) ? value[0] : value;
+  const parsed = Number(raw);
+  if (!Number.isInteger(parsed) || parsed < 1 || parsed > 5) return 1;
+  return parsed as WizardStep;
+}
+
 export default function RelapsePlanScreen() {
   const insets = useSafeAreaInsets();
+  const { visible: keyboardVisible } = useKeyboardState();
   const router = useRouter();
   const { emergencyContacts } = useSupportContacts();
   const { trustedContacts } = useConnection();
@@ -26,20 +40,53 @@ export default function RelapsePlanScreen() {
     [trustedContacts, emergencyContacts],
   );
 
-  const [currentStep, setCurrentStep] = useState<WizardStep>(1);
+  const { step: stepParam } = useLocalSearchParams<{ step?: string | string[] }>();
+  const [currentStep, setCurrentStep] = useState<WizardStep>(() => parseStepParam(stepParam));
+
+  /**
+   * Set when we hand off to Connection so that returning here — by the button there,
+   * the header back arrow, or a swipe — lands on the support contacts step again.
+   */
+  const resumeOnContactsStepRef = useRef(false);
+
+  useFocusEffect(
+    useCallback(() => {
+      if (!resumeOnContactsStepRef.current) return;
+      resumeOnContactsStepRef.current = false;
+      setCurrentStep(SUPPORT_CONTACTS_WIZARD_STEP);
+    }, []),
+  );
+
+  const saveDraft = useRelapsePlanDraftStore.use.saveDraft();
+  const clearDraft = useRelapsePlanDraftStore.use.clearDraft();
+
+  /**
+   * Answers left behind when this screen was torn down — the trip to Connection
+   * dismisses it — so they seed the fields instead of the saved plan.
+   */
+  const draftAtMount = useMemo(() => useRelapsePlanDraftStore.getState().draft, []);
 
   const [warningSignsText, setWarningSignsText] = useState(
-    relapsePlan?.warningSigns?.join('\n') ?? '',
+    draftAtMount?.warningSignsText ?? relapsePlan?.warningSigns?.join('\n') ?? '',
   );
   const [triggersText, setTriggersText] = useState(
-    relapsePlan?.triggers?.join('\n') ?? '',
+    draftAtMount?.triggersText ?? relapsePlan?.triggers?.join('\n') ?? '',
   );
   const [copingStrategiesText, setCopingStrategiesText] = useState(
-    relapsePlan?.copingStrategies?.join('\n') ?? '',
+    draftAtMount?.copingStrategiesText ?? relapsePlan?.copingStrategies?.join('\n') ?? '',
   );
   const [commitmentsText, setCommitmentsText] = useState(
-    relapsePlan?.commitments ?? '',
+    draftAtMount?.commitmentsText ?? relapsePlan?.commitments ?? '',
   );
+
+  // A draft is a one-time hand-off, so drop it now that it has seeded the fields.
+  useEffect(() => {
+    if (draftAtMount) clearDraft();
+  }, [draftAtMount, clearDraft]);
+
+  const stashDraft = useCallback(() => {
+    saveDraft({ warningSignsText, triggersText, copingStrategiesText, commitmentsText });
+  }, [saveDraft, warningSignsText, triggersText, copingStrategiesText, commitmentsText]);
 
   const hasExistingPlan = !!relapsePlan;
 
@@ -105,6 +152,7 @@ export default function RelapsePlanScreen() {
     };
 
     saveRelapsePlan(plan);
+    clearDraft();
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     router.back();
   };
@@ -112,6 +160,7 @@ export default function RelapsePlanScreen() {
   const progress = currentStep / 5;
 
   return (
+    <>
     <KeyboardAvoidingView
       style={styles.container}
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
@@ -271,7 +320,12 @@ export default function RelapsePlanScreen() {
                   ]}
                   onPress={() => {
                     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                    router.push('/connection' as any);
+                    resumeOnContactsStepRef.current = true;
+                    stashDraft();
+                    router.push({
+                      pathname: '/connection',
+                      params: { returnTo: 'relapse-plan' },
+                    } as any);
                   }}
                   testID="relapse-plan-open-connection"
                 >
@@ -322,23 +376,26 @@ export default function RelapsePlanScreen() {
         )}
       </ScreenScrollView>
 
-      <SafeAreaView style={styles.footer} edges={['bottom']}>
-        <Pressable
-          style={({ pressed }) => [
-            styles.primaryButton,
-            pressed && styles.primaryButtonPressed,
-          ]}
-          onPress={goNext}
-          testID="relapse-plan-next"
-        >
-          <Text style={styles.primaryButtonText}>
-            {currentStep < 5 ? 'Continue' : hasExistingPlan ? 'Save plan' : 'Create plan'}
-          </Text>
-          <ChevronRight size={18} color="#FFFFFF" />
-        </Pressable>
-      </SafeAreaView>
-      <KeyboardDoneBar inline />
+      {!keyboardVisible ? (
+        <SafeAreaView style={styles.footer} edges={['bottom']}>
+          <Pressable
+            style={({ pressed }) => [
+              styles.primaryButton,
+              pressed && styles.primaryButtonPressed,
+            ]}
+            onPress={goNext}
+            testID="relapse-plan-next"
+          >
+            <Text style={styles.primaryButtonText}>
+              {currentStep < 5 ? 'Continue' : hasExistingPlan ? 'Save plan' : 'Create plan'}
+            </Text>
+            <ChevronRight size={18} color="#FFFFFF" />
+          </Pressable>
+        </SafeAreaView>
+      ) : null}
     </KeyboardAvoidingView>
+    <KeyboardDoneBar />
+    </>
   );
 }
 

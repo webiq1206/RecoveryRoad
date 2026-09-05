@@ -16,15 +16,17 @@ import { ScreenFlatList } from '../../../components/ScreenFlatList';
 import { ScreenScrollView } from '../../../components/ScreenScrollView';
 import { KeyboardDoneBar } from '../../../components/KeyboardDoneBar';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useRouter, useLocalSearchParams } from 'expo-router';
 import {
   Heart, Shield, Phone, Plus, X,
-  Send, UserPlus, CircleDot,
+  Send, UserPlus, CircleDot, ChevronLeft,
   PhoneCall, Trash2, ToggleLeft, ToggleRight, BookOpen,
 } from 'lucide-react-native';
 import * as Haptics from 'expo-haptics';
 import Colors from '../../../constants/colors';
 import { spacing } from '../../../constants/theme';
 import { SupportResourcesContent } from '../support/index';
+import { SUPPORT_CONTACTS_STEP } from '../../relapse-plan';
 import { useConnection } from '../../../providers/ConnectionProvider';
 import { TrustedContact } from '../../../types';
 import { useHydrateToolUsageStore, useToolUsageStore } from '../../../features/tools/state/useToolUsageStore';
@@ -49,6 +51,10 @@ const ROLE_COLORS: Record<TrustedContact['role'], string> = {
 
 export default function ConnectionScreen() {
   const insets = useSafeAreaInsets();
+  const router = useRouter();
+  const rawReturnTo = useLocalSearchParams<{ returnTo?: string | string[] }>().returnTo;
+  const returnToParam = Array.isArray(rawReturnTo) ? rawReturnTo[0] : rawReturnTo;
+  const cameFromRelapsePlan = returnToParam === 'relapse-plan';
   useHydrateToolUsageStore();
   const logToolUsage = useToolUsageStore.use.logToolUsage();
   const {
@@ -104,6 +110,18 @@ export default function ConnectionScreen() {
     setContactRole('friend');
     setShowAddContact(false);
   }, [contactName, contactPhone, contactRole, addTrustedContact]);
+
+  const handleReturnToRelapsePlan = useCallback(() => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    // Clear the marker so the button does not linger on the Connection tab later.
+    router.setParams({ returnTo: undefined } as any);
+    // Target the plan explicitly: opening Connection leaves the tab bar focused, so
+    // going back here would follow the tab history instead of returning to the plan.
+    router.navigate({
+      pathname: '/relapse-plan',
+      params: { step: SUPPORT_CONTACTS_STEP },
+    } as any);
+  }, [router]);
 
   const handleCallContact = useCallback((phone: string) => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
@@ -496,6 +514,20 @@ export default function ConnectionScreen() {
         <Text style={styles.headerWarmText}>You are not alone</Text>
       </View>
 
+      {cameFromRelapsePlan ? (
+        <Pressable
+          style={({ pressed }) => [styles.returnToPlanBtn, pressed && styles.btnPressed]}
+          onPress={handleReturnToRelapsePlan}
+          accessibilityRole="button"
+          accessibilityLabel="Return to Relapse Plan"
+          accessibilityHint="Goes back to the support contacts step of your relapse plan."
+          testID="connection-return-to-relapse-plan"
+        >
+          <ChevronLeft size={16} color={Colors.primary} />
+          <Text style={styles.returnToPlanText}>Return to Relapse Plan</Text>
+        </Pressable>
+      ) : null}
+
       <View style={styles.tabRow}>
         {(
           [
@@ -663,6 +695,25 @@ const styles = StyleSheet.create({
     color: Colors.textMuted,
     textAlign: 'center',
     paddingHorizontal: 12,
+  },
+  returnToPlanBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 4,
+    marginHorizontal: 16,
+    marginBottom: 8,
+    paddingVertical: 10,
+    paddingHorizontal: 14,
+    borderRadius: 10,
+    backgroundColor: Colors.primary + '14',
+    borderWidth: 1,
+    borderColor: Colors.primary + '35',
+  },
+  returnToPlanText: {
+    fontSize: 14,
+    fontWeight: '600' as const,
+    color: Colors.primary,
   },
   tabRow: {
     flexDirection: 'row',

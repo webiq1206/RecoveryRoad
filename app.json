@@ -3,7 +3,7 @@
     "name": "RecoveryRoad",
     "description": "Personal wellness and recovery support: check-ins, journaling, routines, trusted-circle connection tools, and self-guided exercises. Not medical advice, diagnosis, treatment, therapy, telehealth, or crisis care—use licensed professionals and emergency services when you need them. Subscriptions are billed through your app store.",
     "slug": "recovery-road",
-    "version": "1.0.1",
+    "version": "1.0.2",
     "orientation": "default",
     "icon": "./assets/images/app-icon.png",
     "scheme": "recoveryroad",

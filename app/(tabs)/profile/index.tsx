@@ -14,7 +14,6 @@ import {
   KeyboardAvoidingView,
   Platform,
   Keyboard,
-  findNodeHandle,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ScreenScrollView } from '../../../components/ScreenScrollView';
@@ -34,6 +33,7 @@ import { BRAND } from '../../../constants/branding';
 import { NOTIFICATION_INTENSITY_CONFIG, NotificationIntensity } from '../../../constants/notifications';
 import { useWizardEngineHook } from '../../../hooks/useWizardEngine';
 import { resolveCanonicalRoute } from '../../../utils/legacyRoutes';
+import { getScrollContentRef } from '../../../utils/scrollContentRef';
 import { useQueryClient } from '@tanstack/react-query';
 
 /** Extra scroll padding while inline profile fields are focused so rows stay above the keyboard. */
@@ -106,11 +106,11 @@ export default function ProfileScreen() {
           ? profileTimeEditRef
           : profileMotivationEditRef;
     const anchor = targetRef.current;
-    const scrollNode = findNodeHandle(scroll);
-    if (!anchor || scrollNode == null) return;
+    const scrollContent = getScrollContentRef(scroll);
+    if (!anchor || !scrollContent) return;
 
     anchor.measureLayout(
-      scrollNode,
+      scrollContent,
       (_x, y) => {
         scroll.scrollTo({ y: Math.max(0, y - 56), animated: true });
       },

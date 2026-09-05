@@ -12,7 +12,6 @@ import {
   KeyboardAvoidingView,
   Platform,
   Keyboard,
-  findNodeHandle,
   type ScrollView,
   type NativeSyntheticEvent,
   type NativeScrollEvent,
@@ -44,6 +43,7 @@ import { registerAccountDeletionResetHandler } from '../core/accountDeletionRese
 import { LegalDocLinksRow } from '../components/LegalDocLinksRow';
 import { arePeerPracticeFeaturesEnabled } from '../core/socialLiveConfig';
 import { scrollToTop } from '../hooks/useScrollToTopOnFocus';
+import { getScrollContentRef } from '../utils/scrollContentRef';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 /** Space reserved above the fixed footer so scroll content is not hidden behind it. */
@@ -238,12 +238,35 @@ export default function OnboardingScreen() {
       const bottomOffset = footerBottomInset + (keyboardFooterStep ? kbHeight : 0);
       const reservedBottom = FOOTER_BAR_HEIGHT + bottomOffset;
 
+      const alignByWindowPosition = () => {
+        scroll.measureInWindow((_sx, scrollY, _sw, scrollH) => {
+          anchor.measureInWindow((_ax, ay, _aw, ah) => {
+            const windowH = Dimensions.get('window').height;
+            const footerTopY = windowH - bottomOffset - FOOTER_BAR_HEIGHT;
+            const visibleBottom = Math.min(scrollY + scrollH, footerTopY);
+            const overflow = ay + ah + SCROLL_ABOVE_FOOTER_GAP - visibleBottom;
+            if (overflow > 0) {
+              scroll.scrollTo({
+                y: stepScrollY.current + overflow,
+                animated: true,
+              });
+            }
+          });
+        });
+      };
+
       const run = () => {
-        const scrollHandle = findNodeHandle(scroll);
-        if (!scrollHandle) return;
+        // measureLayout drops the call (without invoking onFail) unless it gets the
+        // content view instance, so fall back by hand when that is unavailable.
+        const scrollContent = getScrollContentRef(scroll);
+
+        if (!scrollContent) {
+          alignByWindowPosition();
+          return;
+        }
 
         anchor.measureLayout(
-          scrollHandle,
+          scrollContent,
           (_left, top, _width, height) => {
             scroll.measure((_fx, _fy, _fw, viewportHeight) => {
               const targetY =
@@ -257,22 +280,7 @@ export default function OnboardingScreen() {
               });
             });
           },
-          () => {
-            scroll.measureInWindow((_sx, scrollY, _sw, scrollH) => {
-              anchor.measureInWindow((_ax, ay, _aw, ah) => {
-                const windowH = Dimensions.get('window').height;
-                const footerTopY = windowH - bottomOffset - FOOTER_BAR_HEIGHT;
-                const visibleBottom = Math.min(scrollY + scrollH, footerTopY);
-                const overflow = ay + ah + SCROLL_ABOVE_FOOTER_GAP - visibleBottom;
-                if (overflow > 0) {
-                  scroll.scrollTo({
-                    y: stepScrollY.current + overflow,
-                    animated: true,
-                  });
-                }
-              });
-            });
-          },
+          alignByWindowPosition,
         );
       };
 

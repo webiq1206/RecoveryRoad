@@ -83,10 +83,10 @@ export default function PledgesScreen() {
             style={styles.completedGradient}
           >
             <View style={styles.checkCircle}>
-              <Check size={36} color={Colors.white} strokeWidth={3} />
+              <Check size={28} color={Colors.white} strokeWidth={3} />
             </View>
-            <Text style={styles.completedTitle}>Pledge Complete</Text>
-            <Text style={styles.completedSubtitle}>
+            <Text style={styles.completedLabel}>Pledge Complete</Text>
+            <Text style={styles.completedStatement} testID="pledge-statement-complete">
               You committed to being free from {profile.addictions?.length > 0 ? profile.addictions.join(', ') : 'your addiction'} today
             </Text>
             <View style={styles.completedMood}>
@@ -135,13 +135,20 @@ export default function PledgesScreen() {
     >
       {renderNavButtons()}
       <View onLayout={(e: LayoutChangeEvent) => { sectionOffsets.current.pledge = e.nativeEvent.layout.y; }} />
-      <View style={styles.pledgeHeader}>
-        <HandHeart size={40} color={Colors.primary} />
-        <Text style={styles.pledgeTitle}>Today's Pledge</Text>
-        <Text style={styles.pledgeSubtitle}>
+      <LinearGradient
+        colors={['rgba(46,196,182,0.16)', 'rgba(46,196,182,0.03)']}
+        style={styles.pledgeHero}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 0, y: 1 }}
+      >
+        <View style={styles.pledgeHeroIcon}>
+          <HandHeart size={26} color={Colors.primary} />
+        </View>
+        <Text style={styles.pledgeHeroLabel}>Today's Pledge</Text>
+        <Text style={styles.pledgeHeroStatement} testID="pledge-statement">
           I pledge to stay free from {profile.addictions?.length > 0 ? profile.addictions.join(', ') : 'my addiction'} today
         </Text>
-      </View>
+      </LinearGradient>
 
       <Text style={styles.sectionLabel}>HOW ARE YOU FEELING?</Text>
       <View style={styles.moodRow}>
@@ -212,24 +219,42 @@ const styles = StyleSheet.create({
     padding: 20,
     paddingBottom: 100,
   },
-  pledgeHeader: {
+  pledgeHero: {
     alignItems: 'center',
-    marginBottom: 32,
+    paddingVertical: 28,
+    paddingHorizontal: 22,
+    borderRadius: 22,
+    borderWidth: 1,
+    borderColor: 'rgba(46,196,182,0.35)',
     marginTop: 10,
+    marginBottom: 28,
   },
-  pledgeTitle: {
-    fontSize: 24,
+  pledgeHeroIcon: {
+    width: 52,
+    height: 52,
+    borderRadius: 26,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'rgba(46,196,182,0.14)',
+    borderWidth: 1,
+    borderColor: 'rgba(46,196,182,0.3)',
+    marginBottom: 14,
+  },
+  // Small label: the pledge itself carries the emphasis below it.
+  pledgeHeroLabel: {
+    fontSize: 11,
     fontWeight: '700' as const,
-    color: Colors.text,
-    marginTop: 16,
-    marginBottom: 8,
+    letterSpacing: 1.6,
+    textTransform: 'uppercase',
+    color: Colors.primary,
+    marginBottom: 10,
   },
-  pledgeSubtitle: {
-    fontSize: 15,
-    color: Colors.textSecondary,
+  pledgeHeroStatement: {
+    fontSize: 26,
+    lineHeight: 34,
+    fontWeight: '800' as const,
+    color: Colors.text,
     textAlign: 'center',
-    lineHeight: 22,
-    paddingHorizontal: 20,
   },
   sectionLabel: {
     fontSize: 11,
@@ -330,26 +355,29 @@ const styles = StyleSheet.create({
     borderColor: Colors.border,
   },
   checkCircle: {
-    width: 72,
-    height: 72,
-    borderRadius: 36,
+    width: 56,
+    height: 56,
+    borderRadius: 28,
     backgroundColor: Colors.primary,
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: 20,
+    marginBottom: 14,
   },
-  completedTitle: {
-    fontSize: 24,
+  completedLabel: {
+    fontSize: 11,
     fontWeight: '700' as const,
-    color: Colors.text,
-    marginBottom: 8,
+    letterSpacing: 1.6,
+    textTransform: 'uppercase',
+    color: Colors.primary,
+    marginBottom: 10,
   },
-  completedSubtitle: {
-    fontSize: 14,
-    color: Colors.textSecondary,
+  completedStatement: {
+    fontSize: 24,
+    lineHeight: 32,
+    fontWeight: '800' as const,
+    color: Colors.text,
     textAlign: 'center',
-    lineHeight: 20,
-    marginBottom: 16,
+    marginBottom: 18,
   },
   completedMood: {
     flexDirection: 'row',

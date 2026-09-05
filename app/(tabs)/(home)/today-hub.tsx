@@ -143,6 +143,13 @@ export default function TodayHubScreen() {
     [guidanceActions, checkInNow],
   );
 
+  const guidanceCompletionLabel = useMemo(() => {
+    const total = guidanceActions.length;
+    if (total === 0) return null;
+    const completed = guidanceActions.filter((action) => action.completed).length;
+    return `(${completed} of ${total} completed)`;
+  }, [guidanceActions]);
+
   const guidanceHeadingScale = useRef(new RNAnimated.Value(1)).current;
   useEffect(() => {
     if (guidanceActions.length === 0 || dailyGuidance.isReentryMode) {
@@ -205,13 +212,6 @@ export default function TodayHubScreen() {
     guidanceMultiple && !guidanceExpanded
       ? guidanceActions.slice(guidanceFocusIndex, guidanceFocusIndex + 1)
       : guidanceActions;
-
-  const guidanceCompletionLabel = useMemo(() => {
-    const total = guidanceActions.length;
-    if (total === 0) return null;
-    const completed = guidanceActions.filter((action) => action.completed).length;
-    return `(${completed} of ${total} completed)`;
-  }, [guidanceActions]);
 
   const checkInRowLocked = (action: WizardAction): boolean => {
     const period = action.params?.period;

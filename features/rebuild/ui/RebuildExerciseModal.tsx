@@ -39,7 +39,14 @@ export function RebuildExerciseModal(props: {
   const scrollBottomPad = (Platform.OS === 'ios' ? 24 : 16) + insets.bottom;
 
   return (
-    <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
+    <Modal
+      visible={visible}
+      transparent
+      animationType="fade"
+      onRequestClose={onClose}
+      statusBarTranslucent
+      navigationBarTranslucent
+    >
       <RebuildModalTopFrame>
         <ScrollView
           style={[styles.modalScroll, { maxHeight: maxScrollH }]}

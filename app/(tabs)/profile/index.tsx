@@ -728,6 +728,8 @@ export default function ProfileScreen() {
         visible={showAddictionModal}
         animationType="slide"
         transparent
+        statusBarTranslucent
+        navigationBarTranslucent
         onRequestClose={() => setShowAddictionModal(false)}
       >
         <View style={styles.modalOverlay}>
@@ -783,6 +785,8 @@ export default function ProfileScreen() {
         visible={showDateModal}
         animationType="slide"
         transparent
+        statusBarTranslucent
+        navigationBarTranslucent
         onRequestClose={() => setShowDateModal(false)}
       >
         <View style={styles.modalOverlay}>

@@ -62,10 +62,9 @@
         "expo-build-properties",
         {
           "android": {
-            "newArchEnabled": true
-          },
-          "ios": {
-            "newArchEnabled": true
+            "enableMinifyInReleaseBuilds": true,
+            "enableShrinkResourcesInReleaseBuilds": true,
+            "extraProguardRules": "-keep class com.facebook.react.views.view.WindowUtil { *; }\n-keep class com.facebook.react.views.view.WindowUtilKt { *; }\n-keepattributes SourceFile,LineNumberTable\n-renamesourcefileattribute SourceFile"
           }
         }
       ],

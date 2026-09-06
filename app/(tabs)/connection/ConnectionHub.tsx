@@ -570,7 +570,13 @@ export default function ConnectionScreen() {
       </Modal>
       */}
 
-      <Modal visible={showAddContact} animationType="slide" transparent>
+      <Modal
+        visible={showAddContact}
+        animationType="slide"
+        transparent
+        statusBarTranslucent
+        navigationBarTranslucent
+      >
         <KeyboardAvoidingView
           style={styles.modalOverlay}
           behavior={Platform.OS === 'ios' ? 'padding' : undefined}
@@ -635,7 +641,13 @@ export default function ConnectionScreen() {
         </KeyboardAvoidingView>
       </Modal>
 
-      <Modal visible={showNamePrompt} animationType="fade" transparent>
+      <Modal
+        visible={showNamePrompt}
+        animationType="fade"
+        transparent
+        statusBarTranslucent
+        navigationBarTranslucent
+      >
         <View style={styles.modalOverlay}>
           <View style={[styles.namePromptModal, { paddingBottom: insets.bottom + 20 }]}>
             <Text style={styles.namePromptTitle}>Choose a Display Name</Text>

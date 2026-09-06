@@ -751,7 +751,14 @@ export default function AccountabilityScreen() {
         )}
       </ScreenScrollView>
 
-      <Modal visible={showNewContract} animationType="slide" transparent testID="new-contract-modal">
+      <Modal
+        visible={showNewContract}
+        animationType="slide"
+        transparent
+        statusBarTranslucent
+        navigationBarTranslucent
+        testID="new-contract-modal"
+      >
         <View style={styles.newContractTopRoot} accessibilityViewIsModal>
           <View
             style={[
@@ -896,7 +903,14 @@ export default function AccountabilityScreen() {
         </KeyboardAvoidingView>
       </Modal>
 
-      <Modal visible={showNewPartner} animationType="slide" transparent testID="new-partner-modal">
+      <Modal
+        visible={showNewPartner}
+        animationType="slide"
+        transparent
+        statusBarTranslucent
+        navigationBarTranslucent
+        testID="new-partner-modal"
+      >
         <View style={styles.newContractTopRoot} accessibilityViewIsModal>
           <View
             style={[

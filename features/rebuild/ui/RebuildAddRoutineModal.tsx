@@ -42,7 +42,14 @@ export function RebuildAddRoutineModal(props: {
   const canAdd = newRoutineTitle.trim().length > 0;
 
   return (
-    <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
+    <Modal
+      visible={visible}
+      transparent
+      animationType="fade"
+      onRequestClose={onClose}
+      statusBarTranslucent
+      navigationBarTranslucent
+    >
       <RebuildModalTopFrame>
         <ScrollView
           style={[styles.modalScroll, { maxHeight: maxScrollH }]}

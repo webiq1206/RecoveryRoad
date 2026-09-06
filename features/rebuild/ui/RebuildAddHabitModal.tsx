@@ -42,7 +42,14 @@ export function RebuildAddHabitModal(props: {
   const canAdd = newHabitTrigger.trim().length > 0 && newHabitReplacement.trim().length > 0;
 
   return (
-    <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
+    <Modal
+      visible={visible}
+      transparent
+      animationType="fade"
+      onRequestClose={onClose}
+      statusBarTranslucent
+      navigationBarTranslucent
+    >
       <RebuildModalTopFrame>
         <ScrollView
           style={[styles.modalScroll, { maxHeight: maxScrollH }]}

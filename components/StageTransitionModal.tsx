@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useMemo } from 'react';
-import { View, Text, StyleSheet, Pressable, Animated, Modal, Platform } from 'react-native';
+import { View, Text, StyleSheet, Pressable, Animated, Modal } from 'react-native';
 import { ShieldAlert, Anchor, Hammer, Trophy, ArrowUp, ArrowDown, ChevronRight, X } from 'lucide-react-native';
 import * as Haptics from 'expo-haptics';
 import Colors from '../constants/colors';
@@ -76,7 +76,8 @@ const StageTransitionModal = React.memo(({ visible, transition, stageConfigs, is
       visible={visible}
       transparent
       animationType="none"
-      statusBarTranslucent={Platform.OS === 'ios'}
+      statusBarTranslucent
+      navigationBarTranslucent
     >
       <Animated.View style={[styles.overlay, { opacity: fadeAnim }]}>
         <Animated.View style={[styles.card, { transform: [{ translateY: slideAnim }, { scale: pulseAnim }] }]}>

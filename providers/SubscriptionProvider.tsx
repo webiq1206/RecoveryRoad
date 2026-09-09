@@ -29,7 +29,7 @@ const RC_USER_ID_KEY = 'rc_user_id';
 
 const REFRESH_CUSTOMER_INFO_DELAYS_MS = [0, 1000, 2500, 5000] as const;
 
-/** Short generic aliases only; canonical id is REVENUECAT_PRO_ENTITLEMENT_ID (RecoveryRoad Premium). */
+/** Short generic aliases only; canonical id is REVENUECAT_PRO_ENTITLEMENT_ID (RecoveryRoad Pro). */
 const ENTITLEMENT_ALIASES = ['premium', 'pro'] as const;
 
 export type PremiumEntitlementSource = 'configured' | 'alias' | 'sole_active' | null;

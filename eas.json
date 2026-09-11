@@ -24,6 +24,12 @@
       "production": {
         "node": "20.20.0",
         "autoIncrement": true,
+        "environment": "production",
+        "developmentClient": false,
+        "distribution": "store",
+        "android": {
+          "buildType": "app-bundle"
+        },
         "env": {
           "EXPO_PUBLIC_INCLUDE_PROVIDER_SUITE": "0",
           "EXPO_PUBLIC_COMMUNITY_ENABLED": "false",
@@ -38,6 +44,12 @@
       }
     },
     "submit": {
-      "production": {}
+      "production": {
+        "android": {
+          "applicationId": "com.webiq.recoveryroad",
+          "track": "internal",
+          "releaseStatus": "completed"
+        }
+      }
     }
   }

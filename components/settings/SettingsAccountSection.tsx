@@ -1,13 +1,26 @@
-import React, { useCallback } from 'react';
-import { View, Text, StyleSheet, Pressable, Alert, Linking } from 'react-native';
+import React, { useCallback, useMemo } from 'react';
+import {
+  View,
+  Text,
+  StyleSheet,
+  Pressable,
+  Alert,
+  Linking,
+  Platform,
+  type AlertButton,
+} from 'react-native';
 import { useRouter } from 'expo-router';
 import { useQueryClient } from '@tanstack/react-query';
 import { Trash2 } from 'lucide-react-native';
 import * as Haptics from 'expo-haptics';
 import Colors from '../../constants/colors';
 import { getSupportEmail } from '../../core/supportContact';
-import { formatDeleteAccountDetailsMessage } from '../../core/accountDeletionCopy';
+import {
+  formatDeleteAccountDetailsMessage,
+  subscriptionStoreNameForPlatform,
+} from '../../core/accountDeletionCopy';
 import { useAppMeta } from '../../core/domains/useAppMeta';
+import { useSubscription } from '../../providers/SubscriptionProvider';
 
 /**
  * Settings → Account (delete account). Hidden via SHOW_SETTINGS_ACCOUNT_SECTION; keep this file when off.
@@ -16,6 +29,7 @@ export function SettingsAccountSection() {
   const router = useRouter();
   const queryClient = useQueryClient();
   const { resetAllData } = useAppMeta();
+  const { isPremium, managementUrl } = useSubscription();
   const supportEmail = getSupportEmail();
 
   const executeFullLocalReset = useCallback(async () => {
@@ -25,31 +39,57 @@ export function SettingsAccountSection() {
     router.replace('/onboarding' as any);
   }, [resetAllData, queryClient, router]);
 
+  /** Store to point at for cancellation, or null when there is no active store subscription to cancel. */
+  const activeSubscriptionStore = useMemo(
+    () => (isPremium ? subscriptionStoreNameForPlatform(Platform.OS) : null),
+    [isPremium],
+  );
+
+  const openManageSubscription = useCallback(() => {
+    void Haptics.selectionAsync();
+    if (managementUrl) {
+      void Linking.openURL(managementUrl);
+    } else if (Platform.OS === 'ios') {
+      void Linking.openURL('https://apps.apple.com/account/subscriptions');
+    } else {
+      void Linking.openURL('https://play.google.com/store/account/subscriptions');
+    }
+  }, [managementUrl]);
+
   const handleDeleteAccount = useCallback(() => {
-    Alert.alert('Delete account?', formatDeleteAccountDetailsMessage(), [
-      { text: 'Cancel', style: 'cancel' },
-      {
-        text: 'Continue',
-        style: 'destructive',
-        onPress: () => {
-          Alert.alert(
-            'Delete account permanently?',
-            'You will set up the app again from the beginning.',
-            [
-              { text: 'Cancel', style: 'cancel' },
-              {
-                text: 'Delete account',
-                style: 'destructive',
-                onPress: () => {
-                  void executeFullLocalReset();
-                },
+    const buttons: AlertButton[] = [{ text: 'Cancel', style: 'cancel' }];
+    if (activeSubscriptionStore) {
+      buttons.push({
+        text: activeSubscriptionStore === 'the App Store' ? 'Cancel in App Store' : 'Cancel in Play',
+        onPress: openManageSubscription,
+      });
+    }
+    buttons.push({
+      text: 'Continue',
+      style: 'destructive',
+      onPress: () => {
+        Alert.alert(
+          'Delete account permanently?',
+          'You will set up the app again from the beginning.',
+          [
+            { text: 'Cancel', style: 'cancel' },
+            {
+              text: 'Delete account',
+              style: 'destructive',
+              onPress: () => {
+                void executeFullLocalReset();
               },
-            ],
-          );
-        },
+            },
+          ],
+        );
       },
-    ]);
-  }, [executeFullLocalReset]);
+    });
+    Alert.alert(
+      'Delete account?',
+      formatDeleteAccountDetailsMessage(activeSubscriptionStore),
+      buttons,
+    );
+  }, [executeFullLocalReset, activeSubscriptionStore, openManageSubscription]);
 
   const openAccountDeletionSupportEmail = useCallback(() => {
     const addr = supportEmail || 'support@recoveryroad.app';

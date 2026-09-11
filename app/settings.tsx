@@ -9,6 +9,7 @@ import {
   Linking,
   Platform,
   ActivityIndicator,
+  type AlertButton,
 } from 'react-native';
 import { ScreenScrollView } from '../components/ScreenScrollView';
 import { Stack, useRouter } from 'expo-router';
@@ -52,6 +53,7 @@ import {
 import {
   formatClearLocalDiagnosticsMessage,
   formatRemoveAllAppDataDetailsMessage,
+  subscriptionStoreNameForPlatform,
 } from '../core/accountDeletionCopy';
 import { SHOW_SETTINGS_ACCOUNT_SECTION } from '../core/settingsUiFlags';
 import { SettingsAccountSection } from '../components/settings/SettingsAccountSection';
@@ -75,6 +77,7 @@ export default function SettingsScreen() {
     restoreMutation,
     storePurchasesReady,
     purchasesApiKeyConfigured,
+    managementUrl,
   } = useSubscription();
   const { openPremiumPaywall } = useOpenPremiumPaywall();
   const {
@@ -119,6 +122,28 @@ export default function SettingsScreen() {
     [privacyControls, updateProfile],
   );
 
+  const openManageSubscription = useCallback(() => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    if (managementUrl) {
+      Linking.openURL(managementUrl);
+    } else if (Platform.OS === 'ios') {
+      Linking.openURL('https://apps.apple.com/account/subscriptions');
+    } else if (Platform.OS === 'android') {
+      Linking.openURL('https://play.google.com/store/account/subscriptions');
+    } else {
+      Alert.alert(
+        'Manage subscription',
+        'Use the App Store or Google Play on your phone to manage your subscription.',
+      );
+    }
+  }, [managementUrl]);
+
+  /** Store to point at for cancellation, or null when there is no active store subscription to cancel. */
+  const activeSubscriptionStore = useMemo(
+    () => (isPremium ? subscriptionStoreNameForPlatform(Platform.OS) : null),
+    [isPremium],
+  );
+
   const executeFullLocalReset = useCallback(async () => {
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
     await resetAllData();
@@ -127,30 +152,39 @@ export default function SettingsScreen() {
   }, [resetAllData, queryClient, router]);
 
   const handleRemoveAppData = useCallback(() => {
-    Alert.alert('Remove all app data?', formatRemoveAllAppDataDetailsMessage(), [
-      { text: 'Cancel', style: 'cancel' },
-      {
-        text: 'Continue',
-        style: 'destructive',
-        onPress: () => {
-          Alert.alert(
-            'Erase everything on this device?',
-            'You will set up the app again from the beginning.',
-            [
-              { text: 'Cancel', style: 'cancel' },
-              {
-                text: 'Remove all data',
-                style: 'destructive',
-                onPress: () => {
-                  void executeFullLocalReset();
-                },
+    const buttons: AlertButton[] = [{ text: 'Cancel', style: 'cancel' }];
+    if (activeSubscriptionStore) {
+      buttons.push({
+        text: activeSubscriptionStore === 'the App Store' ? 'Cancel in App Store' : 'Cancel in Play',
+        onPress: openManageSubscription,
+      });
+    }
+    buttons.push({
+      text: 'Continue',
+      style: 'destructive',
+      onPress: () => {
+        Alert.alert(
+          'Erase everything on this device?',
+          'You will set up the app again from the beginning.',
+          [
+            { text: 'Cancel', style: 'cancel' },
+            {
+              text: 'Remove all data',
+              style: 'destructive',
+              onPress: () => {
+                void executeFullLocalReset();
               },
-            ],
-          );
-        },
+            },
+          ],
+        );
       },
-    ]);
-  }, [executeFullLocalReset]);
+    });
+    Alert.alert(
+      'Remove all app data?',
+      formatRemoveAllAppDataDetailsMessage(activeSubscriptionStore),
+      buttons,
+    );
+  }, [executeFullLocalReset, activeSubscriptionStore, openManageSubscription]);
 
   const handleClearLocalDiagnostics = useCallback(() => {
     Alert.alert('Reset local diagnostics?', formatClearLocalDiagnosticsMessage(), [
@@ -225,20 +259,6 @@ export default function SettingsScreen() {
       },
     });
   }, [restoreMutation, storePurchasesReady, purchasesApiKeyConfigured]);
-
-  const openManageSubscription = useCallback(() => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    if (Platform.OS === 'ios') {
-      Linking.openURL('https://apps.apple.com/account/subscriptions');
-    } else if (Platform.OS === 'android') {
-      Linking.openURL('https://play.google.com/store/account/subscriptions');
-    } else {
-      Alert.alert(
-        'Manage subscription',
-        'Use the App Store or Google Play on your phone to manage your subscription.',
-      );
-    }
-  }, []);
 
   return (
     <View style={styles.wrapper}>

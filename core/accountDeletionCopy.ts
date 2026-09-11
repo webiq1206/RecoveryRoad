@@ -10,6 +10,23 @@ export const DELETE_ACCOUNT_INTRO =
 export const REMOVE_ALL_APP_DATA_INTRO =
   'RecoveryRoad does not create or host a server-side login or profile for you. Remove all app data permanently erases everything the app has stored on this device for your use of the app. Apple or Google may still hold subscription or purchase records tied to your store account—manage billing there.';
 
+/** Store that bills the subscription, as named to the user. */
+export type SubscriptionStoreName = 'Google Play' | 'the App Store';
+
+export function subscriptionStoreNameForPlatform(os: string): SubscriptionStoreName | null {
+  if (os === 'ios') return 'the App Store';
+  if (os === 'android') return 'Google Play';
+  return null;
+}
+
+/**
+ * Erasing local data cannot cancel a store subscription: there is no client-side API for it on
+ * either platform, so billing continues until the user cancels in the store themselves.
+ */
+export function formatActiveSubscriptionBillingNotice(store: SubscriptionStoreName): string {
+  return `Your premium subscription stays active and will keep renewing. Removing your data here does not cancel it. To stop being billed, cancel the subscription in ${store}.`;
+}
+
 export const DELETE_ACCOUNT_DATA_BULLETS: readonly string[] = [
   'Profile and onboarding (name, goals, sober date, recovery inputs, privacy toggles)',
   'Daily check-ins, near-miss events, progress stats, and relapse timeline',
@@ -22,14 +39,26 @@ export const DELETE_ACCOUNT_DATA_BULLETS: readonly string[] = [
   'Optional provider or workspace demo data (only if that build option was enabled on this device)',
 ];
 
-export function formatDeleteAccountDetailsMessage(): string {
+/** `activeSubscriptionStore` adds the billing-continues warning; pass null when not subscribed. */
+export function formatDeleteAccountDetailsMessage(
+  activeSubscriptionStore?: SubscriptionStoreName | null,
+): string {
   const bullets = DELETE_ACCOUNT_DATA_BULLETS.map((line) => `• ${line}`).join('\n');
-  return `${DELETE_ACCOUNT_INTRO}\n\nThis removes:\n${bullets}\n\nThis cannot be undone. You will set up the app again from the beginning.`;
+  const billing = activeSubscriptionStore
+    ? `\n\n${formatActiveSubscriptionBillingNotice(activeSubscriptionStore)}`
+    : '';
+  return `${DELETE_ACCOUNT_INTRO}${billing}\n\nThis removes:\n${bullets}\n\nThis cannot be undone. You will set up the app again from the beginning.`;
 }
 
-export function formatRemoveAllAppDataDetailsMessage(): string {
+/** `activeSubscriptionStore` adds the billing-continues warning; pass null when not subscribed. */
+export function formatRemoveAllAppDataDetailsMessage(
+  activeSubscriptionStore?: SubscriptionStoreName | null,
+): string {
   const bullets = DELETE_ACCOUNT_DATA_BULLETS.map((line) => `• ${line}`).join('\n');
-  return `${REMOVE_ALL_APP_DATA_INTRO}\n\nThis removes:\n${bullets}\n\nThis cannot be undone. You will set up the app again from the beginning.`;
+  const billing = activeSubscriptionStore
+    ? `\n\n${formatActiveSubscriptionBillingNotice(activeSubscriptionStore)}`
+    : '';
+  return `${REMOVE_ALL_APP_DATA_INTRO}${billing}\n\nThis removes:\n${bullets}\n\nThis cannot be undone. You will set up the app again from the beginning.`;
 }
 
 export const CLEAR_LOCAL_DIAGNOSTICS_INTRO =

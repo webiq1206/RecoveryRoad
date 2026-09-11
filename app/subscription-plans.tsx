@@ -21,8 +21,10 @@ import { useSubscription } from '../providers/SubscriptionProvider';
 import { useOpenPremiumPaywall } from '../hooks/useOpenPremiumPaywall';
 import { mapRcOfferingPackagesForDisplay } from '../utils/mapRcOfferingPackagesForDisplay';
 
-function openSubscriptionManagement() {
-  if (Platform.OS === 'ios') {
+function openSubscriptionManagement(managementUrl: string | null) {
+  if (managementUrl) {
+    Linking.openURL(managementUrl);
+  } else if (Platform.OS === 'ios') {
     Linking.openURL('https://apps.apple.com/account/subscriptions');
   } else if (Platform.OS === 'android') {
     Linking.openURL('https://play.google.com/store/account/subscriptions');
@@ -45,6 +47,7 @@ export default function SubscriptionPlansScreen() {
     offerings,
     offeringsLoading,
     reconcileStoreSubscription,
+    managementUrl,
   } = useSubscription();
   const { openPremiumPaywall } = useOpenPremiumPaywall();
 
@@ -143,7 +146,7 @@ export default function SubscriptionPlansScreen() {
                 style={({ pressed }) => [styles.manageInStoreLink, pressed && { opacity: 0.85 }]}
                 onPress={() => {
                   Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                  openSubscriptionManagement();
+                  openSubscriptionManagement(managementUrl);
                 }}
                 testID="subscription-plans-manage-cancel"
               >
@@ -247,7 +250,7 @@ export default function SubscriptionPlansScreen() {
         ) : (
           <Pressable
             style={({ pressed }) => [styles.secondaryBtn, pressed && { opacity: 0.85 }]}
-            onPress={openSubscriptionManagement}
+            onPress={() => openSubscriptionManagement(managementUrl)}
           >
             <Text style={styles.secondaryBtnText}>Manage subscription in {Platform.OS === 'ios' ? 'App Store' : Platform.OS === 'android' ? 'Play Store' : 'store'}</Text>
           </Pressable>

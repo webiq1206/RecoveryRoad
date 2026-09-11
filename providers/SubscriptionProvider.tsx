@@ -29,7 +29,7 @@ const RC_USER_ID_KEY = 'rc_user_id';
 
 const REFRESH_CUSTOMER_INFO_DELAYS_MS = [0, 1000, 2500, 5000] as const;
 
-/** Short generic aliases only; canonical id is REVENUECAT_PRO_ENTITLEMENT_ID (RecoveryRoad Pro). */
+/** Short generic aliases only; canonical id is REVENUECAT_PRO_ENTITLEMENT_ID (RecoveryRoad Premium). */
 const ENTITLEMENT_ALIASES = ['premium', 'pro'] as const;
 
 export type PremiumEntitlementSource = 'configured' | 'alias' | 'sole_active' | null;
@@ -659,6 +659,9 @@ export const [SubscriptionProvider, useSubscription] = createContextHook(() => {
     });
   }, [customerInfo, offerings, subscription]);
 
+  /** Store-specific deep link to the active subscription's manage/cancel screen. Null when not subscribed. */
+  const managementUrl = useMemo(() => customerInfo?.managementURL ?? null, [customerInfo]);
+
   const purchaseStatus = useMemo(
     () => ({
       isPending: purchaseMutation.isPending,
@@ -827,6 +830,7 @@ export const [SubscriptionProvider, useSubscription] = createContextHook(() => {
       offerings,
       offeringsLoading: offeringsQuery.isLoading,
       activePremiumDisplay,
+      managementUrl,
       purchase,
       purchaseStatus,
       restore,
@@ -851,6 +855,7 @@ export const [SubscriptionProvider, useSubscription] = createContextHook(() => {
       offerings,
       offeringsQuery.isLoading,
       activePremiumDisplay,
+      managementUrl,
       purchase,
       purchaseStatus,
       restore,

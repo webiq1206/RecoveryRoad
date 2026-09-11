@@ -49,6 +49,10 @@
           "applicationId": "com.webiq.recoveryroad",
           "track": "internal",
           "releaseStatus": "completed"
+        },
+        "ios": {
+          "ascAppId": "6764677522",
+          "appleTeamId": "KYVDD7RCP8"
         }
       }
     }

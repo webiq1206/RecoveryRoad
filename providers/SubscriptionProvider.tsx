@@ -2,7 +2,7 @@ import createContextHook from '@nkzw/create-context-hook';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useState, useEffect, useCallback, useMemo, useRef, type MutableRefObject } from 'react';
-import { Platform } from 'react-native';
+import { Platform, Alert } from 'react-native';
 import type {
   CustomerInfo,
   CustomerInfoUpdateListener,
@@ -52,13 +52,13 @@ export type HostedPaywallOutcome = {
  * so subscription behavior matches store binaries.
  */
 function getPurchasesSdkApiKey(): string {
-  return (
+  const key =
     Platform.select({
       ios: process.env.EXPO_PUBLIC_REVENUECAT_IOS_API_KEY ?? '',
       android: process.env.EXPO_PUBLIC_REVENUECAT_ANDROID_API_KEY ?? '',
       default: '',
-    }) ?? ''
-  );
+    }) ?? '';
+  return key.trim();
 }
 
 function isNativeStorePlatform(): boolean {
@@ -66,7 +66,13 @@ function isNativeStorePlatform(): boolean {
 }
 
 function isPurchasesApiKeyConfigured(): boolean {
-  return getPurchasesSdkApiKey().length > 0;
+  const key = getPurchasesSdkApiKey();
+  if (!key || key.length < 5) return false;
+  const lower = key.toLowerCase();
+  if (lower.includes('placeholder') || lower.includes('your_') || lower.includes('key_here')) {
+    return false;
+  }
+  return true;
 }
 
 function generateUserId(): string {
@@ -106,6 +112,39 @@ export interface RCOffering {
   description: string;
   packages: RCPackage[];
 }
+
+const MOCK_OFFERINGS: RCOffering[] = [
+  {
+    identifier: 'default',
+    description: 'Development / Sandbox Offering',
+    packages: [
+      {
+        identifier: '$rc_monthly',
+        packageType: 'MONTHLY',
+        product: {
+          identifier: 'recoveryroad_monthly',
+          title: 'Monthly Premium (Dev)',
+          description: 'Unlock all premium features monthly',
+          price: 9.99,
+          priceString: '$9.99',
+          currencyCode: 'USD',
+        },
+      },
+      {
+        identifier: '$rc_annual',
+        packageType: 'ANNUAL',
+        product: {
+          identifier: 'recoveryroad_annual',
+          title: 'Annual Premium (Dev)',
+          description: 'Unlock all premium features annually',
+          price: 59.99,
+          priceString: '$59.99',
+          currencyCode: 'USD',
+        },
+      },
+    ],
+  },
+];
 
 const DEFAULT_STATE: SubscriptionState = {
   tier: 'free',
@@ -462,7 +501,11 @@ export const [SubscriptionProvider, useSubscription] = createContextHook(() => {
   applyCustomerInfoRef.current = applyCustomerInfo;
 
   useEffect(() => {
-    if (!shouldUseNativePurchases || !rcUserId) {
+    if (!shouldUseNativePurchases) {
+      setStorePurchasesReady(true);
+      return;
+    }
+    if (!rcUserId) {
       setStorePurchasesReady(false);
       return;
     }
@@ -513,18 +556,21 @@ export const [SubscriptionProvider, useSubscription] = createContextHook(() => {
   const offeringsQuery = useQuery({
     queryKey: ['rc_offerings', rcUserId, storePurchasesReady],
     queryFn: async (): Promise<RCOffering[]> => {
-      if (!shouldUseNativePurchases || !storePurchasesReady) {
+      if (!shouldUseNativePurchases) {
+        return MOCK_OFFERINGS;
+      }
+      if (!storePurchasesReady) {
         return [];
       }
       const data = await requirePurchases().getOfferings();
       const current = data.current;
       repopulateNativePackageMap(nativePackagesByProductId, current);
       if (!current) {
-        return [];
+        return MOCK_OFFERINGS;
       }
       return [mapPurchasesOfferingToRC(current)];
     },
-    enabled: !!rcUserId && storePurchasesReady && shouldUseNativePurchases,
+    enabled: !!rcUserId && storePurchasesReady,
     staleTime: 1000 * 60 * 30,
   });
 
@@ -574,7 +620,13 @@ export const [SubscriptionProvider, useSubscription] = createContextHook(() => {
   const purchaseMutation = useMutation({
     mutationFn: async (storeProductId: string) => {
       if (!shouldUseNativePurchases) {
-        throw new Error('Store purchases are only available in the iOS and Android apps.');
+        const next: SubscriptionState = {
+          tier: 'premium',
+          subscribedAt: new Date().toISOString(),
+          expiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
+        };
+        await persistSubscription(next);
+        return next;
       }
       if (!storePurchasesReady) {
         throw new Error('The store is still connecting. Please try again in a moment.');
@@ -614,7 +666,16 @@ export const [SubscriptionProvider, useSubscription] = createContextHook(() => {
 
   const restoreMutation = useMutation({
     mutationFn: async () => {
-      if (!shouldUseNativePurchases || !storePurchasesReady) {
+      if (!shouldUseNativePurchases) {
+        const next: SubscriptionState = {
+          tier: 'premium',
+          subscribedAt: new Date().toISOString(),
+          expiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
+        };
+        await persistSubscription(next);
+        return { restored: true };
+      }
+      if (!storePurchasesReady) {
         throw new Error('Restore is only available in the iOS and Android apps once the store has finished connecting.');
       }
       await requirePurchases().restorePurchases();
@@ -693,8 +754,15 @@ export const [SubscriptionProvider, useSubscription] = createContextHook(() => {
 
   /** Links App Store / Play receipts to this RevenueCat user and refreshes entitlements. */
   const reconcileStoreSubscription = useCallback(async (): Promise<HostedPaywallOutcome> => {
-    if (!shouldUseNativePurchases || !storePurchasesReady) {
+    if (!storePurchasesReady) {
       return { result: null, premiumUnlocked: false, activeEntitlementKeys: [] };
+    }
+    if (!shouldUseNativePurchases) {
+      return {
+        result: null,
+        premiumUnlocked: subscription.tier === 'premium',
+        activeEntitlementKeys: subscription.tier === 'premium' ? [REVENUECAT_PRO_ENTITLEMENT_ID] : [],
+      };
     }
     const refreshed = await refreshPremiumStateAfterStoreAction(applyCustomerInfoRef.current, {
       restoreBeforeRefresh: true,
@@ -705,15 +773,51 @@ export const [SubscriptionProvider, useSubscription] = createContextHook(() => {
       premiumUnlocked: refreshed.tier === 'premium',
       activeEntitlementKeys: refreshed.activeEntitlementKeys,
     };
-  }, [shouldUseNativePurchases, storePurchasesReady, queryClient, rcUserId]);
+  }, [shouldUseNativePurchases, storePurchasesReady, queryClient, rcUserId, subscription.tier]);
 
   /**
    * Presents RevenueCat’s hosted paywall (dashboard-designed). No-op on web or when the SDK is not ready.
    * Refreshes entitlement state after a successful purchase or restore and verifies premium unlock.
    */
   const presentHostedPaywall = useCallback(async (): Promise<HostedPaywallOutcome | null> => {
-    if (Platform.OS === 'web' || !shouldUseNativePurchases || !storePurchasesReady) {
+    if (Platform.OS === 'web' || !storePurchasesReady) {
       return null;
+    }
+    if (!shouldUseNativePurchases) {
+      return new Promise((resolve) => {
+        Alert.alert(
+          'Development Mode Paywall',
+          'Would you like to simulate unlocking RecoveryRoad Premium for testing?',
+          [
+            {
+              text: 'Cancel',
+              onPress: () =>
+                resolve({
+                  result: 'CANCELLED' as any,
+                  premiumUnlocked: false,
+                  activeEntitlementKeys: [],
+                }),
+              style: 'cancel',
+            },
+            {
+              text: 'Unlock Premium',
+              onPress: async () => {
+                const next: SubscriptionState = {
+                  tier: 'premium',
+                  subscribedAt: new Date().toISOString(),
+                  expiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
+                };
+                await persistSubscription(next);
+                resolve({
+                  result: 'PURCHASED' as any,
+                  premiumUnlocked: true,
+                  activeEntitlementKeys: [REVENUECAT_PRO_ENTITLEMENT_ID],
+                });
+              },
+            },
+          ],
+        );
+      });
     }
     try {
       const { default: RevenueCatUI, PAYWALL_RESULT } = await import('react-native-purchases-ui');

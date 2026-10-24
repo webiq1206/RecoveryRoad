@@ -239,8 +239,18 @@ export default function OnboardingScreen() {
       const reservedBottom = FOOTER_BAR_HEIGHT + bottomOffset;
 
       const alignByWindowPosition = () => {
-        scroll.measureInWindow((_sx, scrollY, _sw, scrollH) => {
-          anchor.measureInWindow((_ax, ay, _aw, ah) => {
+        const scrollNative = scroll as ScrollView & {
+          measureInWindow: (
+            callback: (x: number, y: number, width: number, height: number) => void,
+          ) => void;
+        };
+        const anchorNative = anchor as View & {
+          measureInWindow: (
+            callback: (x: number, y: number, width: number, height: number) => void,
+          ) => void;
+        };
+        scrollNative.measureInWindow((_sx: number, scrollY: number, _sw: number, scrollH: number) => {
+          anchorNative.measureInWindow((_ax: number, ay: number, _aw: number, ah: number) => {
             const windowH = Dimensions.get('window').height;
             const footerTopY = windowH - bottomOffset - FOOTER_BAR_HEIGHT;
             const visibleBottom = Math.min(scrollY + scrollH, footerTopY);
@@ -265,10 +275,22 @@ export default function OnboardingScreen() {
           return;
         }
 
-        anchor.measureLayout(
+        const scrollNative = scroll as ScrollView & {
+          measure: (
+            callback: (x: number, y: number, width: number, height: number) => void,
+          ) => void;
+        };
+        const anchorNative = anchor as View & {
+          measureLayout: (
+            relativeToNativeNode: unknown,
+            onSuccess: (left: number, top: number, width: number, height: number) => void,
+            onFail?: () => void,
+          ) => void;
+        };
+        anchorNative.measureLayout(
           scrollContent,
-          (_left, top, _width, height) => {
-            scroll.measure((_fx, _fy, _fw, viewportHeight) => {
+          (_left: number, top: number, _width: number, height: number) => {
+            scrollNative.measure((_fx: number, _fy: number, _fw: number, viewportHeight: number) => {
               const targetY =
                 top +
                 height +

@@ -10,13 +10,13 @@ import {
   Modal,
   Alert,
   Platform,
-  InteractionManager,
   ScrollView,
   useWindowDimensions,
 } from 'react-native';
 import { ScreenScrollView } from '../../../components/ScreenScrollView';
 import { KeyboardDoneBar } from '../../../components/KeyboardDoneBar';
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
+import { runAfterInteractions } from '../../../utils/runAfterInteractions';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import {
   Shield,
@@ -217,7 +217,7 @@ export default function AccountabilityScreen() {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     router.back();
     if (fromLogSetbackFlow) {
-      InteractionManager.runAfterInteractions(() => {
+      runAfterInteractions(() => {
         router.back();
       });
     }
@@ -387,8 +387,8 @@ export default function AccountabilityScreen() {
   const renderTabs = () => (
     <View style={styles.tabRow}>
       {([
-        { key: 'contracts' as const, label: 'Commitments', icon: FileText },
-        { key: 'partners' as const, label: 'Partners', icon: Users },
+        { key: 'contracts' as const, label: 'Commitments', icon: FileText, badge: 0 },
+        { key: 'partners' as const, label: 'Partners', icon: Users, badge: 0 },
         { key: 'alerts' as const, label: 'Alerts', icon: Bell, badge: driftAlerts.length },
       ]).map(tab => {
         const isPartners = tab.key === 'partners';

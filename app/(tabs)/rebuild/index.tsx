@@ -8,10 +8,10 @@ import {
   Animated,
   Platform,
   Dimensions,
-  InteractionManager,
 } from 'react-native';
 import { ScreenScrollView } from '../../../components/ScreenScrollView';
 import { Stack, useRouter as useRebuildRouter, useLocalSearchParams } from 'expo-router';
+import { runAfterInteractions } from '../../../utils/runAfterInteractions';
 import { Pressable } from 'react-native';
 import {
   Hammer,
@@ -180,7 +180,7 @@ export default function RebuildScreen() {
     void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     if (showSetbackClose) {
       rebuildRouter.back();
-      InteractionManager.runAfterInteractions(() => {
+      runAfterInteractions(() => {
         rebuildRouter.back();
       });
       return;

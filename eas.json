@@ -6,7 +6,7 @@
     },
     "build": {
       "development": {
-        "node": "20.20.0",
+        "node": "24.14.0",
         "developmentClient": true,
         "distribution": "internal",
         "env": {
@@ -15,14 +15,14 @@
         }
       },
       "preview": {
-        "node": "20.20.0",
+        "node": "24.14.0",
         "distribution": "internal",
         "env": {
           "EXPO_PUBLIC_INCLUDE_PROVIDER_SUITE": "0"
         }
       },
       "production": {
-        "node": "20.20.0",
+        "node": "24.14.0",
         "autoIncrement": true,
         "environment": "production",
         "developmentClient": false,

@@ -1,8 +1,9 @@
 import { useCallback } from 'react';
-import { Alert, InteractionManager, Platform } from 'react-native';
+import { Alert, Platform } from 'react-native';
 import * as Haptics from 'expo-haptics';
 import { REVENUECAT_PRO_ENTITLEMENT_ID } from '../constants/revenueCatPublicConfig';
 import { useSubscription } from '../providers/SubscriptionProvider';
+import { waitForInteractions } from '../utils/runAfterInteractions';
 
 function buildPurchaseVerifyFailedMessage(activeKeys: string[]): string {
   const keysLine =
@@ -45,9 +46,7 @@ export function useOpenPremiumPaywall() {
       );
       return false;
     }
-    await new Promise<void>((resolve) => {
-      InteractionManager.runAfterInteractions(() => resolve());
-    });
+    await waitForInteractions();
     const outcome = await presentHostedPaywall();
     if (!outcome) {
       return false;

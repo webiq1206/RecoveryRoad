@@ -1,5 +1,5 @@
 import { Tabs } from "expo-router";
-import { StyleSheet, View } from "react-native";
+import { StyleSheet, View, type ColorValue } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import {
   Home,
@@ -14,6 +14,11 @@ import Colors from "../../constants/colors";
 import { hairline, shadows, spacing } from "../../constants/theme";
 
 type IconType = typeof Home;
+type TabBarIconProps = { focused: boolean; color: ColorValue; size: number };
+
+function tabIconColor(color: ColorValue): string {
+  return typeof color === 'string' ? color : Colors.primary;
+}
 import { useAppMeta } from "../../core/domains/useAppMeta";
 
 const STABILITY_DOT_COLORS: Record<string, string> = {
@@ -72,43 +77,43 @@ export default function TabLayout() {
   const ICON_SIZE = 20;
 
   const renderHomeIcon = useCallback(
-    ({ color }: { color: string }) => (
-      <HomeTabIcon color={color} size={ICON_SIZE} dotColor={dotColor} />
+    ({ color }: TabBarIconProps) => (
+      <HomeTabIcon color={tabIconColor(color)} size={ICON_SIZE} dotColor={dotColor} />
     ),
     [dotColor],
   );
 
   const renderProgressIcon = useCallback(
-    ({ color }: { color: string }) => (
-      <TabIcon IconComponent={TrendingUp} color={color} size={ICON_SIZE} />
+    ({ color }: TabBarIconProps) => (
+      <TabIcon IconComponent={TrendingUp} color={tabIconColor(color)} size={ICON_SIZE} />
     ),
     [],
   );
 
   const renderRebuildIcon = useCallback(
-    ({ color }: { color: string }) => (
-      <TabIcon IconComponent={Hammer} color={color} size={ICON_SIZE} />
+    ({ color }: TabBarIconProps) => (
+      <TabIcon IconComponent={Hammer} color={tabIconColor(color)} size={ICON_SIZE} />
     ),
     [],
   );
 
   const renderConnectionIcon = useCallback(
-    ({ color }: { color: string }) => (
-      <TabIcon IconComponent={Users} color={color} size={ICON_SIZE} />
+    ({ color }: TabBarIconProps) => (
+      <TabIcon IconComponent={Users} color={tabIconColor(color)} size={ICON_SIZE} />
     ),
     [],
   );
 
   const renderAccountabilityIcon = useCallback(
-    ({ color }: { color: string }) => (
-      <TabIcon IconComponent={Handshake} color={color} size={ICON_SIZE} />
+    ({ color }: TabBarIconProps) => (
+      <TabIcon IconComponent={Handshake} color={tabIconColor(color)} size={ICON_SIZE} />
     ),
     [],
   );
 
   const renderJournalIcon = useCallback(
-    ({ color }: { color: string }) => (
-      <TabIcon IconComponent={BookOpen} color={color} size={ICON_SIZE} />
+    ({ color }: TabBarIconProps) => (
+      <TabIcon IconComponent={BookOpen} color={tabIconColor(color)} size={ICON_SIZE} />
     ),
     [],
   );

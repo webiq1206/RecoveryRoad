@@ -224,7 +224,7 @@ const inlineStyles = StyleSheet.create({
     opacity: 0.4,
   },
   overlay: {
-    ...StyleSheet.absoluteFillObject,
+    ...StyleSheet.absoluteFill,
     backgroundColor: 'transparent',
   },
 });

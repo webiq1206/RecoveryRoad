@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { View, Text, StyleSheet, Pressable, useWindowDimensions } from 'react-native';
 import { useFocusEffect } from 'expo-router';
-import Slider, { type SliderProps, type SliderRef } from '@react-native-community/slider';
+import Slider, { type SliderRef } from '@react-native-community/slider';
 import { Lock, Minus, Plus } from 'lucide-react-native';
 import * as Haptics from 'expo-haptics';
 import Colors from '../../constants/colors';
@@ -265,7 +265,7 @@ export function CheckInMetricSlider({
       <View style={[styles.sliderRow, { gap: sliderStepperGap }]}>
         <View style={[styles.sliderWrap, { minWidth: sliderMinWidth }]}>
           <Slider
-            ref={sliderRef as unknown as SliderProps['ref']}
+            ref={sliderRef as React.Ref<SliderRef>}
             style={styles.slider}
             value={sliderValue}
             onSlidingStart={handleSlidingStart}

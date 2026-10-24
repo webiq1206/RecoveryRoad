@@ -1,14 +1,15 @@
 {
   "extends": "expo/tsconfig.base",
   "compilerOptions": {
-    "strict": true
+    "strict": true,
+    "customConditions": ["react-native", "react-native-legacy-deep-imports"]
   },
   "include": [
     "**/*.ts",
     "**/*.tsx"
   ],
   "exclude": [
-    "utils/mergeProfile.test.ts",
+    "utils/**/*.test.ts",
     "archived/**/*"
   ]
 }

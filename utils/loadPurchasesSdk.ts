@@ -3,6 +3,8 @@ import { isExpoGo } from './runtime';
 import type * as PurchasesNS from 'react-native-purchases';
 
 type PurchasesMod = typeof import('react-native-purchases');
+/** Class with static RevenueCat APIs (not an instance). */
+export type PurchasesSdk = typeof PurchasesNS.default;
 
 let cached: PurchasesMod | null | undefined;
 
@@ -24,11 +26,11 @@ export function loadPurchasesModule(): PurchasesMod | null {
   return cached;
 }
 
-export function loadPurchases(): PurchasesNS.default | null {
+export function loadPurchases(): PurchasesSdk | null {
   return loadPurchasesModule()?.default ?? null;
 }
 
-export function requirePurchases(): PurchasesNS.default {
+export function requirePurchases(): PurchasesSdk {
   const sdk = loadPurchases();
   if (!sdk) {
     throw new Error('Purchases native SDK is not available in this runtime');

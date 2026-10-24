@@ -65,7 +65,7 @@ export default function SubscriptionPlansScreen() {
       );
       return;
     }
-    if (!purchasesApiKeyConfigured || !storePurchasesReady) {
+    if (!storePurchasesReady) {
       Alert.alert(
         'Please wait',
         'The App Store or Google Play is still connecting. Try again in a moment.',

@@ -79,6 +79,70 @@ function generateUserId(): string {
   return 'rc_' + Date.now().toString(36) + Math.random().toString(36).substring(2, 10);
 }
 
+/** Emulators / devices without Play Billing often surface this; not a real app bug. */
+function isBillingUnavailableMessage(message: string): boolean {
+  const m = message.toLowerCase();
+  return (
+    m.includes('billing is not available') ||
+    m.includes('billing_unavailable') ||
+    m.includes('billing service unavailable') ||
+    m.includes('purchasenotallowederror') ||
+    m.includes('purchase_not_allowed')
+  );
+}
+
+function isBillingUnavailableError(error: unknown): boolean {
+  if (!error || typeof error !== 'object') return false;
+  const e = error as {
+    code?: string | number;
+    message?: string;
+    underlyingErrorMessage?: string;
+    userInfo?: { readableErrorCode?: string };
+  };
+  const code = String(e.code ?? '');
+  const readable = String(e.userInfo?.readableErrorCode ?? '');
+  const blob = `${code} ${readable} ${e.message ?? ''} ${e.underlyingErrorMessage ?? ''}`;
+  return (
+    code === '3' ||
+    readable.toLowerCase().includes('purchasenotallowed') ||
+    isBillingUnavailableMessage(blob)
+  );
+}
+
+/**
+ * Install before configure(). Downgrades expected Play Billing gaps (common on
+ * Android emulators) so they don't open a red LogBox ERROR overlay.
+ */
+function installPurchasesLogHandler(): void {
+  const Purchases = requirePurchases();
+  Purchases.setLogHandler((logLevel, message) => {
+    if (isBillingUnavailableMessage(message)) {
+      if (__DEV__) {
+        console.log(
+          '[RevenueCat] Play Billing unavailable on this device (normal on many emulators).',
+        );
+      }
+      return;
+    }
+    switch (logLevel) {
+      case Purchases.LOG_LEVEL.DEBUG:
+        console.debug(`[RevenueCat] ${message}`);
+        break;
+      case Purchases.LOG_LEVEL.INFO:
+        console.info(`[RevenueCat] ${message}`);
+        break;
+      case Purchases.LOG_LEVEL.WARN:
+        console.warn(`[RevenueCat] ${message}`);
+        break;
+      case Purchases.LOG_LEVEL.ERROR:
+        console.error(`[RevenueCat] ${message}`);
+        break;
+      default:
+        console.log(`[RevenueCat] ${message}`);
+    }
+  });
+}
+
 async function getOrCreateUserId(): Promise<string> {
   try {
     const stored = await AsyncStorage.getItem(RC_USER_ID_KEY);
@@ -516,6 +580,8 @@ export const [SubscriptionProvider, useSubscription] = createContextHook(() => {
     (async () => {
       try {
         const apiKey = getPurchasesSdkApiKey();
+        // Must run before configure so we replace RevenueCat's default console.error handler.
+        installPurchasesLogHandler();
         const already = await requirePurchases().isConfigured();
         if (!already) {
           requirePurchases().configure({ apiKey, appUserID: rcUserId });
@@ -523,7 +589,8 @@ export const [SubscriptionProvider, useSubscription] = createContextHook(() => {
           await requirePurchases().logIn(rcUserId);
         }
         if (__DEV__) {
-          await requirePurchases().setLogLevel(requirePurchases().LOG_LEVEL.DEBUG);
+          // INFO avoids DEBUG spam; ERROR-level billing gaps are filtered in the log handler.
+          await requirePurchases().setLogLevel(requirePurchases().LOG_LEVEL.INFO);
         }
         const info = await requirePurchases().getCustomerInfo();
         if (cancelled) return;
@@ -540,6 +607,14 @@ export const [SubscriptionProvider, useSubscription] = createContextHook(() => {
         requirePurchases().addCustomerInfoUpdateListener(listener);
         setStorePurchasesReady(true);
       } catch (e) {
+        if (isBillingUnavailableError(e)) {
+          console.log(
+            '[Subscription] Play Billing unavailable — continuing without store offerings.',
+          );
+          // Still mark ready so the rest of the app loads; offerings query returns mocks.
+          setStorePurchasesReady(true);
+          return;
+        }
         console.log('[Subscription] Purchases setup failed:', e);
         setStorePurchasesReady(false);
       }
@@ -562,13 +637,23 @@ export const [SubscriptionProvider, useSubscription] = createContextHook(() => {
       if (!storePurchasesReady) {
         return [];
       }
-      const data = await requirePurchases().getOfferings();
-      const current = data.current;
-      repopulateNativePackageMap(nativePackagesByProductId, current);
-      if (!current) {
-        return MOCK_OFFERINGS;
+      try {
+        const data = await requirePurchases().getOfferings();
+        const current = data.current;
+        repopulateNativePackageMap(nativePackagesByProductId, current);
+        if (!current) {
+          return MOCK_OFFERINGS;
+        }
+        return [mapPurchasesOfferingToRC(current)];
+      } catch (e) {
+        if (isBillingUnavailableError(e)) {
+          console.log(
+            '[Subscription] Offerings unavailable (no Play Billing). Using local plan list.',
+          );
+          return MOCK_OFFERINGS;
+        }
+        throw e;
       }
-      return [mapPurchasesOfferingToRC(current)];
     },
     enabled: !!rcUserId && storePurchasesReady,
     staleTime: 1000 * 60 * 30,
@@ -613,8 +698,16 @@ export const [SubscriptionProvider, useSubscription] = createContextHook(() => {
 
   const refreshOfferingsPackageMap = useCallback(async () => {
     if (!storePurchasesReady || !shouldUseNativePurchases) return;
-    const data = await requirePurchases().getOfferings();
-    repopulateNativePackageMap(nativePackagesByProductId, data.current);
+    try {
+      const data = await requirePurchases().getOfferings();
+      repopulateNativePackageMap(nativePackagesByProductId, data.current);
+    } catch (e) {
+      if (isBillingUnavailableError(e)) {
+        console.log('[Subscription] refreshOfferings skipped — Play Billing unavailable.');
+        return;
+      }
+      throw e;
+    }
   }, [storePurchasesReady, shouldUseNativePurchases]);
 
   const purchaseMutation = useMutation({

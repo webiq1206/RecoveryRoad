@@ -34,8 +34,13 @@ if (wantsDevClient && !hasSchemeArg(forwarded)) {
   forwarded.push("--scheme", "recoveryroad");
 }
 
+// Prefer the custom dev client. Expo Go for SDK 58 is not always available, and
+// this app uses native modules (RevenueCat, etc.) that require a development build.
 if (!wantsGo && !wantsDevClient) {
-  forwarded.push("--go");
+  forwarded.push("--dev-client");
+  if (!hasSchemeArg(forwarded)) {
+    forwarded.push("--scheme", "recoveryroad");
+  }
 }
 
 const useTunnel = argvImpliesTunnelMode(forwarded);

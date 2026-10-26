@@ -198,7 +198,8 @@ const MOCK_OFFERINGS: RCOffering[] = [
         identifier: '$rc_annual',
         packageType: 'ANNUAL',
         product: {
-          identifier: 'recoveryroad_annual',
+          // Google Play product id (RC Android: recoveryroad_yearly:recoveryroad-baseplan-yearly).
+          identifier: 'recoveryroad_yearly',
           title: 'Annual Premium (Dev)',
           description: 'Unlock all premium features annually',
           price: 59.99,

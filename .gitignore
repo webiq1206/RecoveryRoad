@@ -43,3 +43,8 @@ yarn-error.*
 
 # Live social API persisted state (self-hosted / staging)
 backend/social/data/
+.tmp-aab/
+eas-android-prod.log
+eas-android-submit.log
+r8-build.log
+

@@ -51,11 +51,9 @@
       "./plugins/withAndroidLargeScreenCompat",
       "./plugins/withAndroidR8Optimization",
       [
-        "react-native-edge-to-edge",
+        "expo-status-bar",
         {
-          "android": {
-            "enforceNavigationBarContrast": false
-          }
+          "style": "light"
         }
       ],
       "expo-dev-client",
@@ -66,7 +64,7 @@
             "enableMinifyInReleaseBuilds": true,
             "enableShrinkResourcesInReleaseBuilds": true,
             "enablePngCrunchInReleaseBuilds": true,
-            "extraProguardRules": "# Raise Play Console DEX obfuscation %\n-repackageclasses\n-allowaccessmodification\n# Runtime reflection entry points only (avoid broad -keep **)\n-keep class com.facebook.react.views.view.WindowUtil { *; }\n-keep class com.facebook.react.views.view.WindowUtilKt { *; }\n# Crash deobfuscation — does not block class/method renaming\n-keepattributes SourceFile,LineNumberTable\n-renamesourcefileattribute SourceFile"
+            "extraProguardRules": "# Play DEX obfuscation: allow renaming; avoid package-wide -keep\n-repackageclasses 'o'\n-allowaccessmodification\n# Keep from being stripped; allowobfuscation so renaming still counts\n-keep,allowobfuscation class com.facebook.react.views.view.WindowUtil\n-keep,allowobfuscation class com.facebook.react.views.view.WindowUtilKt\n# Crash deobfuscation (does not block renaming)\n-keepattributes SourceFile,LineNumberTable\n-renamesourcefileattribute SourceFile"
           }
         }
       ],

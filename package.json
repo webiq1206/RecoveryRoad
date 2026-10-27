@@ -24,7 +24,6 @@
     "prebuild:android": "expo prebuild --platform android",
     "doctor": "npx expo-doctor",
     "ios": "node ./scripts/expo-with-packager-env.mjs run:ios",
-    "eas": "eas",
     "social-server": "node ./backend/social/server.mjs"
   },
   "dependencies": {
@@ -37,12 +36,12 @@
     "@trpc/react-query": "^11.11.0",
     "@trpc/server": "^11.11.0",
     "babel-preset-expo": "~58.0.0",
-    "expo": "~58.0.19",
+    "expo": "~58.0.20",
     "expo-blur": "~58.0.5",
     "expo-build-properties": "~58.0.11",
     "expo-constants": "~58.0.13",
     "expo-crypto": "~58.0.7",
-    "expo-dev-client": "~58.0.15",
+    "expo-dev-client": "~58.0.16",
     "expo-font": "~58.0.10",
     "expo-haptics": "~58.0.7",
     "expo-image": "~58.0.17",
@@ -50,17 +49,17 @@
     "expo-linking": "~58.0.14",
     "expo-local-authentication": "~58.0.2",
     "expo-notifications": "~58.1.6",
-    "expo-router": "~58.0.26",
+    "expo-router": "~58.0.27",
     "expo-screen-orientation": "~58.0.3",
     "expo-secure-store": "~58.0.2",
     "expo-sensors": "~58.0.4",
     "expo-splash-screen": "~58.0.11",
-    "expo-web-browser": "~58.0.6",
+    "expo-status-bar": "~58.0.4",
+    "expo-web-browser": "~58.0.7",
     "lucide-react-native": "^0.575.0",
     "react": "19.3.0",
     "react-dom": "19.3.0",
     "react-native": "0.88.0",
-    "react-native-edge-to-edge": "^1.8.1",
     "react-native-gesture-handler": "~3.3.0",
     "react-native-purchases": "10.1.0",
     "react-native-purchases-ui": "10.1.0",
@@ -78,22 +77,12 @@
     "@babel/core": "^7.29.7",
     "@expo/ngrok": "^4.1.0",
     "@types/react": "~19.3.0",
-    "eas-cli": "^25.3.0",
     "eslint": "^9.31.0",
     "eslint-config-expo": "~58.0.4",
     "typescript": "~6.0.3"
   },
   "engines": {
     "node": "^22.13.0 || ^24.3.0 || >=26.0.0"
-  },
-  "expo": {
-    "doctor": {
-      "reactNativeDirectoryCheck": {
-        "exclude": [
-          "react-native-edge-to-edge"
-        ]
-      }
-    }
   },
   "private": true
 }

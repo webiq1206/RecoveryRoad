@@ -68,6 +68,7 @@ export const PRIVACY_POLICY_SECTIONS: LegalSection[] = [
     heading: 'Data storage and location',
     body:
       'On your device. Most App data — including journal entries, check-ins, profile fields, and engagement history — is stored in the application sandbox (AsyncStorage or equivalent) on your phone or tablet. Some sensitive values (such as optional PIN-related material and parts of security diagnostics) use the operating system\'s secure storage (for example iOS Keychain / Android Keystore) where supported. Certain values may additionally be encrypted at the application layer before being written to local storage.\n\n' +
+      'Trusted contact numbers are stored on your device. When you tap Call or Text, RecoveryRoad passes the selected number to your device’s phone or messaging app. RecoveryRoad doesn’t upload trusted contact numbers to its servers.\n\n' +
       'On servers. By default, your full recovery journal is not stored on servers we operate for routine personal use of the App.\n\n' +
       "When optional operator-hosted social features are enabled for the version of the App you are using (the publisher configures this at release), posts, comments, moderated conversation content, moderation reports, and related profile fields you submit are transmitted over HTTPS to and stored by that service's operator under their infrastructure and retention rules.\n\n" +
       'Platform backups. iCloud Backup, Google backup, or computer backups may copy App data according to your device settings. We do not control those backups.',

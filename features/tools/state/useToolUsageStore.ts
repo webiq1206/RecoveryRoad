@@ -5,6 +5,7 @@ import { subscribeWithSelector } from 'zustand/middleware';
 import { STORAGE_KEYS, loadStorageItem, saveStorageItem } from '../../../core/persistence';
 import { createSelectors } from '../../../stores/zustand/createSelectors';
 import type { ToolContext, ToolId, ToolUsageEvent } from '../types';
+import { minimizeContactToolUsage, minimizeStoredContactToolUsage } from './contactToolUsagePrivacy';
 
 type ToolsUsageState = {
   events: ToolUsageEvent[];
@@ -25,7 +26,15 @@ const baseUseToolUsageStore = create<ToolsUsageState>()(
     hydrate: async () => {
       if (get().hasHydrated) return;
       set({ isLoading: true });
-      const events = await loadStorageItem<ToolUsageEvent[]>(STORAGE_KEYS.TOOLS_USAGE, []);
+      const stored = await loadStorageItem<ToolUsageEvent[]>(STORAGE_KEYS.TOOLS_USAGE, []);
+      if (get().hasHydrated) return;
+      const cleanStored = minimizeStoredContactToolUsage(stored);
+      const pending = get().events;
+      const events = pending.length ? [...pending, ...cleanStored].slice(0, 500) : cleanStored;
+      if (events !== stored) {
+        // Retry on the next hydration if the local rewrite fails. Never log its contents.
+        void saveStorageItem(STORAGE_KEYS.TOOLS_USAGE, events).catch(() => undefined);
+      }
       set({ events, isLoading: false, hasHydrated: true });
     },
 
@@ -34,17 +43,22 @@ const baseUseToolUsageStore = create<ToolsUsageState>()(
     },
 
     logToolUsage: ({ toolId, context, action, meta }) => {
-      const event: ToolUsageEvent = {
+      const event = minimizeContactToolUsage({
         id: `${toolId}-${Date.now()}`,
         toolId,
         context,
         action,
         timestamp: new Date().toISOString(),
         meta,
-      };
+      });
       const updated = [event, ...get().events].slice(0, 500);
       set({ events: updated });
-      void saveStorageItem(STORAGE_KEYS.TOOLS_USAGE, updated);
+      if (get().hasHydrated) {
+        void saveStorageItem(STORAGE_KEYS.TOOLS_USAGE, updated);
+      } else {
+        // Do not overwrite persisted milestones if a user acts before hydration.
+        void get().hydrate();
+      }
     },
   }))
 );

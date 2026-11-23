@@ -142,7 +142,7 @@ export default function ConnectionScreen() {
       toolId: 'connect',
       context: 'daily_guidance',
       action: 'completed',
-      meta: { method: 'sms', phone: cleaned },
+      meta: { method: 'sms' },
     });
 
     Linking.openURL(`sms:${cleaned}${separator}body=${message}`).catch(() => {

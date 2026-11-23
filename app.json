@@ -49,6 +49,7 @@
         }
       ],
       "./plugins/withAndroidLargeScreenCompat",
+      "./plugins/withAndroidEdgeToEdge",
       "./plugins/withAndroidR8Optimization",
       [
         "expo-status-bar",

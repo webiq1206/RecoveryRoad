@@ -35,6 +35,14 @@ function withAndroidR8Optimization(config) {
       'shrinkResources true',
     );
 
+    // RecoveryRoad uses Google Play Billing. RevenueCat's Amazon module adds
+    // a consumer rule (-dontoptimize) that disables R8 optimization app-wide.
+    const amazonStoreExclusion =
+      'exclude group: "com.revenuecat.purchases", module: "purchases-store-amazon"';
+    if (!contents.includes(amazonStoreExclusion)) {
+      contents = `${contents.trimEnd()}\n\nconfigurations.configureEach {\n    ${amazonStoreExclusion}\n}\n`;
+    }
+
     cfg.modResults.contents = contents;
     return cfg;
   });
@@ -94,5 +102,5 @@ function withAndroidR8Optimization(config) {
 module.exports = createRunOncePlugin(
   withAndroidR8Optimization,
   'withAndroidR8Optimization',
-  '1.1.0',
+  '1.2.0',
 );

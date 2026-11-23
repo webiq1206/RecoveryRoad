@@ -1,20 +1,20 @@
-import React, { useState, useRef, useEffect } from 'react';
-import { View, Text, StyleSheet, Image, Animated, Pressable, Dimensions } from 'react-native';
+import React, { useState } from 'react';
+import { View, Text, StyleSheet, Animated, Pressable } from 'react-native';
+import { Image } from 'expo-image';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ScreenScrollView } from '../components/ScreenScrollView';
-import { useLocalSearchParams } from 'expo-router';
-import { Stack } from 'expo-router';
+import { Stack, useLocalSearchParams } from 'expo-router';
 import { Heart, ChevronLeft, ChevronRight, Quote } from 'lucide-react-native';
 import * as Haptics from 'expo-haptics';
 import Colors from '../constants/colors';
 import { MOTIVATIONAL_PACKAGES } from '../constants/motivation';
 
-const { width: SCREEN_WIDTH } = Dimensions.get('window');
-
 export default function MotivationPackageScreen() {
+  const insets = useSafeAreaInsets();
   const { id } = useLocalSearchParams<{ id: string }>();
   const pkg = MOTIVATIONAL_PACKAGES.find(p => p.id === id);
   const [currentStatement, setCurrentStatement] = useState(0);
-  const fadeAnim = useRef(new Animated.Value(1)).current;
+  const [fadeAnim] = useState(() => new Animated.Value(1));
 
   if (!pkg) {
     return (
@@ -53,7 +53,18 @@ export default function MotivationPackageScreen() {
   };
 
   return (
-    <ScreenScrollView style={styles.container} contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
+    <ScreenScrollView
+      style={styles.container}
+      contentContainerStyle={[
+        styles.content,
+        {
+          paddingLeft: 20 + insets.left,
+          paddingRight: 20 + insets.right,
+          paddingBottom: 40 + insets.bottom,
+        },
+      ]}
+      showsVerticalScrollIndicator={false}
+    >
       <Stack.Screen options={{ title: pkg.title }} />
 
       <View style={[styles.headerBanner, { backgroundColor: pkg.color + '20' }]}>
@@ -86,8 +97,8 @@ export default function MotivationPackageScreen() {
 
       <Text style={styles.galleryLabel}>INSPIRATION</Text>
       {pkg.imageUrls.map((url, index) => (
-        <View key={index} style={styles.imageCard}>
-          <Image source={{ uri: url }} style={styles.image} resizeMode="cover" />
+        <View key={`${url}-${index}`} style={styles.imageCard}>
+          <Image source={url} style={styles.image} contentFit="cover" cachePolicy="disk" allowDownscaling />
         </View>
       ))}
 
@@ -110,8 +121,7 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.background,
   },
   content: {
-    padding: 20,
-    paddingBottom: 40,
+    paddingTop: 20,
   },
   errorText: {
     color: Colors.textSecondary,

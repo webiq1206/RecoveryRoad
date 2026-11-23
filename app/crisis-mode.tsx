@@ -230,7 +230,7 @@ export default function CrisisModeScreen() {
 
   const handleCallContact = useCallback((phone: string) => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
-    logToolUsage({ toolId: 'connect', context: 'crisis', action: 'completed', meta: { method: 'call', phone } });
+    logToolUsage({ toolId: 'connect', context: 'crisis', action: 'completed', meta: { method: 'call' } });
     const cleaned = phone.replace(/[^0-9+]/g, '');
     Linking.openURL(`tel:${cleaned}`).catch(() => {
       Alert.alert('Unable to Call', `Please dial ${phone} manually.`);
@@ -239,7 +239,7 @@ export default function CrisisModeScreen() {
 
   const handleSMSContact = useCallback((phone: string) => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-    logToolUsage({ toolId: 'connect', context: 'crisis', action: 'completed', meta: { method: 'text', phone } });
+    logToolUsage({ toolId: 'connect', context: 'crisis', action: 'completed', meta: { method: 'text' } });
     const cleaned = phone.replace(/[^0-9+]/g, '');
     const displayName = profile?.name || 'Me';
     const message = encodeURIComponent(`I'm having a tough moment and could use some support. - ${displayName}`);
